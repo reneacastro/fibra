@@ -6,6 +6,7 @@
   import { authStore } from '$lib/stores/auth.svelte';
   import { browser } from '$app/environment';
   import Logo from '$lib/components/Logo.svelte';
+  import { APP_VERSION, VERSION_STORAGE_KEY } from '$lib/version';
 
   let { children } = $props();
 
@@ -23,7 +24,20 @@
     }
   });
 
-  onMount(() => {
+  onMount(async () => {
+    // Versão do app: se bumpou, força re-login pro usuário sair do cache velho.
+    // Usa localStorage direto (não reativo) pra rodar uma vez só por carregamento.
+    try {
+      const stored = localStorage.getItem(VERSION_STORAGE_KEY);
+      if (stored && stored !== APP_VERSION && authStore.user) {
+        console.info(`[FIBRA] app atualizado ${stored} → ${APP_VERSION}, re-login`);
+        await authStore.signOut();
+      }
+      localStorage.setItem(VERSION_STORAGE_KEY, APP_VERSION);
+    } catch {
+      // localStorage bloqueado — segue sem version gate
+    }
+
     // Theme color meta update
     const m = document.querySelector('meta[name="theme-color"]');
     if (m) m.setAttribute('content', '#07090d');

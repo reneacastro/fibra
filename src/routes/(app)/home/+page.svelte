@@ -214,19 +214,8 @@
   <WeeklySchedule />
 </Card>
 
-<!-- Integrações -->
-<div class="sec-title">Integrações</div>
-<Card onclick={() => goto('/config-watch')} padding="md">
-  <div class="integ">
-    <div class="integ-ic"><span class="mi">watch</span></div>
-    <div class="integ-body">
-      <div class="integ-name">Apple Watch</div>
-      <div class="integ-sub">Importar dados do treino via Atalhos</div>
-    </div>
-    <span class="mi chev">chevron_right</span>
-  </div>
-</Card>
-
+<!-- Extras -->
+<div class="sec-title">Extras</div>
 <Card onclick={() => goto('/instalar')} padding="md">
   <div class="integ">
     <div class="integ-ic"><span class="mi">add_to_home_screen</span></div>

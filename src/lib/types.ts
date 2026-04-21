@@ -68,7 +68,6 @@ export interface UserSettings {
   };
   publicProfile: boolean;
   dietPlanId?: string;
-  watchToken?: string; // token pessoal pra webhook do Apple Watch
 }
 
 // ─── Catálogo de exercícios ──────────────────────────────
@@ -152,8 +151,6 @@ export interface Session {
   // Cardio opcional
   km?: number;
   pace?: string;
-  // Dados vindos do Apple Watch
-  watchData?: WatchMetrics;
   // PRs conquistados nessa sessão
   prsEarned?: string[]; // exerciseIds
   createdAt: number;
@@ -175,17 +172,6 @@ export interface PerformedSet {
   paceSecPerKm?: number;
   rpe?: number;
   completed: boolean;
-}
-
-export interface WatchMetrics {
-  heartRateAvg?: number;
-  heartRateMax?: number;
-  activeCalories?: number;
-  totalCalories?: number;
-  exerciseMinutes?: number;
-  distance?: number;
-  source: 'shortcut' | 'health-export' | 'healthkit';
-  importedAt: number;
 }
 
 // ─── Log por exercício ───────────────────────────────────

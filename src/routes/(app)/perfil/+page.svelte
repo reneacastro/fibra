@@ -3,7 +3,6 @@
   import { goto } from '$app/navigation';
   import { authStore } from '$lib/stores/auth.svelte';
   import { getProfile, saveProfile } from '$lib/db/profile';
-  import { seedCatalog } from '$lib/db/catalog';
   import type { UserProfile, Goal } from '$lib/types';
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
@@ -21,8 +20,6 @@
 
   let profile = $state<UserProfile | null>(null);
   let saving = $state(false);
-  let seeding = $state(false);
-  let seedDone = $state(false);
   let dirty = $state(false);
 
   onMount(async () => {
@@ -53,19 +50,6 @@
       dirty = false;
     } finally {
       saving = false;
-    }
-  }
-
-  async function runSeed() {
-    if (!confirm('Isso vai popular o Firestore com os 41 exercícios padrão. Continuar?')) return;
-    seeding = true;
-    try {
-      await seedCatalog();
-      seedDone = true;
-    } catch (e) {
-      alert('Falha ao semear: ' + (e as Error).message);
-    } finally {
-      seeding = false;
     }
   }
 
@@ -178,27 +162,6 @@
         onchange={(e) => field('settings', { ...profile!.settings, publicProfile: e.currentTarget.checked })}
       />
     </label>
-  </Card>
-
-  <!-- Admin -->
-  <Card title="Administração" icon="admin_panel_settings">
-    <div class="admin-row">
-      <div>
-        <div class="ar-t">Semear catálogo de exercícios</div>
-        <div class="ar-s">
-          {seedDone ? '✅ Catálogo populado no Firestore' : 'Sobe os 41 exercícios padrão pro Firestore (só na primeira vez).'}
-        </div>
-      </div>
-      <Button
-        size="sm"
-        variant="secondary"
-        icon={seedDone ? 'refresh' : 'cloud_upload'}
-        loading={seeding}
-        onclick={runSeed}
-      >
-        {seedDone ? 'Re-semear' : 'Semear'}
-      </Button>
-    </div>
   </Card>
 
   <!-- Ações -->
@@ -340,15 +303,6 @@
   .toggle-row input[type=checkbox]:checked::before {
     left: 22px;
   }
-
-  .admin-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: var(--s-3);
-  }
-  .ar-t { font-weight: 600; font-size: var(--fs-sm); }
-  .ar-s { font-size: var(--fs-xs); color: var(--text-mute); margin-top: 2px; }
 
   .footer {
     display: flex;

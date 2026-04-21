@@ -11,7 +11,7 @@
     WorkoutCategory as WCat, WorkoutExercise
   } from '$lib/types';
   import {
-    CATEGORY_ICON, CATEGORY_LABEL, todayISO, fmtDuration, estimateCalories
+    CATEGORY_ICON, CATEGORY_LABEL, todayISO, fmtDuration
   } from '$lib/utils/format';
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
@@ -21,6 +21,7 @@
   import ExerciseHistoryCompact from '$lib/components/ExerciseHistoryCompact.svelte';
   import ExerciseDetailSheet from '$lib/components/ExerciseDetailSheet.svelte';
   import CrossfitTimer from '$lib/components/CrossfitTimer.svelte';
+  import GpsTracker from '$lib/components/GpsTracker.svelte';
   import { isDurationBased, isCardio, fmtSec, fmtPace, parsePace } from '$lib/utils/exercise';
   import { suggestNextLoad } from '$lib/db/gemini';
   import { historyForExercise } from '$lib/db/sessions';
@@ -90,6 +91,7 @@
   // Finalização
   let showFinish = $state(false);
   let finalCalories = $state<string>('');
+  let userBodyWeight = $state<number>(70);
   let finalWeight = $state<string>('');
   let finalMood = $state<1|2|3|4|5>(4);
   let finalNotes = $state('');
@@ -107,6 +109,7 @@
       if (!authStore.uid) return;
 
       const p = await getProfile(authStore.uid);
+      if (p?.weight) userBodyWeight = p.weight;
       if (p?.goals.includes('massa')) userGoal = 'hypertrophy';
       else if (p?.goals.includes('performance')) userGoal = 'strength';
       else if (p?.goals.includes('emagrecer') || p?.goals.includes('qualidade')) userGoal = 'endurance';
@@ -179,6 +182,22 @@
     performed = next;
   }
 
+  let gpsTarget = $state<{ exIdx: number; sIdx: number } | null>(null);
+  function applyGps(result: { distanceM: number; paceSecPerKm: number; durationSec: number }) {
+    if (!gpsTarget) return;
+    const { exIdx, sIdx } = gpsTarget;
+    const next = [...performed];
+    next[exIdx].sets[sIdx] = {
+      ...next[exIdx].sets[sIdx],
+      distanceM: result.distanceM,
+      paceSecPerKm: result.paceSecPerKm,
+      durationSec: result.durationSec,
+      completed: true
+    };
+    performed = next;
+    gpsTarget = null;
+  }
+
   function skipExercise(exIdx: number) {
     const next = [...performed];
     next[exIdx].skipped = !next[exIdx].skipped;
@@ -197,6 +216,35 @@
       (s, st) => s + (st.completed ? (st.weight ?? 0) * (st.reps ?? 0) : 0), 0
     ), 0
   ));
+
+  // Estimativa de calorias no estilo Apple Health: MET × peso(kg) × horas.
+  // Pra cada exercício com séries concluídas, usa seu MET próprio.
+  // Sem HR: é uma estimativa; Apple Watch só é melhor porque mede BPM real.
+  const suggestedCalories = $derived.by(() => {
+    const weight = Number(finalWeight) || userBodyWeight || 70;
+    const totalMinutes = Math.max(1, elapsed / 60000);
+    const activeExercises = performed.filter((pe) => !pe.skipped && pe.sets.some((s) => s.completed));
+    if (activeExercises.length === 0) return 0;
+    // MET médio ponderado pelo número de séries feitas
+    let totalSets = 0;
+    let metSum = 0;
+    for (const pe of activeExercises) {
+      const ex = catalogStore.byId(pe.exerciseId);
+      const met = ex?.mets ?? 4;
+      const done = pe.sets.filter((s) => s.completed).length;
+      metSum += met * done;
+      totalSets += done;
+    }
+    const avgMet = totalSets > 0 ? metSum / totalSets : 4;
+    return Math.round((avgMet * weight * totalMinutes) / 60);
+  });
+
+  // Pré-preenche kcal ao abrir "Finalizar" se o usuário ainda não digitou nada
+  $effect(() => {
+    if (showFinish && !finalCalories && suggestedCalories > 0) {
+      finalCalories = String(suggestedCalories);
+    }
+  });
 
   async function finish() {
     if (!authStore.uid || !workout) return;
@@ -420,6 +468,15 @@
                           oninput={(e) => updateSetPace(idx, sIdx, e.currentTarget.value)}
                         />
                       </label>
+                      <button
+                        type="button"
+                        class="gps-btn"
+                        onclick={() => (gpsTarget = { exIdx: idx, sIdx })}
+                        aria-label="Medir com GPS"
+                      >
+                        <span class="mi">my_location</span>
+                        GPS
+                      </button>
                     </div>
                     <div class="target mono">
                       {#if workoutEx.sets[sIdx]?.distanceM}
@@ -499,7 +556,13 @@
     </Button>
   {:else}
     <Card title="Finalizar" icon="flag">
-      <Input type="number" label="🔥 Calorias (kcal)" bind:value={finalCalories} placeholder="0" />
+      <Input type="number" label="🔥 Calorias (kcal)" bind:value={finalCalories} placeholder={String(suggestedCalories || 0)} />
+      {#if suggestedCalories > 0}
+        <div class="kcal-hint">
+          <span class="mi">bolt</span>
+          <span>Estimado: <strong>{suggestedCalories} kcal</strong> (MET × peso × tempo). Edite se tiver dado real.</span>
+        </div>
+      {/if}
       <div class="spacer"></div>
       <Input type="number" label="⚖️ Peso corporal hoje (kg)" bind:value={finalWeight} placeholder="0" step="0.1" />
       <div class="spacer"></div>
@@ -573,6 +636,10 @@
 
 {#if detailExId}
   <ExerciseDetailSheet exerciseId={detailExId} onClose={() => (detailExId = null)} />
+{/if}
+
+{#if gpsTarget}
+  <GpsTracker onComplete={applyGps} onClose={() => (gpsTarget = null)} />
 {/if}
 
 <style>
@@ -801,6 +868,38 @@
     gap: 6px;
     flex: 1;
   }
+  .kcal-hint {
+    margin-top: 6px;
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    padding: 8px 10px;
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 var(--r-sm) var(--r-sm) 0;
+    font-size: 11px;
+    color: var(--text-mute);
+    line-height: 1.4;
+  }
+  .kcal-hint .mi { font-size: 14px; color: var(--accent); flex-shrink: 0; margin-top: 1px; }
+  .kcal-hint strong { color: var(--text); }
+
+  .gps-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 10px;
+    background: var(--grad-primary);
+    color: var(--bg-0);
+    border-radius: var(--r-md);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+  }
+  .gps-btn .mi { font-size: 18px; }
+  .gps-btn:active { transform: scale(0.95); }
   .inp-wrap {
     flex: 1;
     display: flex;
