@@ -79,8 +79,13 @@
     font-weight: 600;
     letter-spacing: 0.02em;
   }
-  .bnav-btn:hover {
-    color: var(--text-mute);
+  @media (hover: hover) {
+    .bnav-btn:hover {
+      color: var(--text-mute);
+    }
+  }
+  .bnav-btn:active {
+    transform: scale(0.94);
   }
   .bnav-btn.active {
     color: var(--accent);

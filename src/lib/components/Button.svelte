@@ -83,8 +83,10 @@
     color: var(--bg-0);
     box-shadow: var(--shadow-md), 0 0 0 0 transparent;
   }
-  .v-primary:hover:not(:disabled) {
-    box-shadow: var(--shadow-lg), var(--shadow-glow);
+  @media (hover: hover) {
+    .v-primary:hover:not(:disabled) {
+      box-shadow: var(--shadow-lg), var(--shadow-glow);
+    }
   }
 
   .v-secondary {
@@ -92,18 +94,22 @@
     color: var(--text);
     border: 1px solid var(--border);
   }
-  .v-secondary:hover:not(:disabled) {
-    background: var(--bg-4);
-    border-color: var(--border-strong);
+  @media (hover: hover) {
+    .v-secondary:hover:not(:disabled) {
+      background: var(--bg-4);
+      border-color: var(--border-strong);
+    }
   }
 
   .v-ghost {
     background: transparent;
     color: var(--text-mute);
   }
-  .v-ghost:hover:not(:disabled) {
-    background: var(--bg-3);
-    color: var(--text);
+  @media (hover: hover) {
+    .v-ghost:hover:not(:disabled) {
+      background: var(--bg-3);
+      color: var(--text);
+    }
   }
 
   .v-danger {

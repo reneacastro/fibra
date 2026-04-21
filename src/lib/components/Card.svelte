@@ -52,8 +52,10 @@
     position: relative;
     transition: border-color var(--dur-fast), transform var(--dur-fast) var(--ease-out);
   }
-  .card.clickable:hover {
-    border-color: var(--border-strong);
+  @media (hover: hover) {
+    .card.clickable:hover {
+      border-color: var(--border-strong);
+    }
   }
   .card.clickable:active {
     transform: scale(0.99);
