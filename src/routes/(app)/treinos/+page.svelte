@@ -35,26 +35,32 @@
   let listEl: HTMLDivElement | undefined = $state();
   let sortable: Sortable | null = null;
 
+  // Só cria Sortable uma vez por montagem de listEl + tab ativa.
+  // Não depender de workouts.length evita recriar a cada delete/reload.
   $effect(() => {
-    if (!listEl || active !== 'meus' || workouts.length === 0) {
-      sortable?.destroy();
-      sortable = null;
-      return;
-    }
-    sortable?.destroy();
-    sortable = Sortable.create(listEl, {
+    const el = listEl;
+    const tab = active;
+    if (!el || tab !== 'meus') return;
+
+    const s = Sortable.create(el, {
       animation: 180,
       handle: '.wk-drag',
       ghostClass: 'dragging',
-      delay: 100,
-      delayOnTouchOnly: true,
       onEnd: async (evt) => {
         if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
         if (evt.oldIndex === evt.newIndex) return;
+        const { item, oldIndex, newIndex } = evt;
+
+        // Desfaz a mutação feita pelo Sortable — Svelte vai re-renderizar
+        // na ordem certa a partir do state (evita briga pela árvore DOM).
+        const refNode = el.children[oldIndex] || null;
+        el.insertBefore(item, refNode);
+
         const next = [...workouts];
-        const [moved] = next.splice(evt.oldIndex, 1);
-        next.splice(evt.newIndex, 0, moved);
+        const [moved] = next.splice(oldIndex, 1);
+        next.splice(newIndex, 0, moved);
         workouts = next;
+
         if (authStore.uid) {
           try {
             await saveWorkoutsOrder(authStore.uid, next);
@@ -64,7 +70,11 @@
         }
       }
     });
-    return () => sortable?.destroy();
+    sortable = s;
+    return () => {
+      s.destroy();
+      sortable = null;
+    };
   });
 
   async function reloadWorkouts() {

@@ -55,23 +55,33 @@
   let sortable: Sortable | null = null;
 
   $effect(() => {
-    if (!stackEl) return;
-    sortable?.destroy();
-    sortable = Sortable.create(stackEl, {
+    const el = stackEl;
+    if (!el) return;
+    const s = Sortable.create(el, {
       animation: 180,
       handle: '.drag-handle',
       ghostClass: 'dragging',
       onEnd: (evt) => {
         if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
         if (evt.oldIndex === evt.newIndex) return;
+        const { item, oldIndex, newIndex } = evt;
+
+        // Desfaz a mutação do Sortable — Svelte renderiza da ordem do state.
+        const refNode = el.children[oldIndex] || null;
+        el.insertBefore(item, refNode);
+
         const next = [...workout.exercises];
-        const [moved] = next.splice(evt.oldIndex, 1);
-        next.splice(evt.newIndex, 0, moved);
+        const [moved] = next.splice(oldIndex, 1);
+        next.splice(newIndex, 0, moved);
         next.forEach((e, i) => (e.order = i));
         workout = { ...workout, exercises: next };
       }
     });
-    return () => sortable?.destroy();
+    sortable = s;
+    return () => {
+      s.destroy();
+      sortable = null;
+    };
   });
 
   onMount(async () => {
