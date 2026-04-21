@@ -31,8 +31,12 @@
   </div>
 
   {#if authStore.user}
-    <button class="icon-btn" onclick={() => goto('/perfil')} aria-label="Perfil">
-      <span class="mi">account_circle</span>
+    <button class="avatar-btn" onclick={() => goto('/perfil')} aria-label="Perfil">
+      {#if authStore.user.photoURL}
+        <img src={authStore.user.photoURL} alt="Perfil" referrerpolicy="no-referrer" />
+      {:else}
+        <span class="mi">account_circle</span>
+      {/if}
     </button>
   {/if}
 </header>
@@ -64,6 +68,26 @@
   }
   .icon-btn:hover { background: var(--bg-4); }
   .icon-btn .mi { font-size: 20px; }
+
+  .avatar-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--bg-3);
+    border: 2px solid var(--accent);
+    display: grid;
+    place-items: center;
+    color: var(--text);
+    transition: transform var(--dur-fast);
+  }
+  .avatar-btn:hover { transform: scale(1.05); }
+  .avatar-btn img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .avatar-btn .mi { font-size: 22px; }
 
   .hdr-title {
     flex: 1;

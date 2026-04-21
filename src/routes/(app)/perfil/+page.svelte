@@ -80,7 +80,13 @@
   <!-- Avatar + nome -->
   <Card>
     <div class="hero">
-      <div class="avatar-big">{profile.avatar}</div>
+      {#if authStore.user?.photoURL}
+        <div class="avatar-big photo">
+          <img src={authStore.user.photoURL} alt="Perfil" referrerpolicy="no-referrer" />
+        </div>
+      {:else}
+        <div class="avatar-big">{profile.avatar}</div>
+      {/if}
       <div class="hero-info">
         <div class="hero-name">{profile.name} {profile.surname ?? ''}</div>
         <div class="hero-email">{profile.email}</div>
@@ -226,6 +232,17 @@
     place-items: center;
     font-size: 36px;
     box-shadow: var(--shadow-glow);
+    overflow: hidden;
+  }
+  .avatar-big.photo {
+    background: var(--bg-3);
+    border: 2px solid var(--accent);
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+  }
+  .avatar-big.photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
   .hero-name { font-size: var(--fs-xl); font-weight: 800; letter-spacing: -0.02em; }
   .hero-email { color: var(--text-mute); font-size: var(--fs-sm); }

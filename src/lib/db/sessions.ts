@@ -1,5 +1,5 @@
 import {
-  collection, doc, getDocs, setDoc, query, orderBy, limit as fsLimit, where, writeBatch
+  collection, doc, getDocs, setDoc, deleteDoc, query, orderBy, limit as fsLimit, where, writeBatch
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type { Session, ExerciseLogEntry } from '$lib/types';
@@ -101,6 +101,33 @@ export async function saveSession(uid: string, s: Session) {
 
   await batch.commit();
   return { prsEarned };
+}
+
+/**
+ * Apaga uma sessão e todos os exerciseLogs associados a ela.
+ */
+export async function deleteSession(uid: string, sessionId: string) {
+  const batch = writeBatch(db());
+
+  // 1) Apagar a sessão
+  batch.delete(doc(sessionsCol(uid), sessionId));
+
+  // 2) Apagar entries de exerciseLogs que referenciam essa sessão
+  // collectionGroup query pra varrer todos os exerciseLogs
+  const session = await getDocs(
+    query(sessionsCol(uid), where('id', '==', sessionId), fsLimit(1))
+  );
+  if (!session.empty) {
+    const s = session.docs[0].data() as Session;
+    for (const pe of s.performedExercises) {
+      const entries = await getDocs(
+        query(entriesCol(uid, pe.exerciseId), where('sessionId', '==', sessionId))
+      );
+      for (const e of entries.docs) batch.delete(e.ref);
+    }
+  }
+
+  await batch.commit();
 }
 
 export async function historyForExercise(uid: string, exerciseId: string, max = 30) {

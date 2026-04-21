@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { authStore } from '$lib/stores/auth.svelte';
   import { listWorkouts } from '$lib/db/workouts';
-  import { listSessions } from '$lib/db/sessions';
+  import { listSessions, deleteSession } from '$lib/db/sessions';
   import type { Workout, Session } from '$lib/types';
   import { CATEGORY_ICON, CATEGORY_LABEL, fmtDateRelative } from '$lib/utils/format';
   import Card from '$lib/components/Card.svelte';
@@ -25,6 +25,13 @@
 
   function start(workoutId: string) {
     goto(`/registrar/${workoutId}`);
+  }
+
+  async function removeSession(sessionId: string, label: string) {
+    if (!authStore.uid) return;
+    if (!confirm(`Apagar registro: "${label}"?\n\nIsso também remove os recordes desse treino do seu histórico.`)) return;
+    await deleteSession(authStore.uid, sessionId);
+    recentSessions = recentSessions.filter((s) => s.id !== sessionId);
   }
 </script>
 
@@ -109,6 +116,13 @@
               {/if}
             </div>
           </div>
+          <button
+            class="hist-del"
+            onclick={() => removeSession(s.id, s.workoutName)}
+            aria-label="Apagar registro"
+          >
+            <span class="mi">delete_outline</span>
+          </button>
         </div>
       </Card>
     {/each}
@@ -218,6 +232,18 @@
   .hist-body { flex: 1; min-width: 0; }
   .hist-name { font-weight: 700; font-size: var(--fs-sm); }
   .hist-sub { font-size: var(--fs-xs); color: var(--text-mute); margin-top: 2px; }
+
+  .hist-del {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--r-md);
+    color: var(--text-dim);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+  .hist-del:hover { background: var(--bg-3); color: var(--danger); }
+  .hist-del .mi { font-size: 18px; }
 
   .empty {
     text-align: center;
