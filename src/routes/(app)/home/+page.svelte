@@ -16,12 +16,14 @@
   import WeeklySchedule from '$lib/components/WeeklySchedule.svelte';
   import { randomPhrase } from '$lib/data/motivation';
   import { withTimeout } from '$lib/utils/withTimeout';
+  import { checkIsAdmin } from '$lib/admin';
 
   let profile = $state<UserProfile | null>(null);
   let workouts = $state<Workout[]>([]);
   let sessions = $state<Session[]>([]);
   let schedule = $state<Schedule | null>(null);
   let loading = $state(true);
+  let isAdminUser = $state(false);
   // Sorteada uma vez por carregamento da home
   const phrase = randomPhrase();
 
@@ -33,12 +35,13 @@
     loadError = null;
     try {
       await catalogStore.ensure();
-      [profile, workouts, sessions, schedule] = await withTimeout(
+      [profile, workouts, sessions, schedule, isAdminUser] = await withTimeout(
         Promise.all([
           getProfile(authStore.uid),
           listWorkouts(authStore.uid),
           listSessions(authStore.uid, 50),
-          getSchedule(authStore.uid)
+          getSchedule(authStore.uid),
+          checkIsAdmin(authStore.uid)
         ]),
         10_000,
         'carregar home'
@@ -233,6 +236,21 @@
   <WeeklySchedule />
 </Card>
 
+<!-- Trainer/Nutri dashboard (se aprovado) -->
+{#if profile?.settings?.role === 'trainer' || profile?.settings?.role === 'nutritionist'}
+  <div class="sec-title">Assessoria</div>
+  <Card onclick={() => goto('/trainer')} accent="glow" padding="md">
+    <div class="rank-promo">
+      <div class="rp-ic">{profile.settings.role === 'nutritionist' ? '🥗' : '💪'}</div>
+      <div class="rp-body">
+        <div class="rp-t">Meus clientes</div>
+        <div class="rp-s">Gerencie atletas que você assiste.</div>
+      </div>
+      <span class="mi chev">chevron_right</span>
+    </div>
+  </Card>
+{/if}
+
 <!-- Ranking da comunidade (destaque) -->
 <div class="sec-title">Ranking</div>
 <Card onclick={() => goto('/comunidade')} accent="glow" padding="md">
@@ -245,6 +263,19 @@
     <span class="mi chev">chevron_right</span>
   </div>
 </Card>
+
+{#if isAdminUser}
+  <Card onclick={() => goto('/admin')} padding="md">
+    <div class="integ">
+      <div class="integ-ic"><span class="mi">admin_panel_settings</span></div>
+      <div class="integ-body">
+        <div class="integ-name">Admin</div>
+        <div class="integ-sub">Aprovar pedidos de trainer/nutricionista</div>
+      </div>
+      <span class="mi chev">chevron_right</span>
+    </div>
+  </Card>
+{/if}
 
 <div class="sec-title">Extras</div>
 <Card onclick={() => goto('/instalar')} padding="md">

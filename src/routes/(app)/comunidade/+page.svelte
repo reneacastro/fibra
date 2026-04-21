@@ -6,6 +6,8 @@
   import { getProfile, saveProfile } from '$lib/db/profile';
   import { listRanking, type RankingOrder } from '$lib/db/rankings';
   import { listPublicShared, listReceived, cloneToWorkout } from '$lib/db/sharedWorkouts';
+  import { listPendingForMe, acceptInvite, deleteInvite } from '$lib/db/relationships';
+  import type { Relationship } from '$lib/types';
   import { listWorkouts, saveWorkout, newWorkoutId } from '$lib/db/workouts';
   import type { RankingEntry, SharedWorkout, WorkoutCategory, UserProfile } from '$lib/types';
   import { CATEGORY_LABEL, CATEGORY_ICON } from '$lib/utils/format';
@@ -17,13 +19,14 @@
   import ShareSheet from '$lib/components/ShareSheet.svelte';
   import type { ShareCardData } from '$lib/utils/shareCard';
 
-  type TabId = 'ranking' | 'publicos' | 'recebidos';
+  type TabId = 'ranking' | 'publicos' | 'recebidos' | 'convites';
   let active = $state<TabId>('ranking');
 
   let profile = $state<UserProfile | null>(null);
   let ranking = $state<RankingEntry[]>([]);
   let publicShared = $state<SharedWorkout[]>([]);
   let received = $state<SharedWorkout[]>([]);
+  let pendingInvites = $state<Relationship[]>([]);
   let loading = $state(true);
   let loadError = $state<string | null>(null);
 
@@ -48,12 +51,13 @@
     loading = true;
     loadError = null;
     try {
-      const [p, r, pub, rec] = await withTimeout(
+      const [p, r, pub, rec, inv] = await withTimeout(
         Promise.all([
           authStore.uid ? getProfile(authStore.uid) : Promise.resolve(null),
           listRanking({ orderBy, category: filterCategory || undefined, max: 50 }),
           listPublicShared({ max: 50 }),
-          authStore.uid ? listReceived(authStore.uid, 50) : Promise.resolve([])
+          authStore.uid ? listReceived(authStore.uid, 50) : Promise.resolve([]),
+          authStore.uid ? listPendingForMe(authStore.uid) : Promise.resolve([])
         ]),
         12_000,
         'comunidade'
@@ -62,6 +66,7 @@
       ranking = r;
       publicShared = pub;
       received = rec;
+      pendingInvites = inv;
       await catalogStore.ensure();
     } catch (e) {
       loadError = (e as Error).message;
@@ -149,8 +154,21 @@
   const tabs = $derived([
     { id: 'ranking',   label: 'Ranking' },
     { id: 'publicos',  label: 'Públicos' },
-    { id: 'recebidos', label: received.length > 0 ? `Recebidos (${received.length})` : 'Recebidos' }
+    { id: 'recebidos', label: received.length > 0 ? `Recebidos (${received.length})` : 'Recebidos' },
+    ...(pendingInvites.length > 0 ? [{ id: 'convites', label: `Convites (${pendingInvites.length})` }] : [])
   ]);
+
+  async function acceptInv(r: Relationship) {
+    if (!confirm(`Aceitar convite de ${r.trainerName}? Ele poderá editar ${r.scope.map((s) => s === 'workouts' ? 'treinos' : 'dieta').join(' e ')} no seu app.`)) return;
+    await acceptInvite(r.trainerUid, r.clientUid);
+    pendingInvites = pendingInvites.filter((x) => x.id !== r.id);
+  }
+
+  async function rejectInv(r: Relationship) {
+    if (!confirm(`Rejeitar convite de ${r.trainerName}?`)) return;
+    await deleteInvite(r.trainerUid, r.clientUid);
+    pendingInvites = pendingInvites.filter((x) => x.id !== r.id);
+  }
 </script>
 
 <Tabs {tabs} value={active} onChange={(id) => (active = id as TabId)} />
@@ -258,6 +276,55 @@
     </div>
   {/if}
 
+{:else if active === 'convites'}
+  {#if pendingInvites.length === 0}
+    <div class="empty">
+      <span class="mi">inbox</span>
+      <div>
+        <div class="empty-t">Nenhum convite pendente</div>
+        <div class="empty-s">Convites de personal trainers ou nutricionistas aparecem aqui.</div>
+      </div>
+    </div>
+  {:else}
+    <div class="shared-list">
+      {#each pendingInvites as inv (inv.id)}
+        <Card>
+          <div class="sh-head">
+            <div class="sh-avatar">
+              {#if inv.trainerAvatar?.startsWith('http')}
+                <img src={inv.trainerAvatar} alt={inv.trainerName} />
+              {:else}
+                <span class="emo">{inv.trainerAvatar || '💪'}</span>
+              {/if}
+            </div>
+            <div class="sh-by">
+              <div class="sh-by-n">{inv.trainerName}</div>
+              <div class="sh-by-d">
+                {inv.trainerRole === 'nutritionist' ? 'Nutricionista' : 'Personal trainer'}
+              </div>
+            </div>
+          </div>
+          <div class="sh-name">Convidou você pra assessoria</div>
+          <div class="sh-meta">
+            Vai poder editar:
+            <strong>
+              {inv.scope.map((s) => s === 'workouts' ? 'treinos' : 'dieta').join(' e ')}
+            </strong>
+          </div>
+          {#if inv.note}
+            <div class="sh-desc">"{inv.note}"</div>
+          {/if}
+          <div class="spacer-sm"></div>
+          <div class="inv-actions">
+            <Button variant="ghost" onclick={() => rejectInv(inv)}>Recusar</Button>
+            <Button icon="check_circle" full variant="success" onclick={() => acceptInv(inv)}>
+              Aceitar
+            </Button>
+          </div>
+        </Card>
+      {/each}
+    </div>
+  {/if}
 {:else}
   <!-- Treinos compartilhados: públicos ou recebidos direto -->
   {@const list = active === 'publicos' ? publicShared : received}
@@ -483,4 +550,5 @@
     line-height: 1.5;
     white-space: pre-wrap;
   }
+  .inv-actions { display: flex; gap: var(--s-2); }
 </style>

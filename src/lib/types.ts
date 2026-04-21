@@ -68,6 +68,14 @@ export interface UserSettings {
   };
   publicProfile: boolean;
   dietPlanId?: string;
+  // Papel real do usuário. Default = 'athlete'. Só admin pode promover
+  // pra trainer/nutritionist.
+  role?: 'athlete' | 'trainer' | 'nutritionist';
+  // Intenção do usuário (auto-declarada). Fica aqui até admin aprovar
+  // ou rejeitar. Quando aprovado: role recebe o valor e rolePending = undefined.
+  rolePending?: 'trainer' | 'nutritionist';
+  roleApprovedAt?: number;
+  roleApprovedBy?: string;
 }
 
 // ─── Catálogo de exercícios ──────────────────────────────
@@ -366,6 +374,40 @@ export interface PublicProfile {
     measurements: boolean;
     currentWeight: boolean;
   };
+}
+
+// ─── Pedidos de role (gate admin) ───────────────────────
+
+export interface RoleRequest {
+  uid: string;
+  name: string;
+  avatar?: string;
+  requestedRole: 'trainer' | 'nutritionist';
+  note?: string; // explicação opcional ("sou CREF XYZ, atendo há 5 anos…")
+  createdAt: number;
+}
+
+// ─── Relacionamentos trainer/nutri ⇄ cliente ────────────
+
+/**
+ * Doc ID determinístico: `${trainerUid}_${clientUid}`.
+ * Evita duplicatas de convite e simplifica regras.
+ */
+export interface Relationship {
+  id: string; // = `${trainerUid}_${clientUid}`
+  trainerUid: string;
+  trainerName: string;
+  trainerAvatar?: string;
+  trainerRole: 'trainer' | 'nutritionist';
+  clientUid: string;
+  clientName: string;
+  clientAvatar?: string;
+  status: 'pending' | 'active' | 'ended';
+  scope: Array<'workouts' | 'diet'>; // o que o trainer pode editar no cliente
+  note?: string; // mensagem opcional do trainer ao convidar
+  createdAt: number;
+  acceptedAt?: number;
+  endedAt?: number;
 }
 
 // ─── Comunidade ─────────────────────────────────────────

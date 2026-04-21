@@ -5,7 +5,7 @@
   import { authStore } from '$lib/stores/auth.svelte';
   import { catalogStore } from '$lib/stores/catalog.svelte';
   import {
-    getWorkout, saveWorkout, deleteWorkout, newWorkoutId
+    getWorkout, saveWorkout, deleteWorkout, newWorkoutId, saveWorkoutForClient
   } from '$lib/db/workouts';
   import type {
     Workout, WorkoutCategory, WorkoutExercise, ExerciseSet
@@ -84,13 +84,17 @@
     };
   });
 
+  // Trainer mode: editando o workout de um cliente
+  const targetUid = $derived(page.url.searchParams.get('clientUid') || authStore.uid || '');
+  const isClientMode = $derived(!!page.url.searchParams.get('clientUid'));
+
   onMount(async () => {
     try {
       await catalogStore.ensure();
-      if (!isNew && authStore.uid && page.params.id) {
-        const w = await getWorkout(authStore.uid, page.params.id);
+      if (!isNew && targetUid && page.params.id) {
+        const w = await getWorkout(targetUid, page.params.id);
         if (w) workout = w;
-        else goto('/treinos');
+        else goto(isClientMode ? `/trainer/cliente/${targetUid}` : '/treinos');
       }
     } catch (e) {
       console.error('Falha ao carregar treino:', e);
@@ -271,11 +275,16 @@
     saving = true;
     saveError = null;
     try {
-      await saveWorkout(authStore.uid, workout);
-      if (page.url.searchParams.get('then') === 'register') {
-        goto(`/registrar/${workout.id}`);
+      if (isClientMode) {
+        await saveWorkoutForClient(targetUid, workout);
+        goto(`/trainer/cliente/${targetUid}`);
       } else {
-        goto('/treinos');
+        await saveWorkout(authStore.uid!, workout);
+        if (page.url.searchParams.get('then') === 'register') {
+          goto(`/registrar/${workout.id}`);
+        } else {
+          goto('/treinos');
+        }
       }
     } catch (e) {
       saveError = 'Erro ao salvar: ' + (e as Error).message;
@@ -287,8 +296,8 @@
   async function remove() {
     if (!authStore.uid || isNew) return;
     if (!confirm(`Apagar "${workout.name}"?`)) return;
-    await deleteWorkout(authStore.uid, workout.id);
-    goto('/treinos');
+    await deleteWorkout(targetUid, workout.id);
+    goto(isClientMode ? `/trainer/cliente/${targetUid}` : '/treinos');
   }
 </script>
 

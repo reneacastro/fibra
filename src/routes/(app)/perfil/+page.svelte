@@ -3,7 +3,8 @@
   import { goto } from '$app/navigation';
   import { authStore } from '$lib/stores/auth.svelte';
   import { getProfile, saveProfile } from '$lib/db/profile';
-  import type { UserProfile, Goal } from '$lib/types';
+  import { getMyRoleRequest, submitRoleRequest, cancelRoleRequest } from '$lib/db/roleRequests';
+  import type { UserProfile, Goal, RoleRequest } from '$lib/types';
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
   import Input from '$lib/components/Input.svelte';
@@ -21,11 +22,38 @@
   let profile = $state<UserProfile | null>(null);
   let saving = $state(false);
   let dirty = $state(false);
+  let roleRequest = $state<RoleRequest | null>(null);
+  let roleNote = $state('');
 
   onMount(async () => {
     if (!authStore.uid) return;
     profile = await getProfile(authStore.uid);
+    roleRequest = await getMyRoleRequest(authStore.uid);
   });
+
+  const approvedRole = $derived(profile?.settings?.role ?? 'athlete');
+
+  async function requestRole(role: 'trainer' | 'nutritionist') {
+    if (!authStore.uid || !profile) return;
+    await submitRoleRequest({
+      uid: authStore.uid,
+      name: profile.name || authStore.user?.displayName || 'Usuário',
+      avatar: authStore.user?.photoURL || profile.avatar,
+      requestedRole: role,
+      note: roleNote.trim() || undefined,
+      createdAt: Date.now()
+    });
+    roleRequest = await getMyRoleRequest(authStore.uid);
+    roleNote = '';
+    alert('Pedido enviado. Um admin vai avaliar.');
+  }
+
+  async function cancelRequest() {
+    if (!authStore.uid) return;
+    if (!confirm('Cancelar seu pedido?')) return;
+    await cancelRoleRequest(authStore.uid);
+    roleRequest = null;
+  }
 
   function toggleGoal(g: Goal) {
     if (!profile) return;
@@ -162,6 +190,61 @@
         onchange={(e) => field('settings', { ...profile!.settings, publicProfile: e.currentTarget.checked })}
       />
     </label>
+  </Card>
+
+  <!-- Papel no app -->
+  <Card title="Papel no app" icon="workspace_premium">
+    <div class="role-sub">
+      Treinadores e nutricionistas podem assistir clientes, criando treinos
+      e planos direto no app deles. <strong>Precisa de aprovação do admin</strong>
+      antes de virar trainer ou nutri (pra garantir que a pessoa é real).
+    </div>
+
+    {#if approvedRole !== 'athlete'}
+      <div class="role-status approved">
+        <span class="mi">verified</span>
+        <div>
+          <div class="rs-t">Você é {approvedRole === 'trainer' ? 'personal trainer' : 'nutricionista'} aprovado</div>
+          <div class="rs-s">Dashboard disponível em "Meus clientes"</div>
+        </div>
+      </div>
+    {:else if roleRequest}
+      <div class="role-status pending">
+        <span class="mi spin">hourglass_top</span>
+        <div>
+          <div class="rs-t">Aguardando aprovação</div>
+          <div class="rs-s">Pediu: {roleRequest.requestedRole === 'trainer' ? 'Personal trainer' : 'Nutricionista'}</div>
+        </div>
+        <Button size="sm" variant="ghost" onclick={cancelRequest}>Cancelar</Button>
+      </div>
+    {:else}
+      <div class="role-options">
+        <div class="r-title">Quer pedir promoção?</div>
+        <textarea
+          bind:value={roleNote}
+          placeholder="Opcional: conta pro admin quem você é (ex: 'sou CREF 123, atendo há 5 anos')"
+          rows="2"
+          maxlength="300"
+        ></textarea>
+        <div class="spacer-xs"></div>
+        <div class="role-btn-row">
+          <button class="role-btn" onclick={() => requestRole('trainer')}>
+            <span class="r-ic">💪</span>
+            <div class="r-body">
+              <div class="r-t">Personal trainer</div>
+              <div class="r-s">Monto treinos pra clientes</div>
+            </div>
+          </button>
+          <button class="role-btn" onclick={() => requestRole('nutritionist')}>
+            <span class="r-ic">🥗</span>
+            <div class="r-body">
+              <div class="r-t">Nutricionista</div>
+              <div class="r-s">Monto dietas pra clientes</div>
+            </div>
+          </button>
+        </div>
+      </div>
+    {/if}
   </Card>
 
   <!-- Ações -->
@@ -303,6 +386,68 @@
   .toggle-row input[type=checkbox]:checked::before {
     left: 22px;
   }
+
+  .role-sub {
+    font-size: var(--fs-xs);
+    color: var(--text-mute);
+    margin-bottom: var(--s-3);
+    line-height: 1.5;
+  }
+  .role-status {
+    display: flex;
+    gap: var(--s-3);
+    align-items: center;
+    padding: var(--s-3);
+    border-radius: var(--r-md);
+  }
+  .role-status.approved {
+    background: color-mix(in srgb, var(--success) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--success) 25%, transparent);
+    color: var(--success);
+  }
+  .role-status.pending {
+    background: color-mix(in srgb, var(--warning) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--warning) 25%, transparent);
+    color: var(--warning);
+    justify-content: space-between;
+  }
+  .role-status .mi { font-size: 28px; flex-shrink: 0; }
+  .role-status.pending .mi { animation: spin 2s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .rs-t { font-weight: 700; font-size: var(--fs-sm); color: var(--text); }
+  .rs-s { font-size: var(--fs-xs); opacity: 0.8; margin-top: 2px; }
+
+  .role-options textarea {
+    width: 100%;
+    padding: var(--s-2) var(--s-3);
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    color: var(--text);
+    font-family: inherit;
+    font-size: var(--fs-sm);
+    resize: vertical;
+  }
+  .spacer-xs { height: var(--s-2); }
+  .r-title { font-size: var(--fs-xs); font-weight: 700; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: var(--s-2); }
+  .role-btn-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+  }
+  .role-btn {
+    display: flex;
+    gap: var(--s-3);
+    align-items: center;
+    padding: var(--s-3);
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    text-align: left;
+  }
+  .r-ic { font-size: 28px; flex-shrink: 0; }
+  .r-t { font-weight: 700; font-size: var(--fs-sm); }
+  .r-s { font-size: var(--fs-xs); color: var(--text-mute); margin-top: 2px; }
 
   .footer {
     display: flex;

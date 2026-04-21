@@ -7,6 +7,17 @@ import { cleanUndefined } from '$lib/utils/clean';
 
 const col = (uid: string) => collection(db(), 'users', uid, 'workouts');
 
+/** Trainer escreve workout no catálogo de um cliente (via rule hasTrainerAccess).
+ *  O workout ganha um marker `createdByUid` pra UI distinguir. */
+export async function saveWorkoutForClient(clientUid: string, w: Workout & { createdByUid?: string; createdByName?: string }) {
+  const now = Date.now();
+  await setDoc(doc(col(clientUid), w.id), cleanUndefined({
+    ...w,
+    updatedAt: now,
+    createdAt: w.createdAt ?? now
+  }));
+}
+
 export async function listWorkouts(uid: string): Promise<Workout[]> {
   const q = query(col(uid), orderBy('order', 'asc'));
   const snap = await getDocs(q);

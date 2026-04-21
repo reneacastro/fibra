@@ -17,6 +17,19 @@ service cloud.firestore {
     function notTooLarge() {
       return request.resource.size() < 524288;
     }
+    // True se existe relationship ATIVA entre request.auth.uid (trainer)
+    // e o uid do path (client), com scope incluindo a string `sc`.
+    function hasTrainerAccess(uid, sc) {
+      let relId = request.auth.uid + '_' + uid;
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/relationships/$(relId))
+        && get(/databases/$(database)/documents/relationships/$(relId)).data.status == 'active'
+        && sc in get(/databases/$(database)/documents/relationships/$(relId)).data.scope;
+    }
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
 
     // ─── Catálogos públicos (read-only) ──────────────────
     match /exerciseCatalog/{docId} {
@@ -28,10 +41,27 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ─── Admins (existência = permissão) ─────────────────
+    match /admins/{uid} {
+      // Qualquer user autenticado pode checar se ele próprio é admin
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      // Escrita só via Firebase Console (manual)
+      allow write: if false;
+    }
+
+    // ─── Pedidos de virar trainer/nutritionist ───────────
+    // User declara intenção escrevendo em /roleRequests/{uid}. Admin aprova.
+    match /roleRequests/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create, update: if isOwner(uid) && notTooLarge()
+        && request.resource.data.uid == request.auth.uid;
+      allow delete: if isOwner(uid) || isAdmin();
+    }
+
     // ─── Dados do usuário ────────────────────────────────
     match /users/{uid} {
-      allow read: if isOwner(uid);
-      allow create, update: if isOwner(uid) && notTooLarge();
+      allow read: if isOwner(uid) || isAdmin();
+      allow create, update: if (isOwner(uid) || isAdmin()) && notTooLarge();
       allow delete: if false;
 
       match /exercises/{id} {
@@ -41,9 +71,9 @@ service cloud.firestore {
       }
 
       match /workouts/{id} {
-        allow read: if isOwner(uid);
-        allow create, update: if isOwner(uid) && notTooLarge();
-        allow delete: if isOwner(uid);
+        allow read: if isOwner(uid) || hasTrainerAccess(uid, 'workouts');
+        allow create, update: if (isOwner(uid) || hasTrainerAccess(uid, 'workouts')) && notTooLarge();
+        allow delete: if isOwner(uid) || hasTrainerAccess(uid, 'workouts');
       }
 
       match /sessions/{id} {
@@ -74,9 +104,9 @@ service cloud.firestore {
       }
 
       match /dietPlans/{planId} {
-        allow read: if isOwner(uid);
-        allow create, update: if isOwner(uid) && notTooLarge();
-        allow delete: if isOwner(uid);
+        allow read: if isOwner(uid) || hasTrainerAccess(uid, 'diet');
+        allow create, update: if (isOwner(uid) || hasTrainerAccess(uid, 'diet')) && notTooLarge();
+        allow delete: if isOwner(uid) || hasTrainerAccess(uid, 'diet');
       }
 
       match /meals/{date} {
@@ -116,6 +146,32 @@ service cloud.firestore {
       allow read: if true;
       allow create, update: if isOwner(uid) && notTooLarge();
       allow delete: if isOwner(uid);
+    }
+
+    // ─── Relacionamentos trainer/nutri ⇄ cliente ─────────
+    // Doc ID = `${trainerUid}_${clientUid}`
+    match /relationships/{relId} {
+      // Trainer e client podem ler seu próprio vínculo
+      allow read: if isSignedIn() && (
+        resource.data.trainerUid == request.auth.uid ||
+        resource.data.clientUid == request.auth.uid
+      );
+      // Trainer inicia o convite (create). O cliente aceita via update.
+      allow create: if isSignedIn()
+        && request.resource.data.trainerUid == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && notTooLarge();
+      // Update: trainer pode mudar scope/note. Client pode aceitar (pending→active)
+      // ou encerrar. Ninguém pode trocar os UIDs.
+      allow update: if isSignedIn()
+        && resource.data.trainerUid == request.resource.data.trainerUid
+        && resource.data.clientUid == request.resource.data.clientUid
+        && (resource.data.trainerUid == request.auth.uid || resource.data.clientUid == request.auth.uid)
+        && notTooLarge();
+      allow delete: if isSignedIn() && (
+        resource.data.trainerUid == request.auth.uid ||
+        resource.data.clientUid == request.auth.uid
+      );
     }
 
     // ─── Treinos compartilhados pela comunidade ──────────
