@@ -8,7 +8,7 @@ import { env } from '$env/dynamic/public';
  */
 
 const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const MODEL = 'deepseek/deepseek-chat-v3-0324:free';
+const MODEL = 'qwen/qwen3-next-80b-a3b-instruct:free';
 const FALLBACK_MODEL = 'meta-llama/llama-3.3-70b-instruct:free';
 
 export interface GeminiOptions {
