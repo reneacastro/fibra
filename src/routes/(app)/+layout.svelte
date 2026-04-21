@@ -20,6 +20,7 @@
     const p = page.url.pathname;
     if (p === '/treinos/novo') return { t: 'Novo treino', s: 'Monte seu plano', back: true };
     if (p.startsWith('/treinos/')) return { t: 'Editar treino', s: 'Ajustes e exercícios', back: true };
+    if (p.startsWith('/sessao/')) return { t: 'Detalhes do treino', s: 'Revisar e compartilhar', back: true };
     if (p.startsWith('/registrar/')) return { t: 'Treino em andamento', s: 'Foco total', back: true };
     return TITLES[p] ?? { t: 'FIBRA' };
   });

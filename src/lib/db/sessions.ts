@@ -1,5 +1,5 @@
 import {
-  collection, doc, getDocs, setDoc, deleteDoc, query, orderBy, limit as fsLimit, where, writeBatch
+  collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy, limit as fsLimit, where, writeBatch
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type { Session, ExerciseLogEntry } from '$lib/types';
@@ -30,6 +30,11 @@ export async function listSessions(uid: string, max = 100): Promise<Session[]> {
   const q = query(sessionsCol(uid), orderBy('date', 'desc'), fsLimit(max));
   const snap = await getDocs(q);
   return snap.docs.map((d) => d.data() as Session);
+}
+
+export async function getSession(uid: string, sessionId: string): Promise<Session | null> {
+  const snap = await getDoc(doc(sessionsCol(uid), sessionId));
+  return snap.exists() ? (snap.data() as Session) : null;
 }
 
 export async function sessionsForDate(uid: string, date: string): Promise<Session[]> {

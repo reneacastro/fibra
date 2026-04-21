@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { authStore } from '$lib/stores/auth.svelte';
   import { listWorkouts } from '$lib/db/workouts';
-  import { listSessions, deleteSession } from '$lib/db/sessions';
+  import { listSessions } from '$lib/db/sessions';
   import { withTimeout } from '$lib/utils/withTimeout';
   import type { Workout, Session } from '$lib/types';
   import { CATEGORY_ICON, CATEGORY_LABEL, fmtDateRelative } from '$lib/utils/format';
@@ -44,12 +44,6 @@
     goto(`/registrar/${workoutId}`);
   }
 
-  async function removeSession(sessionId: string, label: string) {
-    if (!authStore.uid) return;
-    if (!confirm(`Apagar registro: "${label}"?\n\nIsso também remove os recordes desse treino do seu histórico.`)) return;
-    await deleteSession(authStore.uid, sessionId);
-    recentSessions = recentSessions.filter((s) => s.id !== sessionId);
-  }
 </script>
 
 <!-- Ação principal: montar treino novo -->
@@ -109,7 +103,7 @@
 {:else}
   <div class="hist">
     {#each recentSessions as s (s.id)}
-      <Card>
+      <Card onclick={() => goto(`/sessao/${s.id}`)}>
         <div class="hist-row">
           <div class="hist-ic">{CATEGORY_ICON[s.workoutCategory]}</div>
           <div class="hist-body">
@@ -122,13 +116,7 @@
               {/if}
             </div>
           </div>
-          <button
-            class="hist-del"
-            onclick={() => removeSession(s.id, s.workoutName)}
-            aria-label="Apagar registro"
-          >
-            <span class="mi">delete_outline</span>
-          </button>
+          <span class="mi chev">chevron_right</span>
         </div>
       </Card>
     {/each}
@@ -239,17 +227,7 @@
   .hist-name { font-weight: 700; font-size: var(--fs-sm); }
   .hist-sub { font-size: var(--fs-xs); color: var(--text-mute); margin-top: 2px; }
 
-  .hist-del {
-    width: 32px;
-    height: 32px;
-    border-radius: var(--r-md);
-    color: var(--text-dim);
-    display: grid;
-    place-items: center;
-    flex-shrink: 0;
-  }
-  .hist-del:hover { background: var(--bg-3); color: var(--danger); }
-  .hist-del .mi { font-size: 18px; }
+  .chev { color: var(--text-dim); font-size: 22px; flex-shrink: 0; }
 
   .empty {
     text-align: center;
