@@ -227,6 +227,17 @@
   </div>
 </Card>
 
+<Card onclick={() => goto('/instalar')} padding="md">
+  <div class="integ">
+    <div class="integ-ic"><span class="mi">add_to_home_screen</span></div>
+    <div class="integ-body">
+      <div class="integ-name">Instalar na tela inicial</div>
+      <div class="integ-sub">Como salvar o FIBRA como app no iPhone/Android</div>
+    </div>
+    <span class="mi chev">chevron_right</span>
+  </div>
+</Card>
+
 <style>
   .hero {
     background: var(--grad-hero);

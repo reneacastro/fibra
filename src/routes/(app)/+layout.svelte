@@ -13,6 +13,7 @@
     '/corpo':       { t: 'Composição', s: 'Bioimpedância e medidas', back: true },
     '/dieta':       { t: 'Dieta', s: 'Macros e rotina alimentar' },
     '/config-watch':{ t: 'Apple Watch', s: 'Como sincronizar via Atalhos', back: true },
+    '/instalar':    { t: 'Instalar app', s: 'Salvar na tela inicial', back: true },
     '/perfil':      { t: 'Perfil', s: 'Seus dados e ajustes', back: true }
   };
 

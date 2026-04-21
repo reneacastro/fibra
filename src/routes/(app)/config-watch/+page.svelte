@@ -182,53 +182,6 @@
   </Card>
 </div>
 
-<!-- Instalar na tela inicial -->
-<Card accent="glow">
-  <div class="intro">
-    <div class="ic alt"><span class="mi">add_to_home_screen</span></div>
-    <div>
-      <h2>Salvar na tela inicial</h2>
-      <p>
-        Instale o FIBRA como um app de verdade — ícone na tela inicial,
-        abre em tela cheia, funciona offline. Leva 10 segundos.
-      </p>
-      <div class="pills">
-        <Badge variant="success" icon="offline_bolt">Offline</Badge>
-        <Badge variant="info" icon="speed">Abre mais rápido</Badge>
-        <Badge variant="accent" icon="fullscreen">Tela cheia</Badge>
-      </div>
-    </div>
-  </div>
-</Card>
-
-<Card title="iPhone / iPad (Safari)" icon="phone_iphone">
-  <ol class="steps">
-    <li>Abra este site no <strong>Safari</strong> (não funciona no Chrome iOS)</li>
-    <li>Toque no botão <strong>Compartilhar</strong> <span class="mi inline">ios_share</span> na barra de baixo</li>
-    <li>Role e toque em <strong>"Adicionar à Tela de Início"</strong></li>
-    <li>Toque em <strong>Adicionar</strong> no canto superior direito</li>
-    <li>Pronto — o ícone do FIBRA aparece ao lado dos seus apps</li>
-  </ol>
-  <div class="tip">
-    <span class="mi">lightbulb</span>
-    <span>Abra pelo ícone (não pelo Safari) pra ganhar tela cheia, push e cache offline.</span>
-  </div>
-</Card>
-
-<Card title="Android (Chrome)" icon="android">
-  <ol class="steps">
-    <li>Abra este site no <strong>Chrome</strong></li>
-    <li>Toque nos três pontos <strong>⋮</strong> no canto superior direito</li>
-    <li>Toque em <strong>"Instalar app"</strong> ou <strong>"Adicionar à tela inicial"</strong></li>
-    <li>Confirme em <strong>Instalar</strong></li>
-    <li>O ícone do FIBRA aparece na gaveta de apps e tela inicial</li>
-  </ol>
-  <div class="tip">
-    <span class="mi">lightbulb</span>
-    <span>Às vezes o Chrome mostra um banner "Adicionar à tela inicial" direto — basta aceitar.</span>
-  </div>
-</Card>
-
 <!-- Troubleshooting -->
 <Card title="Se algo der errado" icon="support">
   <details class="faq">
@@ -280,12 +233,6 @@
     box-shadow: var(--shadow-glow);
   }
   .intro .ic .mi { font-size: 28px; color: var(--bg-0); }
-  .intro .ic.alt { background: linear-gradient(135deg, var(--accent-2, var(--accent)), var(--accent)); }
-  .mi.inline {
-    font-size: 16px;
-    vertical-align: -3px;
-    color: var(--accent);
-  }
   .intro h2 { font-size: var(--fs-xl); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 4px; }
   .intro p { color: var(--text-mute); font-size: var(--fs-sm); }
   .pills {
