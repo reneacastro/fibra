@@ -1,0 +1,340 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { authStore } from '$lib/stores/auth.svelte';
+  import { catalogStore } from '$lib/stores/catalog.svelte';
+  import { listWorkouts } from '$lib/db/workouts';
+  import { listSessions } from '$lib/db/sessions';
+  import { getSchedule } from '$lib/db/schedule';
+  import { getProfile } from '$lib/db/profile';
+  import type { Workout, Session, UserProfile, Schedule } from '$lib/types';
+  import { CATEGORY_ICON, CATEGORY_LABEL, todayISO } from '$lib/utils/format';
+  import Card from '$lib/components/Card.svelte';
+  import Stat from '$lib/components/Stat.svelte';
+  import Badge from '$lib/components/Badge.svelte';
+  import Button from '$lib/components/Button.svelte';
+  import WeeklySchedule from '$lib/components/WeeklySchedule.svelte';
+
+  let profile = $state<UserProfile | null>(null);
+  let workouts = $state<Workout[]>([]);
+  let sessions = $state<Session[]>([]);
+  let schedule = $state<Schedule | null>(null);
+  let loading = $state(true);
+
+  onMount(async () => {
+    if (!authStore.uid) return;
+    await catalogStore.ensure();
+    [profile, workouts, sessions, schedule] = await Promise.all([
+      getProfile(authStore.uid),
+      listWorkouts(authStore.uid),
+      listSessions(authStore.uid, 50),
+      getSchedule(authStore.uid)
+    ]);
+    loading = false;
+  });
+
+  const greeting = $derived.by(() => {
+    const h = new Date().getHours();
+    if (h < 5) return 'Boa madrugada';
+    if (h < 12) return 'Bom dia';
+    if (h < 18) return 'Boa tarde';
+    return 'Boa noite';
+  });
+
+  const firstName = $derived(profile?.name ?? authStore.user?.displayName?.split(' ')[0] ?? 'atleta');
+
+  // Streak: dias consecutivos com sessão até hoje
+  const streak = $derived.by(() => {
+    if (sessions.length === 0) return 0;
+    const dates = new Set(sessions.map((s) => s.date));
+    let s = 0;
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    for (let i = 0; i < 365; i++) {
+      const iso = d.toISOString().slice(0, 10);
+      if (dates.has(iso)) { s++; d.setDate(d.getDate() - 1); }
+      else if (i === 0) { d.setDate(d.getDate() - 1); } // ainda pode treinar hoje
+      else break;
+    }
+    return s;
+  });
+
+  const weekCount = $derived.by(() => {
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    const iso = weekStart.toISOString().slice(0, 10);
+    return sessions.filter((s) => s.date >= iso).length;
+  });
+
+  const totalCount = $derived(sessions.length);
+
+  // Treino de hoje: baseado na grade semanal
+  const todayWorkout = $derived.by(() => {
+    if (!schedule) return null;
+    const day = new Date().getDay();
+    const plan = schedule.days[day];
+    if (!plan || plan.rest || plan.workoutIds.length === 0) return null;
+    const w = workouts.find((x) => plan.workoutIds.includes(x.id));
+    return w ?? null;
+  });
+
+  const didTrainToday = $derived(sessions.some((s) => s.date === todayISO()));
+</script>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-top">
+    <div>
+      <div class="greet">{greeting},</div>
+      <div class="name">{firstName} 👋</div>
+    </div>
+    {#if streak > 0}
+      <Badge variant="accent" icon="local_fire_department">{streak} {streak === 1 ? 'dia' : 'dias'}</Badge>
+    {/if}
+  </div>
+  <div class="hero-tag">
+    {#if didTrainToday}
+      Você já treinou hoje. Fibra em dia. 🔥
+    {:else if todayWorkout}
+      Pronto pra mais uma fibra?
+    {:else}
+      Cada fibra conta hoje.
+    {/if}
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats">
+  <Stat label="Sequência" value={streak} icon="bolt" accent={streak > 0 ? 'accent' : 'default'} />
+  <Stat label="Semana" value={weekCount} icon="calendar_today" />
+  <Stat label="Total" value={totalCount} icon="fitness_center" />
+</div>
+
+<!-- Treino de hoje -->
+{#if todayWorkout && !didTrainToday}
+  <div class="today">
+    <div class="today-head">
+      <span class="today-label">Treino de hoje</span>
+      <Badge category={todayWorkout.category}>
+        {CATEGORY_ICON[todayWorkout.category]} {CATEGORY_LABEL[todayWorkout.category]}
+      </Badge>
+    </div>
+    <div class="today-title">{todayWorkout.name}</div>
+    <div class="today-meta">
+      <span><span class="mi">fitness_center</span> {todayWorkout.exercises.length} exercícios</span>
+      <span><span class="mi">repeat</span> {todayWorkout.exercises.reduce((a, e) => a + e.sets.length, 0)} séries</span>
+    </div>
+    <Button size="lg" icon="play_arrow" full onclick={() => goto(`/registrar/${todayWorkout.id}`)}>
+      Começar agora
+    </Button>
+  </div>
+{:else if didTrainToday}
+  <Card accent="glow">
+    <div class="done-today">
+      <div class="done-ic">✅</div>
+      <div>
+        <div class="done-t">Missão de hoje cumprida</div>
+        <div class="done-s">Você treinou. +1 fibra na conta.</div>
+      </div>
+    </div>
+  </Card>
+{:else if !loading && schedule}
+  <Card>
+    <div class="no-plan">
+      <span class="mi">event_available</span>
+      <div>
+        <div class="np-t">Dia sem treino agendado</div>
+        <div class="np-s">Se quiser, comece um treino livre ou ajuste a grade.</div>
+      </div>
+    </div>
+    <div class="np-btns">
+      <Button size="sm" variant="secondary" onclick={() => goto('/registrar')}>Treino livre</Button>
+    </div>
+  </Card>
+{/if}
+
+<!-- Módulos -->
+<div class="sec-title">Módulos</div>
+<div class="menu-grid">
+  <Card onclick={() => goto('/treinos')} padding="md">
+    <div class="mc">
+      <div class="mc-ic" style="background:var(--grad-primary)"><span class="mi">library_add</span></div>
+      <div class="mc-body">
+        <div class="mc-name">Banco de Treinos</div>
+        <div class="mc-sub">{workouts.length} salvos</div>
+      </div>
+    </div>
+  </Card>
+  <Card onclick={() => goto('/dieta')} padding="md">
+    <div class="mc">
+      <div class="mc-ic" style="background:var(--grad-green)"><span class="mi">restaurant</span></div>
+      <div class="mc-body">
+        <div class="mc-name">Dieta</div>
+        <div class="mc-sub">Macros do dia</div>
+      </div>
+    </div>
+  </Card>
+  <Card onclick={() => goto('/progresso')} padding="md">
+    <div class="mc">
+      <div class="mc-ic" style="background:var(--grad-purple)"><span class="mi">insights</span></div>
+      <div class="mc-body">
+        <div class="mc-name">Progresso</div>
+        <div class="mc-sub">Gráficos e recordes</div>
+      </div>
+    </div>
+  </Card>
+  <Card onclick={() => goto('/corpo')} padding="md">
+    <div class="mc">
+      <div class="mc-ic" style="background:var(--grad-fire)"><span class="mi">monitor_heart</span></div>
+      <div class="mc-body">
+        <div class="mc-name">Corpo</div>
+        <div class="mc-sub">Bioimpedância</div>
+      </div>
+    </div>
+  </Card>
+</div>
+
+<!-- Grade semanal -->
+<div class="sec-title">Grade semanal</div>
+<Card>
+  <WeeklySchedule />
+</Card>
+
+<!-- Integrações -->
+<div class="sec-title">Integrações</div>
+<Card onclick={() => goto('/config-watch')} padding="md">
+  <div class="integ">
+    <div class="integ-ic"><span class="mi">watch</span></div>
+    <div class="integ-body">
+      <div class="integ-name">Apple Watch</div>
+      <div class="integ-sub">Importar dados do treino via Atalhos</div>
+    </div>
+    <span class="mi chev">chevron_right</span>
+  </div>
+</Card>
+
+<style>
+  .hero {
+    background: var(--grad-hero);
+    border: 1px solid var(--border);
+    border-radius: var(--r-2xl);
+    padding: var(--s-5);
+    margin-bottom: var(--s-4);
+  }
+  .hero-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--s-3);
+  }
+  .greet { color: var(--text-mute); font-size: var(--fs-sm); }
+  .name { font-size: var(--fs-2xl); font-weight: 800; letter-spacing: -0.02em; }
+  .hero-tag { margin-top: var(--s-2); color: var(--text-mute); font-size: var(--fs-sm); font-style: italic; }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s-2);
+    margin-bottom: var(--s-4);
+  }
+  @media (max-width: 380px) {
+    .stats { grid-template-columns: 1fr 1fr; }
+  }
+
+  .today {
+    background: linear-gradient(var(--bg-2), var(--bg-2)) padding-box,
+                var(--grad-primary) border-box;
+    border: 1px solid transparent;
+    border-radius: var(--r-xl);
+    padding: var(--s-5);
+    margin-bottom: var(--s-5);
+  }
+  .today-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--s-3);
+  }
+  .today-label {
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-mute);
+    font-weight: 700;
+  }
+  .today-title { font-size: var(--fs-xl); font-weight: 800; letter-spacing: -0.02em; margin-bottom: var(--s-2); }
+  .today-meta {
+    display: flex;
+    gap: var(--s-4);
+    color: var(--text-mute);
+    font-size: var(--fs-sm);
+    margin-bottom: var(--s-4);
+  }
+  .today-meta span { display: inline-flex; align-items: center; gap: 4px; }
+  .today-meta .mi { font-size: 16px; }
+
+  .done-today {
+    display: flex;
+    gap: var(--s-3);
+    align-items: center;
+    padding: var(--s-2);
+  }
+  .done-ic { font-size: 36px; }
+  .done-t { font-weight: 700; }
+  .done-s { color: var(--text-mute); font-size: var(--fs-sm); }
+
+  .no-plan {
+    display: flex;
+    gap: var(--s-3);
+    align-items: center;
+    color: var(--text);
+  }
+  .no-plan .mi { font-size: 28px; color: var(--text-mute); }
+  .np-t { font-weight: 700; }
+  .np-s { color: var(--text-mute); font-size: var(--fs-sm); }
+  .np-btns { margin-top: var(--s-3); display: flex; gap: var(--s-2); }
+
+  .sec-title {
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-mute);
+    font-weight: 700;
+    margin: var(--s-5) 0 var(--s-2);
+  }
+
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--s-2);
+  }
+  .mc { display: flex; gap: var(--s-3); align-items: center; }
+  .mc-ic {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--r-md);
+    display: grid;
+    place-items: center;
+    color: var(--bg-0);
+    flex-shrink: 0;
+  }
+  .mc-ic .mi { font-size: 20px; }
+  .mc-name { font-weight: 700; font-size: var(--fs-sm); }
+  .mc-sub { color: var(--text-mute); font-size: var(--fs-xs); }
+
+  .integ { display: flex; align-items: center; gap: var(--s-3); }
+  .integ-ic {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--r-md);
+    background: var(--bg-3);
+    display: grid;
+    place-items: center;
+  }
+  .integ-body { flex: 1; }
+  .integ-name { font-weight: 700; font-size: var(--fs-sm); }
+  .integ-sub { color: var(--text-mute); font-size: var(--fs-xs); }
+  .chev { color: var(--text-dim); }
+</style>

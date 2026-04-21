@@ -1,0 +1,240 @@
+/* ═══════════════════════════════════════════════════════════
+   FIBRA — Design Tokens + Base
+   "O que te constrói."
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  /* ─── Color palette (dark-first) ─── */
+  --bg-0: #07090d;          /* deepest */
+  --bg-1: #0d1117;          /* app background */
+  --bg-2: #161b22;          /* cards */
+  --bg-3: #1f2630;          /* elevated */
+  --bg-4: #2a313d;          /* hover / pressed */
+
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+
+  --text: #e6edf3;
+  --text-mute: #8b949e;
+  --text-dim: #6e7681;
+
+  /* ─── Brand accent — electric cyan ─── */
+  --accent: #00e5ff;
+  --accent-2: #00b8d4;
+  --accent-glow: rgba(0, 229, 255, 0.25);
+
+  /* ─── Semantic ─── */
+  --success: #3fb950;
+  --warn: #f0b72f;
+  --danger: #f85149;
+  --info: #58a6ff;
+
+  /* Category tints */
+  --cat-upper: #58a6ff;     /* superior */
+  --cat-lower: #3fb950;     /* inferior */
+  --cat-full:  #bc8cff;     /* full body */
+  --cat-free:  #ff7b3a;     /* livre */
+  --cat-stretch: #7ce38b;   /* alongamento */
+  --cat-func: #ffb86b;      /* funcional */
+  --cat-crossfit: #ff5ea0;  /* crossfit */
+  --cat-diet: #a5f3b8;      /* dieta */
+
+  /* ─── Gradients ─── */
+  --grad-primary: linear-gradient(135deg, #00e5ff 0%, #7c3aed 100%);
+  --grad-fire: linear-gradient(135deg, #ff6a00 0%, #ee0979 100%);
+  --grad-green: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  --grad-purple: linear-gradient(135deg, #8e2de2 0%, #4a00e0 100%);
+  --grad-hero: radial-gradient(ellipse at top, rgba(0, 229, 255, 0.15), transparent 60%),
+               radial-gradient(ellipse at bottom right, rgba(188, 140, 255, 0.12), transparent 60%);
+
+  /* ─── Typography ─── */
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --fs-xs: 11px;
+  --fs-sm: 13px;
+  --fs-md: 15px;
+  --fs-lg: 17px;
+  --fs-xl: 20px;
+  --fs-2xl: 24px;
+  --fs-3xl: 32px;
+  --fs-4xl: 40px;
+
+  /* ─── Spacing scale ─── */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+  --s-12: 48px;
+  --s-16: 64px;
+
+  /* ─── Radii ─── */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --r-2xl: 28px;
+  --r-full: 999px;
+
+  /* ─── Shadows ─── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --shadow-glow: 0 0 24px var(--accent-glow);
+
+  /* ─── Transitions ─── */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 140ms;
+  --dur-base: 240ms;
+  --dur-slow: 420ms;
+
+  /* Layout */
+  --nav-h: 72px;
+  --header-h: 56px;
+  --safe-top: env(safe-area-inset-top, 0);
+  --safe-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* ═══ Reset ═══ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--bg-1);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  overscroll-behavior-y: contain;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0, 229, 255, 0.08), transparent),
+    var(--bg-1);
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* Esconder setinhas nativas do number input em todos os browsers */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Números em inputs ficam tabulares e com zero cortado */
+input[type='number'],
+input[type='date'],
+input[type='time'] {
+  font-variant-numeric: tabular-nums slashed-zero;
+  font-feature-settings: 'ss01', 'cv11';
+}
+
+button {
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--bg-0);
+}
+
+/* ═══ Material Symbols ═══ */
+.mi {
+  font-family: 'Material Symbols Rounded';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  direction: ltr;
+  font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+}
+
+.mi.filled {
+  font-variation-settings: 'FILL' 1, 'wght' 500;
+}
+
+/* ═══ Utility ═══ */
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums slashed-zero;
+  font-feature-settings: 'ss01', 'cv11';
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ═══ Focus ring ═══ */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* ═══ Scrollbar ═══ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--bg-3);
+  border-radius: var(--r-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--bg-4);
+}

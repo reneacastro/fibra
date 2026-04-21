@@ -1,0 +1,114 @@
+rules_version = '2';
+
+// ═══════════════════════════════════════════════════════════
+//  FIBRA — Firestore Security Rules
+// ═══════════════════════════════════════════════════════════
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helpers ─────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+    function notTooLarge() {
+      return request.resource.size() < 524288;
+    }
+
+    // ─── Catálogos públicos (read-only) ──────────────────
+    match /exerciseCatalog/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /foodCatalog/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ─── Dados do usuário ────────────────────────────────
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create, update: if isOwner(uid) && notTooLarge();
+      allow delete: if false;
+
+      match /exercises/{id} {
+        allow read: if isOwner(uid);
+        allow create, update, delete: if isOwner(uid) && notTooLarge();
+      }
+
+      match /workouts/{id} {
+        allow read: if isOwner(uid);
+        allow create, update, delete: if isOwner(uid) && notTooLarge();
+      }
+
+      match /sessions/{id} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && notTooLarge();
+        allow update: if isOwner(uid) && notTooLarge()
+          && request.resource.data.createdAt == resource.data.createdAt
+          && (request.time.toMillis() - resource.data.createdAt) < 172800000;
+        allow delete: if isOwner(uid);
+      }
+
+      match /exerciseLogs/{exId}/entries/{entryId} {
+        allow read: if isOwner(uid);
+        allow create, update, delete: if isOwner(uid) && notTooLarge();
+      }
+
+      match /bodyComp/{date} {
+        allow read: if isOwner(uid);
+        allow create, update, delete: if isOwner(uid) && notTooLarge();
+      }
+
+      match /schedule/{docId} {
+        allow read: if isOwner(uid);
+        allow create, update, delete: if isOwner(uid) && notTooLarge();
+      }
+
+      match /dietPlans/{planId} {
+        allow read: if isOwner(uid);
+        allow create, update, delete: if isOwner(uid) && notTooLarge();
+      }
+
+      match /meals/{date} {
+        allow read: if isOwner(uid);
+        allow create, update, delete: if isOwner(uid) && notTooLarge();
+
+        match /items/{itemId} {
+          allow read: if isOwner(uid);
+          allow create, update, delete: if isOwner(uid) && notTooLarge();
+        }
+      }
+
+      match /foods/{foodId} {
+        allow read: if isOwner(uid);
+        allow create, update, delete: if isOwner(uid) && notTooLarge();
+      }
+
+      match /watchData/{date} {
+        allow read: if isOwner(uid);
+        allow create, update, delete: if isOwner(uid) && notTooLarge();
+      }
+
+      match /achievements/{achId} {
+        allow read: if isOwner(uid);
+        allow create, update, delete: if isOwner(uid) && notTooLarge();
+      }
+    }
+
+    // ─── Perfis públicos ─────────────────────────────────
+    match /publicProfiles/{uid} {
+      allow read: if true;
+      allow create, update: if isOwner(uid) && notTooLarge();
+      allow delete: if isOwner(uid);
+    }
+
+    // Negação catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

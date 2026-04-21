@@ -1,0 +1,19 @@
+node_modules
+.svelte-kit
+build
+.env
+.env.local
+.env.*.local
+.DS_Store
+*.log
+.firebase/
+# Outputs de build/deploy
+dist/
+.vercel/
+.netlify/
+# Cloud Functions artifacts
+firebase/functions/lib/
+firebase/functions/.runtimeconfig.json
+# IDE
+.vscode/
+.idea/
