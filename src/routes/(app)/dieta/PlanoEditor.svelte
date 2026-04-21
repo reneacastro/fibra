@@ -14,7 +14,7 @@
   import Badge from '$lib/components/Badge.svelte';
   import AIPromptSheet from '$lib/components/AIPromptSheet.svelte';
   import {
-    buildDietFromPrompt, extractDietFromImage, extractDietFromText,
+    buildDietFromPrompt, extractDietFromText,
     type DietPlanBlueprint, type ParsedDietPlan
   } from '$lib/db/gemini';
   import { listUserFoods, saveDietPlan as saveDiet, newPlanId as newId } from '$lib/db/diet';
@@ -195,15 +195,6 @@
   let importWarn = $state<string | null>(null);
   let fileInput: HTMLInputElement | undefined = $state();
 
-  function fileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve((r.result as string).split(',')[1] ?? '');
-      r.onerror = reject;
-      r.readAsDataURL(file);
-    });
-  }
-
   async function onImportFile(e: Event) {
     const file = (e.currentTarget as HTMLInputElement).files?.[0];
     if (!file) return;
@@ -211,20 +202,13 @@
     importWarn = null;
     importPreview = null;
     try {
-      const isImage = file.type.startsWith('image/');
       const isPdf = file.type === 'application/pdf';
-      if (!isImage && !isPdf) throw new Error('Envie PDF ou imagem (PNG/JPG)');
+      if (!isPdf) throw new Error('Envie um PDF (imagem não suportada nesta versão).');
 
-      if (isImage) {
-        importWarn = 'Analisando imagem com Gemini…';
-        const base64 = await fileToBase64(file);
-        importPreview = await extractDietFromImage(base64, file.type);
-      } else {
-        importWarn = 'Extraindo PDF…';
-        const raw = await extractPdfText(file);
-        importWarn = 'Analisando com Gemini…';
-        importPreview = await extractDietFromText(raw);
-      }
+      importWarn = 'Extraindo PDF…';
+      const raw = await extractPdfText(file);
+      importWarn = 'Analisando com IA…';
+      importPreview = await extractDietFromText(raw);
       importWarn = null;
     } catch (err) {
       importWarn = 'Erro: ' + (err as Error).message;
@@ -310,7 +294,7 @@
   </div>
   <input
     type="file"
-    accept="application/pdf,image/png,image/jpeg,image/webp,image/heic"
+    accept="application/pdf"
     bind:this={fileInput}
     onchange={onImportFile}
     style="display:none"

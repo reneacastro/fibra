@@ -1,15 +1,15 @@
 import { env } from '$env/dynamic/public';
 
 /**
- * Cliente mínimo pro Gemini 2.0 Flash.
- * Tier grátis: 15 req/min, 1.5M tokens/dia — suficiente pra uso pessoal.
- * Docs: https://ai.google.dev/api/generate-content
+ * Cliente de IA via OpenRouter (DeepSeek V3 free — 100% grátis).
+ * Mantém a assinatura `askGemini` pra retrocompatibilidade com o resto do código.
+ * Multimodal (imagens) está desabilitado — modelos free não aceitam visão.
+ * Docs: https://openrouter.ai/docs/api-reference/chat-completion
  */
 
-const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
-// gemini-flash-latest é alias sempre apontando pro modelo Flash estável atual —
-// evita quebrar quando Google descontinua versão específica
-const MODEL = 'gemini-flash-latest';
+const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const MODEL = 'deepseek/deepseek-chat-v3-0324:free';
+const FALLBACK_MODEL = 'meta-llama/llama-3.3-70b-instruct:free';
 
 export interface GeminiOptions {
   responseMimeType?: 'text/plain' | 'application/json';
@@ -22,39 +22,58 @@ export interface ImagePart {
   inlineData: { mimeType: string; data: string /* base64, sem prefixo */ };
 }
 
+async function callOpenRouter(model: string, prompt: string, opts: GeminiOptions, key: string) {
+  const wantsJson = opts.responseMimeType === 'application/json';
+  const content = wantsJson
+    ? prompt + '\n\nIMPORTANTE: Responda APENAS com JSON válido, sem ```json nem comentários nem texto extra.'
+    : prompt;
+
+  const body: Record<string, unknown> = {
+    model,
+    messages: [{ role: 'user', content }],
+    temperature: opts.temperature ?? 0.2,
+    max_tokens: opts.maxOutputTokens ?? 1024
+  };
+  if (wantsJson) body.response_format = { type: 'json_object' };
+
+  return fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${key}`,
+      'HTTP-Referer': 'https://fibra-f1d34.web.app',
+      'X-Title': 'FIBRA'
+    },
+    body: JSON.stringify(body)
+  });
+}
+
 export async function askGemini(
   prompt: string,
   opts: GeminiOptions = {},
   images?: ImagePart[]
 ): Promise<string> {
-  const key = env.PUBLIC_GEMINI_API_KEY;
-  if (!key) throw new Error('PUBLIC_GEMINI_API_KEY não configurada');
+  if (images?.length) {
+    throw new Error('Análise de imagem está desabilitada. Use a entrada manual ou envie PDF de texto.');
+  }
 
-  const parts: unknown[] = [{ text: prompt }];
-  if (images?.length) parts.push(...images.map((i) => ({ inline_data: i.inlineData })));
+  const key = env.PUBLIC_OPENROUTER_API_KEY;
+  if (!key) throw new Error('PUBLIC_OPENROUTER_API_KEY não configurada');
 
-  const res = await fetch(`${API_URL}/${MODEL}:generateContent?key=${key}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts }],
-      generationConfig: {
-        temperature: opts.temperature ?? 0.2,
-        maxOutputTokens: opts.maxOutputTokens ?? 1024,
-        responseMimeType: opts.responseMimeType ?? 'text/plain',
-        ...(opts.responseSchema ? { responseSchema: opts.responseSchema } : {})
-      }
-    })
-  });
+  let res = await callOpenRouter(MODEL, prompt, opts, key);
+  if (!res.ok && (res.status === 429 || res.status === 503)) {
+    // Free model com rate limit — tenta fallback
+    res = await callOpenRouter(FALLBACK_MODEL, prompt, opts, key);
+  }
 
   if (!res.ok) {
     const txt = await res.text();
-    throw new Error(`Gemini ${res.status}: ${txt}`);
+    throw new Error(`IA ${res.status}: ${txt.slice(0, 200)}`);
   }
 
   const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error('Resposta vazia do Gemini');
+  const text = data?.choices?.[0]?.message?.content;
+  if (!text) throw new Error('Resposta vazia da IA');
   return text;
 }
 
@@ -74,25 +93,6 @@ const BODY_COMP_SCHEMA_PROMPT = `Campos possíveis (omita os que não encontrar,
 - metabolicAge (anos, inteiro — idade do corpo)
 - bodyScore (0-100, inteiro — pontuação corporal)
 - targetWeight (kg peso alvo)`;
-
-/**
- * Extrai bioimpedância de IMAGEM (foto do app, print do PDF, etc).
- * Usa Gemini Vision.
- */
-export async function extractBodyCompFromImage(base64: string, mimeType: string) {
-  const prompt = `Você recebe uma imagem de relatório de balança de bioimpedância (Relaxmedic, Picooc, etc).
-Extraia os campos abaixo e responda APENAS com JSON válido, sem \`\`\`json nem comentários nem texto extra.
-
-${BODY_COMP_SCHEMA_PROMPT}`;
-
-  const text = await askGemini(prompt, {
-    responseMimeType: 'application/json',
-    temperature: 0.1,
-    maxOutputTokens: 2048
-  }, [{ inlineData: { mimeType, data: base64 } }]);
-
-  return parseJson(text);
-}
 
 /**
  * Extrai campos de bioimpedância de um texto bruto (tipicamente de PDF).
@@ -430,15 +430,6 @@ Estrutura:
   ],
   "notes": "observações do nutri, se houver"
 }`;
-
-export async function extractDietFromImage(base64: string, mimeType: string): Promise<ParsedDietPlan> {
-  const text = await askGemini(DIET_EXTRACT_PROMPT, {
-    responseMimeType: 'application/json',
-    temperature: 0.1,
-    maxOutputTokens: 8192
-  }, [{ inlineData: { mimeType, data: base64 } }]);
-  return parseJson(text);
-}
 
 export async function extractDietFromText(rawText: string): Promise<ParsedDietPlan> {
   const prompt = `${DIET_EXTRACT_PROMPT}

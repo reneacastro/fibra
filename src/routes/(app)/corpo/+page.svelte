@@ -11,7 +11,7 @@
   import {
     extractPdfText, parseRelaxFitText, isParseOK, toBodyComp
   } from '$lib/utils/pdfRelaxFit';
-  import { extractBodyCompFromText, extractBodyCompFromImage } from '$lib/db/gemini';
+  import { extractBodyCompFromText } from '$lib/db/gemini';
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
   import Input from '$lib/components/Input.svelte';
@@ -102,19 +102,6 @@
     history = await listBodyComp(authStore.uid);
   }
 
-  function fileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => {
-        const result = r.result as string;
-        // Remove o prefixo "data:...;base64,"
-        resolve(result.split(',')[1] ?? '');
-      };
-      r.onerror = reject;
-      r.readAsDataURL(file);
-    });
-  }
-
   // ─── Import PDF ou Imagem ─────────────────────────
   async function onFile(e: Event) {
     const file = (e.currentTarget as HTMLInputElement).files?.[0];
@@ -122,37 +109,26 @@
     importing = true;
     importWarn = null;
     try {
-      const isImage = file.type.startsWith('image/');
       const isPdf = file.type === 'application/pdf';
 
-      if (!isImage && !isPdf) {
-        throw new Error('Formato não suportado. Use PDF ou imagem (PNG/JPG).');
+      if (!isPdf) {
+        throw new Error('Envie o PDF do relatório (imagem não suportada nesta versão).');
       }
 
-      let parsed;
+      // PDF: tenta parser local primeiro
+      const raw = await extractPdfText(file);
+      let parsed = parseRelaxFitText(raw);
 
-      if (isImage) {
-        importWarn = 'Analisando imagem com Gemini…';
-        const base64 = await fileToBase64(file);
-        const data = await extractBodyCompFromImage(base64, file.type);
-        parsed = { ...data, _missing: [] };
-        importWarn = null;
-      } else {
-        // PDF: tenta parser local primeiro
-        const raw = await extractPdfText(file);
-        parsed = parseRelaxFitText(raw);
-
-        // Fallback Gemini se falhar
-        if (!isParseOK(parsed)) {
-          try {
-            importWarn = 'Layout não reconhecido — usando Gemini pra extrair.';
-            const geminiData = await extractBodyCompFromText(raw);
-            parsed = { ...parsed, ...geminiData, _missing: [] };
-            importWarn = null;
-          } catch (e) {
-            importWarn = `Parser falhou e Gemini também: ${(e as Error).message}`;
-            return;
-          }
+      // Fallback IA se falhar
+      if (!isParseOK(parsed)) {
+        try {
+          importWarn = 'Layout não reconhecido — usando IA pra extrair.';
+          const aiData = await extractBodyCompFromText(raw);
+          parsed = { ...parsed, ...aiData, _missing: [] };
+          importWarn = null;
+        } catch (e) {
+          importWarn = `Parser falhou e IA também: ${(e as Error).message}`;
+          return;
         }
       }
 
@@ -217,16 +193,16 @@
       <div class="import-ic">📄</div>
       <div class="import-body">
         <div class="import-title">Importar avaliação</div>
-        <div class="import-sub">PDF ou foto do relatório da balança — a IA lê e preenche</div>
+        <div class="import-sub">PDF do relatório da balança — a IA lê e preenche</div>
       </div>
     </div>
     <div class="spacer-sm"></div>
     <Button icon="upload_file" variant="secondary" full loading={importing} onclick={() => fileInput?.click()}>
-      {importing ? 'Analisando…' : 'Selecionar PDF ou imagem'}
+      {importing ? 'Analisando…' : 'Selecionar PDF'}
     </Button>
     <input
       type="file"
-      accept="application/pdf,image/png,image/jpeg,image/webp,image/heic"
+      accept="application/pdf"
       bind:this={fileInput}
       onchange={onFile}
       style="display:none"
