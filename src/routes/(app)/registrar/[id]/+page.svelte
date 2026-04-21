@@ -24,6 +24,8 @@
   import { suggestNextLoad } from '$lib/db/gemini';
   import { historyForExercise } from '$lib/db/sessions';
   import { getProfile } from '$lib/db/profile';
+  import { saveWorkout, newWorkoutId } from '$lib/db/workouts';
+  import type { Workout, WorkoutCategory as WCat, WorkoutExercise } from '$lib/types';
 
   // AI suggest load state
   let suggestingFor = $state<string | null>(null);
@@ -91,6 +93,9 @@
   let finalWeight = $state<string>('');
   let finalMood = $state<1|2|3|4|5>(4);
   let finalNotes = $state('');
+  let saveAsTemplate = $state(false);
+  let templateName = $state('');
+  let templateCategory = $state<WCat>('superior');
 
   onMount(async () => {
     await catalogStore.ensure();
@@ -199,6 +204,37 @@
         createdAt: Date.now()
       };
       const { prsEarned } = await saveSession(authStore.uid, session);
+
+      // Salvar como template se solicitado (só em treino livre ou "novo")
+      if (saveAsTemplate && templateName.trim() && workout.id === 'livre' && performed.length > 0) {
+        const workoutExercises: WorkoutExercise[] = performed
+          .filter((pe) => !pe.skipped)
+          .map((pe, idx) => ({
+            exerciseId: pe.exerciseId,
+            order: idx,
+            sets: pe.sets
+              .filter((s) => s.completed)
+              .map((s) => ({
+                type: 'normal' as const,
+                reps: s.reps,
+                weight: s.weight,
+                durationSec: s.durationSec
+              })),
+            restSeconds: 60
+          }));
+        if (workoutExercises.length > 0) {
+          const tmpl: Workout = {
+            id: newWorkoutId(),
+            name: templateName.trim(),
+            category: templateCategory,
+            exercises: workoutExercises,
+            order: 0,
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+          };
+          await saveWorkout(authStore.uid, tmpl);
+        }
+      }
 
       if (prsEarned.length > 0 && navigator.vibrate) {
         navigator.vibrate([100, 50, 100, 50, 200]);
@@ -441,6 +477,39 @@
         placeholder="Como se sentiu? Alguma observação?"
         rows="2"
       ></textarea>
+
+      {#if workout.id === 'livre' && performed.length > 0}
+        <div class="spacer"></div>
+        <label class="tmpl-toggle">
+          <input type="checkbox" bind:checked={saveAsTemplate} />
+          <span>
+            <span class="tmpl-t">💾 Salvar como treino fixo</span>
+            <span class="tmpl-s">Cria um template pra reusar no futuro</span>
+          </span>
+        </label>
+
+        {#if saveAsTemplate}
+          <div class="spacer-sm"></div>
+          <Input
+            label="Nome do treino"
+            bind:value={templateName}
+            placeholder="Ex: Peito e tríceps terça"
+          />
+          <div class="spacer-sm"></div>
+          <label class="mood-lbl">Categoria</label>
+          <div class="tmpl-cats">
+            {#each ['superior','inferior','fullbody','forca','pump','core','funcional','calistenia','crossfit','hiit','cardio','mobilidade','alongamento','livre'] as c (c)}
+              <button
+                class="tmpl-cat"
+                class:on={templateCategory === c}
+                onclick={() => (templateCategory = c as WCat)}
+              >
+                {CATEGORY_ICON[c]} {CATEGORY_LABEL[c]}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      {/if}
 
       <div class="spacer"></div>
       <div class="finish-btns">
@@ -784,6 +853,43 @@
   .finish-btns {
     display: flex;
     gap: var(--s-2);
+  }
+
+  .spacer-sm { height: var(--s-2); }
+
+  .tmpl-toggle {
+    display: flex;
+    gap: var(--s-3);
+    align-items: flex-start;
+    padding: var(--s-3);
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    cursor: pointer;
+  }
+  .tmpl-toggle input { margin-top: 4px; accent-color: var(--accent); }
+  .tmpl-t { display: block; font-weight: 700; font-size: var(--fs-sm); }
+  .tmpl-s { display: block; color: var(--text-mute); font-size: var(--fs-xs); margin-top: 2px; }
+
+  .tmpl-cats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+  }
+  .tmpl-cat {
+    padding: 6px 12px;
+    border-radius: var(--r-full);
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    color: var(--text-mute);
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .tmpl-cat.on {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    color: var(--accent);
   }
 
   @keyframes spin { to { transform: rotate(360deg); } }

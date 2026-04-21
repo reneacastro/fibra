@@ -2,8 +2,12 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { authStore } from '$lib/stores/auth.svelte';
-  import { getActiveDietPlan, getMealLog, saveMealLog, computeMealLogTotals, newLoggedMealId } from '$lib/db/diet';
-  import type { DietPlan, MealLog, LoggedMeal } from '$lib/types';
+  import {
+    getActiveDietPlan, getMealLog, saveMealLog, computeMealLogTotals,
+    newLoggedMealId, newLoggedItemId, computeItemMacros, listUserFoods
+  } from '$lib/db/diet';
+  import { TACO_BASICS } from '$lib/db/openFoodFacts';
+  import type { DietPlan, MealLog, LoggedMeal, Food, LoggedFoodItem } from '$lib/types';
   import { todayISO, fmtDateShort } from '$lib/utils/format';
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
@@ -29,23 +33,59 @@
     if (!authStore.uid) return;
     loading = true;
     try {
-      [plan, log] = await Promise.all([
+      const [p, existingLog, userFoods] = await Promise.all([
         getActiveDietPlan(authStore.uid),
-        getMealLog(authStore.uid, today)
+        getMealLog(authStore.uid, today),
+        listUserFoods(authStore.uid)
       ]);
-      if (!log) {
-        // Cria um log vazio usando o template da agenda, se houver
-        const meals: LoggedMeal[] = (plan?.meals ?? []).map((pm) => ({
-          id: newLoggedMealId(),
-          plannedMealId: pm.id,
-          name: pm.name,
-          time: pm.time,
-          items: []
-        }));
+      plan = p;
+
+      if (existingLog) {
+        log = existingLog;
+      } else {
+        // Cria log do dia pré-populando com itens do plano (usuário confirma/edita depois)
+        const foodIndex = new Map<string, Food>();
+        for (const f of TACO_BASICS) foodIndex.set(f.id, f);
+        for (const f of userFoods) foodIndex.set(f.id, f);
+
+        const meals: LoggedMeal[] = (plan?.meals ?? []).map((pm) => {
+          const items: LoggedFoodItem[] = pm.items.map((pi) => {
+            const food = foodIndex.get(pi.foodId);
+            if (!food) {
+              return {
+                id: newLoggedItemId(),
+                foodId: pi.foodId,
+                foodName: pi.foodName,
+                grams: pi.grams,
+                kcal: 0,
+                proteinG: 0,
+                carbG: 0,
+                fatG: 0
+              };
+            }
+            const macros = computeItemMacros(food, pi.grams);
+            return {
+              id: newLoggedItemId(),
+              foodId: pi.foodId,
+              foodName: pi.foodName,
+              grams: pi.grams,
+              ...macros
+            };
+          });
+          return {
+            id: newLoggedMealId(),
+            plannedMealId: pm.id,
+            name: pm.name,
+            time: pm.time,
+            items
+          };
+        });
+
+        const totals = computeMealLogTotals(meals);
         log = {
           date: today,
           meals,
-          totals: { kcal: 0, proteinG: 0, carbG: 0, fatG: 0 },
+          totals,
           createdAt: Date.now(),
           updatedAt: Date.now()
         };

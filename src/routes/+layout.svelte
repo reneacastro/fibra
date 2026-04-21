@@ -27,6 +27,14 @@
     // Theme color meta update
     const m = document.querySelector('meta[name="theme-color"]');
     if (m) m.setAttribute('content', '#07090d');
+
+    // Tenta travar orientação portrait (funciona em PWAs instalados Android)
+    const scr = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
+    scr?.lock?.('portrait').catch(() => {});
+
+    // Previne pinch-zoom em iOS Safari mesmo se o meta viewport falhar
+    document.addEventListener('gesturestart', (e) => e.preventDefault());
+    document.addEventListener('gesturechange', (e) => e.preventDefault());
   });
 </script>
 

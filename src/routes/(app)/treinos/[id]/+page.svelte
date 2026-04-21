@@ -20,8 +20,12 @@
   import ExerciseHistoryCompact from '$lib/components/ExerciseHistoryCompact.svelte';
   import ExerciseDetailSheet from '$lib/components/ExerciseDetailSheet.svelte';
   import CrossfitEditor from '$lib/components/CrossfitEditor.svelte';
+  import NewExerciseSheet from '$lib/components/NewExerciseSheet.svelte';
   import Sortable from 'sortablejs';
   import { isDurationBased, isCardio, fmtSec } from '$lib/utils/exercise';
+  import type { Exercise } from '$lib/types';
+
+  let newExOpen = $state(false);
 
   const isNew = $derived(page.params.id === 'novo');
 
@@ -81,7 +85,9 @@
   });
 
   const CATS: WorkoutCategory[] = [
-    'superior','inferior','fullbody','funcional','crossfit','alongamento','hiit','livre'
+    'superior','inferior','fullbody','forca','pump','core',
+    'funcional','calistenia','crossfit','hiit',
+    'cardio','mobilidade','alongamento','livre'
   ];
 
   const pickerResults = $derived.by(() => {
@@ -343,6 +349,18 @@
   />
 {/if}
 
+{#if newExOpen}
+  <NewExerciseSheet
+    defaultCategory={pickerCat}
+    onCreated={(ex: Exercise) => {
+      addExercise(ex.id);
+      newExOpen = false;
+      pickerOpen = false;
+    }}
+    onClose={() => (newExOpen = false)}
+  />
+{/if}
+
 <!-- Picker modal -->
 {#if pickerOpen}
   <div
@@ -356,7 +374,12 @@
       <div class="sheet-handle"></div>
       <div class="sheet-head">
         <h3>Adicionar exercício</h3>
-        <button class="icon-btn" onclick={() => (pickerOpen = false)}><span class="mi">close</span></button>
+        <div class="sheet-actions">
+          <button class="icon-btn" onclick={() => (newExOpen = true)} aria-label="Criar novo">
+            <span class="mi">add_circle</span>
+          </button>
+          <button class="icon-btn" onclick={() => (pickerOpen = false)}><span class="mi">close</span></button>
+        </div>
       </div>
 
       <Tabs
@@ -716,6 +739,7 @@
     font-size: var(--fs-lg);
     font-weight: 800;
   }
+  .sheet-actions { display: flex; gap: 4px; }
   .picker-list {
     display: flex;
     flex-direction: column;

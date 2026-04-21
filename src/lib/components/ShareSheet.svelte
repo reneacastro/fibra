@@ -21,6 +21,104 @@
   let rendering = $state(false);
   let photoInput: HTMLInputElement;
 
+  // Drag state
+  let previewEl: HTMLDivElement;
+  let activeId = $state<string | null>(null);
+  let dragging = $state(false);
+  let dragStart = { x: 0, y: 0, origX: 0, origY: 0 };
+
+  const activeScale = $derived.by(() => {
+    if (!activeId) return 1;
+    if (activeId === 'caption') return custom.captionStyle?.scale ?? 1;
+    return custom.stickers.find((s) => s.id === activeId)?.scale ?? 1;
+  });
+
+  function startDrag(e: PointerEvent, kind: 'sticker' | 'caption', id?: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    const targetId = kind === 'caption' ? 'caption' : id!;
+    activeId = targetId;
+    dragging = true;
+
+    const rect = previewEl.getBoundingClientRect();
+    const relX = (e.clientX - rect.left) / rect.width;
+    const relY = (e.clientY - rect.top) / rect.height;
+
+    let origX: number, origY: number;
+    if (kind === 'caption') {
+      origX = custom.captionStyle?.x ?? 0.5;
+      origY = custom.captionStyle?.y ?? 0.82;
+    } else {
+      const s = custom.stickers.find((x) => x.id === id);
+      origX = s?.x ?? 0.5;
+      origY = s?.y ?? 0.5;
+    }
+    dragStart = { x: relX, y: relY, origX, origY };
+
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    window.addEventListener('pointermove', onDrag);
+    window.addEventListener('pointerup', endDrag, { once: true });
+    window.addEventListener('pointercancel', endDrag, { once: true });
+  }
+
+  function onDrag(e: PointerEvent) {
+    if (!dragging || !activeId) return;
+    const rect = previewEl.getBoundingClientRect();
+    const relX = (e.clientX - rect.left) / rect.width;
+    const relY = (e.clientY - rect.top) / rect.height;
+    const dx = relX - dragStart.x;
+    const dy = relY - dragStart.y;
+    const newX = Math.max(0.05, Math.min(0.95, dragStart.origX + dx));
+    const newY = Math.max(0.05, Math.min(0.95, dragStart.origY + dy));
+
+    if (activeId === 'caption') {
+      custom = {
+        ...custom,
+        captionStyle: { ...(custom.captionStyle ?? { x: 0.5, y: 0.82, scale: 1 }), x: newX, y: newY }
+      };
+    } else {
+      custom = {
+        ...custom,
+        stickers: custom.stickers.map((s) => s.id === activeId ? { ...s, x: newX, y: newY } : s)
+      };
+    }
+  }
+
+  function endDrag() {
+    dragging = false;
+    window.removeEventListener('pointermove', onDrag);
+  }
+
+  function scaleActive(delta: number) {
+    if (!activeId) return;
+    if (activeId === 'caption') {
+      const cur = custom.captionStyle?.scale ?? 1;
+      const next = Math.max(0.5, Math.min(2.5, cur + delta));
+      custom = {
+        ...custom,
+        captionStyle: { ...(custom.captionStyle ?? { x: 0.5, y: 0.82, scale: 1 }), scale: next }
+      };
+    } else {
+      custom = {
+        ...custom,
+        stickers: custom.stickers.map((s) => {
+          if (s.id !== activeId) return s;
+          return { ...s, scale: Math.max(0.3, Math.min(3, s.scale + delta)) };
+        })
+      };
+    }
+  }
+
+  function rotateActive() {
+    if (!activeId || activeId === 'caption') return;
+    custom = {
+      ...custom,
+      stickers: custom.stickers.map((s) =>
+        s.id === activeId ? { ...s, rotation: s.rotation + Math.PI / 12 } : s
+      )
+    };
+  }
+
   // ─── Re-render on changes ───────────────────────
   let renderTimer: ReturnType<typeof setTimeout> | null = null;
   $effect(() => {
@@ -142,15 +240,58 @@
       <button class="close" onclick={onClose} aria-label="Fechar"><span class="mi">close</span></button>
     </div>
 
-    <!-- Preview -->
-    <div class="preview" class:rendering>
+    <!-- Preview com overlay interativo -->
+    <div class="preview" class:rendering bind:this={previewEl}>
       {#if url}
         <img src={url} alt="Preview" />
       {/if}
+
+      <!-- Overlay de stickers (drag + pinch) -->
+      {#each custom.stickers as s (s.id)}
+        <button
+          class="sticker-overlay"
+          class:active={activeId === s.id}
+          style="left: {s.x * 100}%; top: {s.y * 100}%; transform: translate(-50%, -50%) scale({s.scale}) rotate({s.rotation}rad); font-size: 60px;"
+          onpointerdown={(e) => startDrag(e, 'sticker', s.id)}
+          aria-label="Mover {s.emoji}"
+        >{s.emoji}</button>
+      {/each}
+
+      <!-- Overlay de caption (drag + pinch) -->
+      {#if custom.caption && custom.captionStyle}
+        <button
+          class="caption-overlay"
+          class:active={activeId === 'caption'}
+          style="left: {custom.captionStyle.x * 100}%; top: {custom.captionStyle.y * 100}%; transform: translate(-50%, -50%) scale({custom.captionStyle.scale}); "
+          onpointerdown={(e) => startDrag(e, 'caption')}
+          aria-label="Mover legenda"
+        >"{custom.caption}"</button>
+      {/if}
+
       {#if rendering}
         <div class="rendering-dot"><span class="mi spin">progress_activity</span></div>
       {/if}
     </div>
+
+    <!-- Controle de tamanho do elemento ativo -->
+    {#if activeId}
+      <div class="scale-bar">
+        <span class="sb-label">
+          {activeId === 'caption' ? '💬 Legenda' : custom.stickers.find((s) => s.id === activeId)?.emoji}
+        </span>
+        <button onclick={() => scaleActive(-0.15)} aria-label="Diminuir">
+          <span class="mi">remove</span>
+        </button>
+        <span class="sb-val mono">{Math.round(activeScale * 100)}%</span>
+        <button onclick={() => scaleActive(0.15)} aria-label="Aumentar">
+          <span class="mi">add</span>
+        </button>
+        <button onclick={() => rotateActive()} aria-label="Girar">
+          <span class="mi">rotate_right</span>
+        </button>
+        <button class="clear-ative" onclick={() => (activeId = null)}>OK</button>
+      </div>
+    {/if}
 
     <!-- Controles -->
     <div class="controls">
@@ -343,6 +484,7 @@
     max-width: 100%;
     position: relative;
     transition: opacity var(--dur-fast);
+    touch-action: none;
   }
   .preview img {
     width: 100%;
@@ -350,6 +492,94 @@
     object-fit: cover;
   }
   .preview.rendering img { opacity: 0.6; }
+
+  /* Overlays interativos (transparente visualmente — servem só pra detectar drag) */
+  .sticker-overlay {
+    position: absolute;
+    background: transparent;
+    border: 2px dashed transparent;
+    padding: 4px 8px;
+    border-radius: var(--r-md);
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    line-height: 1;
+    z-index: 10;
+    /* O emoji da imagem canvas embaixo aparece através — esse aqui é invisível */
+    opacity: 0;
+  }
+  .sticker-overlay.active {
+    opacity: 0.25;
+    border-color: #00e5ff;
+    background: rgba(0, 229, 255, 0.2);
+  }
+
+  .caption-overlay {
+    position: absolute;
+    background: transparent;
+    border: 2px dashed transparent;
+    padding: 8px 16px;
+    border-radius: var(--r-full);
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    font-family: var(--font-sans);
+    font-style: italic;
+    color: transparent;
+    z-index: 10;
+    min-width: 60px;
+    min-height: 30px;
+  }
+  .caption-overlay.active {
+    border-color: #00e5ff;
+    background: rgba(0, 229, 255, 0.15);
+  }
+
+  /* Barra de controle do elemento ativo */
+  .scale-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: var(--accent-glow);
+    border: 1px solid var(--accent);
+    border-radius: var(--r-full);
+    margin-bottom: var(--s-3);
+    justify-content: center;
+  }
+  .sb-label {
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    color: var(--accent);
+    margin-right: 4px;
+  }
+  .scale-bar button {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--bg-2);
+    color: var(--text);
+    display: grid;
+    place-items: center;
+  }
+  .scale-bar button:hover { background: var(--bg-3); }
+  .scale-bar .mi { font-size: 16px; }
+  .sb-val {
+    min-width: 40px;
+    text-align: center;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .clear-ative {
+    width: auto !important;
+    padding: 0 12px;
+    border-radius: var(--r-full) !important;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    background: var(--accent) !important;
+    color: var(--bg-0) !important;
+    margin-left: 4px;
+  }
   .rendering-dot {
     position: absolute;
     inset: auto 12px 12px auto;

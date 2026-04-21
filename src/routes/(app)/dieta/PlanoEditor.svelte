@@ -116,6 +116,8 @@
         tmb: tmb ?? undefined,
         foods: allFoods.map((f) => ({
           id: f.id, name: f.name,
+          servingSize: f.servingSize,
+          unit: f.unit,
           kcalPer100g: f.kcalPer100g,
           proteinPer100g: f.proteinPer100g,
           carbPer100g: f.carbPer100g,

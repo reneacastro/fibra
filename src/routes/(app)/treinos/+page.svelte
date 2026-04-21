@@ -53,11 +53,17 @@
     { id: 'superior',    label: 'Superior',    icon: '💪' },
     { id: 'inferior',    label: 'Inferior',    icon: '🦵' },
     { id: 'fullbody',    label: 'Full Body',   icon: '🔥' },
+    { id: 'forca',       label: 'Força',       icon: '🏋️' },
+    { id: 'pump',        label: 'Pump',        icon: '🍑' },
+    { id: 'core',        label: 'Core/Abs',    icon: '🫁' },
     { id: 'funcional',   label: 'Funcional',   icon: '🤸' },
+    { id: 'calistenia',  label: 'Calistenia',  icon: '🧗' },
     { id: 'crossfit',    label: 'CrossFit',    icon: '⚡' },
-    { id: 'alongamento', label: 'Alongamento', icon: '🧘' },
     { id: 'hiit',        label: 'HIIT',        icon: '💥' },
-    { id: 'livre',       label: 'Cardio',      icon: '🏃' }
+    { id: 'cardio',      label: 'Cardio',      icon: '🏃‍♂️' },
+    { id: 'mobilidade',  label: 'Mobilidade',  icon: '🌊' },
+    { id: 'alongamento', label: 'Alongamento', icon: '🧘' },
+    { id: 'livre',       label: 'Livre',       icon: '🏃' }
   ];
 
   const tabs = $derived([

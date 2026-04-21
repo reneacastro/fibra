@@ -338,7 +338,7 @@ export async function buildDietFromPrompt(params: {
   userPrompt: string;
   userProfile: { name: string; goals: string[]; weightKg: number; heightCm: number; sex: 'M' | 'F' | 'outro'; activityLevel: number };
   tmb?: number;
-  foods: { id: string; name: string; kcalPer100g: number; proteinPer100g: number; carbPer100g: number; fatPer100g: number }[];
+  foods: { id: string; name: string; servingSize?: number; unit?: string; kcalPer100g: number; proteinPer100g: number; carbPer100g: number; fatPer100g: number }[];
 }): Promise<DietPlanBlueprint> {
   const { userPrompt, userProfile, tmb, foods } = params;
 
@@ -352,14 +352,18 @@ ${tmb ? `TMB: ${tmb} kcal/dia` : ''}
 Pedido do atleta: "${userPrompt}"
 
 ALIMENTOS DISPONÍVEIS (use APENAS esses IDs):
-${foods.map((f) => `- ${f.id} | ${f.name} | ${f.kcalPer100g}kcal P${f.proteinPer100g} C${f.carbPer100g} G${f.fatPer100g} /100g`).join('\n')}
+${foods.map((f) => {
+  const unitInfo = f.unit ? ` | 1 ${f.unit} ≈ ${f.servingSize}g` : '';
+  return `- ${f.id} | ${f.name}${unitInfo} | ${f.kcalPer100g}kcal P${f.proteinPer100g} C${f.carbPer100g} G${f.fatPer100g} /100g`;
+}).join('\n')}
 
 Monte um plano completo. Regras:
 1. Use APENAS foodIds da lista acima
 2. 4-6 refeições distribuídas durante o dia com horários realistas PT-BR (café 7h / lanche 10h / almoço 12h30 / lanche 16h / jantar 19h30)
 3. Macros devem bater: proteína ≥ 1.8 g/kg (ou 2.4 se cutting), gordura ~25% kcal, carbo resto
 4. Kcal total coerente: TMB × atividade + ajuste do objetivo (emagrecer -15%, massa +10%, manter 0)
-5. Quantidades em múltiplos de 5g
+5. Quantidades em gramas (campo "grams"). Para alimentos que têm "1 X ≈ Yg" (ovo, banana, etc), calcule grams = quantidade desejada × Y. Ex: 2 ovos → grams: 100
+6. Cada refeição deve ter lista completa de items (NÃO deixe vazio)
 
 Responda JSON com:
 - name (string, ex: "Plano hipertrofia 2500 kcal")

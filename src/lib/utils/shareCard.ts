@@ -75,10 +75,17 @@ export interface WeekCardData {
 
 export type ShareCardData = SessionCardData | PRCardData | StreakCardData | WeekCardData;
 
+export interface CaptionStyle {
+  x: number; // 0-1 relative center
+  y: number; // 0-1 relative center
+  scale: number; // 0.5-2
+}
+
 export interface ShareCustomization {
   theme: ShareTheme;
   layout: ShareLayout;
   caption?: string;
+  captionStyle?: CaptionStyle;
   photoDataUrl?: string; // base64 data URL
   stickers: Sticker[];
 }
@@ -86,7 +93,8 @@ export interface ShareCustomization {
 export const DEFAULT_CUSTOMIZATION: ShareCustomization = {
   theme: 'fibra',
   layout: 'stats',
-  stickers: []
+  stickers: [],
+  captionStyle: { x: 0.5, y: 0.82, scale: 1 }
 };
 
 export const AVAILABLE_STICKERS = ['🔥', '💪', '🏆', '⚡', '✨', '🎯', '💯', '🚀', '💀', '👑'];
@@ -127,7 +135,7 @@ export async function renderShareCard(
   }
 
   // Caption (se tiver)
-  if (custom.caption) drawCaption(ctx, custom.caption);
+  if (custom.caption) drawCaption(ctx, custom.caption, custom.captionStyle);
 
   // Stickers (por cima de tudo)
   for (const s of custom.stickers) drawSticker(ctx, s);
@@ -383,40 +391,47 @@ function drawWeekCard(ctx: Ctx, d: WeekCardData, c: ShareCustomization) {
 }
 
 // ─── Caption ────────────────────────────────────────────
-function drawCaption(ctx: Ctx, text: string) {
-  ctx.font = 'italic 44px "Plus Jakarta Sans", sans-serif';
+function drawCaption(ctx: Ctx, text: string, style?: CaptionStyle) {
+  const s = style ?? { x: 0.5, y: 0.82, scale: 1 };
+  const fontSize = Math.round(44 * s.scale);
+  const lineHeight = Math.round(58 * s.scale);
+  const padX = Math.round(36 * s.scale);
+  const padY = Math.round(20 * s.scale);
+
+  ctx.font = `italic ${fontSize}px "Plus Jakarta Sans", sans-serif`;
   ctx.textAlign = 'center';
   (ctx as any).letterSpacing = '0';
 
   const maxWidth = W - 160;
   const quoted = `"${text}"`;
   const lines = wrapLines(ctx, quoted, maxWidth);
-  const lineHeight = 58;
   const blockHeight = lines.length * lineHeight;
-  const blockY = H - 380 - blockHeight;
 
-  // Largura do fundo = maior linha + padding horizontal
   let maxLineWidth = 0;
   for (const l of lines) {
     const w = ctx.measureText(l).width;
     if (w > maxLineWidth) maxLineWidth = w;
   }
-  const padX = 36;
-  const padY = 20;
   const bgW = maxLineWidth + padX * 2;
   const bgH = blockHeight + padY * 2;
-  const bgX = (W - bgW) / 2;
-  const bgY = blockY - padY - 10;
 
-  // Fundo arredondado centralizado no texto
+  // Centro do bloco na posição customizada
+  const cx = s.x * W;
+  const cy = s.y * H;
+  const bgX = cx - bgW / 2;
+  const bgY = cy - bgH / 2;
+
   ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
   roundRect(ctx, bgX, bgY, bgW, bgH, bgH / 2.4);
   ctx.fill();
 
-  // Texto
   ctx.fillStyle = TEXT;
+  ctx.textBaseline = 'middle';
+  lines.forEach((l, i) => {
+    const ly = bgY + padY + (i + 0.5) * lineHeight;
+    ctx.fillText(l, cx, ly);
+  });
   ctx.textBaseline = 'alphabetic';
-  lines.forEach((l, i) => ctx.fillText(l, W / 2, blockY + i * lineHeight));
 }
 
 // ─── Stickers ───────────────────────────────────────────

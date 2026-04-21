@@ -1,5 +1,7 @@
 import type { Exercise, WorkoutCategory } from '$lib/types';
 import { loadCatalog } from '$lib/db/catalog';
+import { listCustomExercises } from '$lib/db/customExercises';
+import { authStore } from './auth.svelte';
 
 class CatalogStore {
   all = $state<Exercise[]>([]);
@@ -10,11 +12,22 @@ class CatalogStore {
     if (this.loaded || this.loading) return;
     this.loading = true;
     try {
-      this.all = await loadCatalog();
+      const [base, customs] = await Promise.all([
+        loadCatalog(),
+        authStore.uid ? listCustomExercises(authStore.uid) : Promise.resolve([])
+      ]);
+      this.all = [...base, ...customs];
       this.loaded = true;
     } finally {
       this.loading = false;
     }
+  }
+
+  async reloadCustoms() {
+    if (!authStore.uid) return;
+    const customs = await listCustomExercises(authStore.uid);
+    const base = this.all.filter((e) => !e.isCustom);
+    this.all = [...base, ...customs];
   }
 
   byId(id: string) {

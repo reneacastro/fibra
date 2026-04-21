@@ -28,7 +28,13 @@
       alongamento: 'var(--cat-stretch)',
       funcional: 'var(--cat-func)',
       crossfit: 'var(--cat-crossfit)',
-      hiit: 'var(--cat-fire, var(--warn))'
+      hiit: 'var(--cat-fire, var(--warn))',
+      cardio: 'var(--info)',
+      core: 'var(--cat-func)',
+      mobilidade: 'var(--cat-stretch)',
+      calistenia: 'var(--cat-upper)',
+      forca: 'var(--warn)',
+      pump: 'var(--cat-crossfit)'
     };
     const color = map[category];
     return `--badge-color:${color};background:color-mix(in srgb, ${color} 18%, transparent);color:${color};`;

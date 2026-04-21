@@ -14,7 +14,13 @@ export type WorkoutCategory =
   | 'alongamento'
   | 'funcional'
   | 'crossfit'
-  | 'hiit';
+  | 'hiit'
+  | 'cardio'
+  | 'core'
+  | 'mobilidade'
+  | 'calistenia'
+  | 'forca'       // powerlifting / força máxima
+  | 'pump';       // foco em glúteo/estético
 
 export type Goal = 'emagrecer' | 'massa' | 'qualidade' | 'lesao' | 'performance';
 
@@ -270,6 +276,8 @@ export interface PlannedFoodItem {
   foodId: string;
   foodName: string;
   grams: number;
+  /** Qtd em unidades (se o alimento for medido em unidades). */
+  units?: number;
 }
 
 export interface Food {
@@ -277,7 +285,9 @@ export interface Food {
   name: string;
   brand?: string;
   barcode?: string;
-  servingSize: number; // g
+  servingSize: number; // g (peso de 1 porção/unidade)
+  /** Se preenchido, alimento pode ser medido em unidades além de gramas (ex: "unidade", "fatia", "colher") */
+  unit?: string;
   kcalPer100g: number;
   proteinPer100g: number;
   carbPer100g: number;

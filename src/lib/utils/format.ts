@@ -6,7 +6,13 @@ export const CATEGORY_LABEL: Record<string, string> = {
   alongamento: 'Alongamento',
   funcional: 'Funcional',
   crossfit: 'CrossFit',
-  hiit: 'HIIT'
+  hiit: 'HIIT',
+  cardio: 'Cardio',
+  core: 'Core/Abs',
+  mobilidade: 'Mobilidade',
+  calistenia: 'Calistenia',
+  forca: 'Força',
+  pump: 'Pump'
 };
 
 export const GOAL_LABEL: Record<string, string> = {
@@ -25,7 +31,13 @@ export const CATEGORY_ICON: Record<string, string> = {
   alongamento: '🧘',
   funcional: '🤸',
   crossfit: '⚡',
-  hiit: '💥'
+  hiit: '💥',
+  cardio: '🏃‍♂️',
+  core: '🫁',
+  mobilidade: '🌊',
+  calistenia: '🧗',
+  forca: '🏋️',
+  pump: '🍑'
 };
 
 export const DAYS_PT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];

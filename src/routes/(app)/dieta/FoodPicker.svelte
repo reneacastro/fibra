@@ -21,6 +21,8 @@
   let activeTab = $state<'favoritos' | 'basicos' | 'off' | 'criar'>('basicos');
   let picked = $state<Food | null>(null);
   let grams = $state(100);
+  let units = $state(1);
+  let inputMode = $state<'gramas' | 'unidades'>('gramas');
 
   // Form de criação
   let newFood = $state<Partial<Food>>({
@@ -65,7 +67,16 @@
   function pick(f: Food) {
     picked = f;
     grams = f.servingSize ?? 100;
+    units = 1;
+    inputMode = f.unit ? 'unidades' : 'gramas';
   }
+
+  // Sincroniza gramas ↔ unidades quando input muda
+  $effect(() => {
+    if (inputMode === 'unidades' && picked?.servingSize) {
+      grams = Math.round(units * picked.servingSize);
+    }
+  });
 
   function confirm() {
     if (!picked) return;
@@ -137,18 +148,46 @@
         </div>
       </div>
 
-      <div class="grams-row">
-        <Input
-          type="number" label="Quantidade" suffix="g" step="5" min="1"
-          value={String(grams)}
-          oninput={(e) => (grams = Number((e.currentTarget as HTMLInputElement).value) || 0)}
-        />
-        <div class="quick-grams">
-          {#each [50, 100, 150, 200] as g (g)}
-            <button class="qg" class:on={grams === g} onclick={() => (grams = g)}>{g}g</button>
-          {/each}
+      {#if picked.unit}
+        <div class="mode-toggle">
+          <button class="mt-btn" class:on={inputMode === 'unidades'} onclick={() => (inputMode = 'unidades')}>
+            {picked.unit}{inputMode === 'unidades' ? '' : 's'}
+          </button>
+          <button class="mt-btn" class:on={inputMode === 'gramas'} onclick={() => (inputMode = 'gramas')}>
+            gramas
+          </button>
         </div>
+      {/if}
+
+      <div class="grams-row">
+        {#if inputMode === 'unidades' && picked.unit}
+          <Input
+            type="number" label="Quantidade" suffix={picked.unit === 'colher de sopa' ? 'col' : picked.unit} step="0.5" min="0.5"
+            value={String(units)}
+            oninput={(e) => (units = Number((e.currentTarget as HTMLInputElement).value) || 0)}
+          />
+          <div class="quick-grams">
+            {#each [1, 2, 3, 4] as u (u)}
+              <button class="qg" class:on={units === u} onclick={() => (units = u)}>{u}</button>
+            {/each}
+          </div>
+        {:else}
+          <Input
+            type="number" label="Quantidade" suffix="g" step="5" min="1"
+            value={String(grams)}
+            oninput={(e) => (grams = Number((e.currentTarget as HTMLInputElement).value) || 0)}
+          />
+          <div class="quick-grams">
+            {#each [50, 100, 150, 200] as g (g)}
+              <button class="qg" class:on={grams === g} onclick={() => (grams = g)}>{g}g</button>
+            {/each}
+          </div>
+        {/if}
       </div>
+
+      {#if inputMode === 'unidades' && picked.unit}
+        <div class="gram-equiv">≈ {grams}g</div>
+      {/if}
 
       {#if preview}
         <div class="preview">
@@ -214,7 +253,10 @@
           {#each basicsFiltered as f (f.id)}
             <button class="f-row" onclick={() => pick(f)}>
               <div class="f-body">
-                <div class="f-name">{f.name}</div>
+                <div class="f-name">
+                  {f.name}
+                  {#if f.unit}<span class="unit-chip">{f.unit}</span>{/if}
+                </div>
                 <div class="f-macro mono">{f.kcalPer100g} kcal · P{f.proteinPer100g} C{f.carbPer100g} G{f.fatPer100g} /100g</div>
               </div>
               <span class="mi">chevron_right</span>
@@ -353,7 +395,37 @@
   .picked-name { font-weight: 700; color: var(--accent); }
   .picked-meta { font-size: var(--fs-xs); color: var(--text-mute); margin-top: 4px; font-family: var(--font-mono); }
 
-  .grams-row { margin-bottom: var(--s-3); }
+  .grams-row { margin-bottom: var(--s-2); }
+
+  .mode-toggle {
+    display: flex;
+    gap: 4px;
+    padding: 3px;
+    background: var(--bg-3);
+    border-radius: var(--r-full);
+    margin-bottom: var(--s-2);
+  }
+  .mt-btn {
+    flex: 1;
+    padding: 6px 12px;
+    border-radius: var(--r-full);
+    color: var(--text-mute);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    text-transform: capitalize;
+  }
+  .mt-btn.on {
+    background: var(--accent);
+    color: var(--bg-0);
+  }
+
+  .gram-equiv {
+    text-align: center;
+    font-size: var(--fs-xs);
+    color: var(--text-mute);
+    font-family: var(--font-mono);
+    margin-bottom: var(--s-2);
+  }
   .quick-grams {
     display: flex;
     gap: 4px;
@@ -474,6 +546,19 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .unit-chip {
+    padding: 1px 6px;
+    font-size: 9px;
+    font-weight: 700;
+    background: var(--accent-glow);
+    color: var(--accent);
+    border-radius: var(--r-full);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
   .f-macro {
     font-size: 10px;
