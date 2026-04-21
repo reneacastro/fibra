@@ -434,6 +434,7 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['inferior', 'forca'],
     muscleGroup: ['quadriceps', 'gluteos', 'lombar'],
     equipment: 'barra',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/images/0.jpg',
     mets: 8,
     tags: ['composto', 'big-three']
   },
@@ -443,6 +444,7 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['fullbody', 'forca'],
     muscleGroup: ['posterior', 'gluteos', 'lombar', 'costas'],
     equipment: 'barra',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Deadlift/images/0.jpg',
     mets: 8,
     tags: ['composto', 'big-three']
   },
@@ -452,6 +454,7 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['superior', 'forca'],
     muscleGroup: ['peito', 'triceps', 'ombros'],
     equipment: 'barra',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press_-_Medium_Grip/images/0.jpg',
     mets: 6,
     tags: ['composto', 'push', 'big-three']
   },
@@ -461,6 +464,7 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['superior', 'forca'],
     muscleGroup: ['ombros', 'triceps', 'core'],
     equipment: 'barra',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Military_Press/images/0.jpg',
     mets: 6,
     tags: ['composto', 'push']
   },
@@ -470,6 +474,7 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['superior', 'forca'],
     muscleGroup: ['costas', 'biceps'],
     equipment: 'barra',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_Barbell_Row/images/0.jpg',
     mets: 6,
     tags: ['composto', 'pull']
   },
@@ -505,6 +510,7 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['inferior', 'pump', 'forca'],
     muscleGroup: ['quadriceps', 'gluteos'],
     equipment: 'halteres',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bench_Squat/images/0.jpg',
     mets: 7,
     tags: ['unilateral']
   },
@@ -516,6 +522,7 @@ export const SEED_EXERCISES: Exercise[] = [
     category: 'core',
     muscleGroup: 'core',
     equipment: 'peso-corporal',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Crunches/images/0.jpg',
     mets: 4
   },
   {
@@ -524,6 +531,7 @@ export const SEED_EXERCISES: Exercise[] = [
     category: 'core',
     muscleGroup: 'core',
     equipment: 'peso-corporal',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Jackknife_Sit-Up/images/0.jpg',
     mets: 5
   },
   {
@@ -532,6 +540,7 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['core', 'calistenia'],
     muscleGroup: ['core', 'ombros'],
     equipment: 'nenhum',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ab_Roller/images/0.jpg',
     mets: 5
   },
   {
@@ -540,14 +549,16 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['core', 'funcional'],
     muscleGroup: 'core',
     equipment: 'halteres',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Russian_Twist/images/0.jpg',
     mets: 5
   },
   {
     id: 'elevacao-pernas',
-    name: 'Elevação de pernas (na barra ou deitado)',
+    name: 'Elevação de pernas (barra)',
     category: ['core', 'calistenia'],
     muscleGroup: 'core',
     equipment: 'barra',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hanging_Leg_Raise/images/0.jpg',
     mets: 5
   },
 
@@ -567,6 +578,7 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['cardio', 'hiit'],
     muscleGroup: ['cardio', 'panturrilha'],
     equipment: 'corda',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rope_Jumping/images/0.jpg',
     mets: 11,
     tags: ['cardio', 'hiit']
   },
@@ -587,6 +599,7 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['superior', 'calistenia'],
     muscleGroup: ['costas', 'biceps'],
     equipment: 'barra',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pullups/images/0.jpg',
     mets: 8,
     tags: ['pull', 'composto']
   },
@@ -596,6 +609,7 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['superior', 'calistenia'],
     muscleGroup: ['costas', 'biceps'],
     equipment: 'barra',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chin-Up/images/0.jpg',
     mets: 8,
     tags: ['pull']
   },
@@ -605,6 +619,7 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['superior', 'calistenia'],
     muscleGroup: ['peito', 'triceps', 'ombros'],
     equipment: 'nenhum',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dips_-_Chest_Version/images/0.jpg',
     mets: 7,
     tags: ['push']
   },
@@ -614,6 +629,7 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['superior', 'calistenia'],
     muscleGroup: ['triceps', 'peito'],
     equipment: 'peso-corporal',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-Ups_-_Close_Triceps_Position/images/0.jpg',
     mets: 6
   },
   {
@@ -631,6 +647,7 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['inferior', 'calistenia', 'forca'],
     muscleGroup: ['quadriceps', 'gluteos'],
     equipment: 'peso-corporal',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Single_Leg_Squat/images/0.jpg',
     mets: 7,
     tags: ['unilateral']
   },

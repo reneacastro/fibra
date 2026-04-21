@@ -31,7 +31,19 @@
 >
   {#if exercise.gifUrl}
     <div class="ex-thumb">
-      <img src={exercise.gifUrl} alt={exercise.name} loading="lazy" />
+      <img
+        src={exercise.gifUrl}
+        alt={exercise.name}
+        loading="lazy"
+        onerror={(e) => {
+          // Se a URL externa falhar, esconde img e mostra placeholder
+          const img = e.currentTarget as HTMLImageElement;
+          img.style.display = 'none';
+          const parent = img.parentElement;
+          if (parent) parent.classList.add('placeholder-fallback');
+        }}
+      />
+      <span class="mi placeholder-icon">fitness_center</span>
     </div>
   {:else}
     <div class="ex-thumb placeholder">
@@ -102,7 +114,12 @@
     height: 100%;
     object-fit: cover;
   }
-  .ex-thumb.placeholder .mi {
+  .placeholder-icon {
+    display: none;
+  }
+  .ex-thumb.placeholder .mi,
+  .ex-thumb.placeholder-fallback .placeholder-icon {
+    display: inline-block;
     color: var(--text-dim);
     font-size: 28px;
   }

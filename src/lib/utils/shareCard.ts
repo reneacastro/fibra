@@ -140,8 +140,7 @@ export async function renderShareCard(
   // Stickers (por cima de tudo)
   for (const s of custom.stickers) drawSticker(ctx, s);
 
-  // Footer sempre por cima
-  drawFooter(ctx, data);
+  // (Footer removido — info de perfil ficava poluindo)
 
   return new Promise((resolve) => {
     canvas.toBlob((b) => resolve(b!), 'image/png', 0.95);

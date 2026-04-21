@@ -270,6 +270,9 @@ export interface PlannedMeal {
   name: string; // "Café da manhã"
   time: string; // "07:00"
   items: PlannedFoodItem[];
+  /** Dias da semana em que essa refeição aplica (0=dom, 6=sáb).
+   * Se vazio/undefined, vale pra todos os dias. */
+  daysOfWeek?: number[];
 }
 
 export interface PlannedFoodItem {

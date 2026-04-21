@@ -48,7 +48,14 @@
         for (const f of TACO_BASICS) foodIndex.set(f.id, f);
         for (const f of userFoods) foodIndex.set(f.id, f);
 
-        const meals: LoggedMeal[] = (plan?.meals ?? []).map((pm) => {
+        // Dia da semana atual (0=dom, 6=sáb)
+        const todayDow = new Date(today + 'T12:00:00').getDay();
+        // Filtra: refeições sem daysOfWeek = todos os dias; se tiver, checa
+        const todayMeals = (plan?.meals ?? []).filter((pm) =>
+          !pm.daysOfWeek || pm.daysOfWeek.length === 0 || pm.daysOfWeek.includes(todayDow)
+        );
+
+        const meals: LoggedMeal[] = todayMeals.map((pm) => {
           const items: LoggedFoodItem[] = pm.items.map((pi) => {
             const food = foodIndex.get(pi.foodId);
             // Tenta 3 vias, em ordem: catálogo → macros inline do plano → zero

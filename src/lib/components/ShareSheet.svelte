@@ -494,11 +494,11 @@
   }
   .preview.rendering img { opacity: 0.6; }
 
-  /* Overlays interativos (transparente visualmente — servem só pra detectar drag) */
+  /* Overlays interativos: hit-area transparente, sem visual */
   .sticker-overlay {
     position: absolute;
     background: transparent;
-    border: 2px dashed transparent;
+    border: 1.5px solid transparent;
     padding: 4px 8px;
     border-radius: var(--r-md);
     cursor: grab;
@@ -506,19 +506,19 @@
     user-select: none;
     line-height: 1;
     z-index: 10;
-    /* O emoji da imagem canvas embaixo aparece através — esse aqui é invisível */
     opacity: 0;
   }
   .sticker-overlay.active {
-    opacity: 0.25;
-    border-color: #00e5ff;
-    background: rgba(0, 229, 255, 0.2);
+    opacity: 1;
+    color: transparent;
+    border-color: rgba(0, 229, 255, 0.8);
+    background: transparent;
   }
 
   .caption-overlay {
     position: absolute;
     background: transparent;
-    border: 2px dashed transparent;
+    border: 1.5px solid transparent;
     padding: 8px 16px;
     border-radius: var(--r-full);
     cursor: grab;
@@ -532,8 +532,8 @@
     min-height: 30px;
   }
   .caption-overlay.active {
-    border-color: #00e5ff;
-    background: rgba(0, 229, 255, 0.15);
+    border-color: rgba(0, 229, 255, 0.8);
+    background: transparent;
   }
 
   /* Barra de controle do elemento ativo */

@@ -453,14 +453,40 @@
             </div>
           </div>
           <div class="hist-grid">
-            {#if h.peso}<div><span class="hg-l">Peso</span><span class="hg-v mono">{fmtKg(h.peso)}<em>kg</em></span></div>{/if}
-            {#if h.imc}<div><span class="hg-l">IMC</span><span class="hg-v mono">{h.imc.toFixed(1)}</span></div>{/if}
-            {#if h.fat}<div><span class="hg-l">Gord.</span><span class="hg-v mono">{h.fat}<em>%</em></span></div>{/if}
-            {#if h.muscle}<div><span class="hg-l">Músculo</span><span class="hg-v mono">{fmtKg(h.muscle)}<em>kg</em></span></div>{/if}
-            {#if h.bodyScore}<div><span class="hg-l">Score</span><span class="hg-v mono">{h.bodyScore}<em>/100</em></span></div>{/if}
-            {#if h.visceral}<div><span class="hg-l">Visceral</span><span class="hg-v mono">{h.visceral}</span></div>{/if}
-            {#if h.waist}<div><span class="hg-l">Cintura</span><span class="hg-v mono">{h.waist}<em>cm</em></span></div>{/if}
-            {#if h.hip}<div><span class="hg-l">Quadril</span><span class="hg-v mono">{h.hip}<em>cm</em></span></div>{/if}
+            {#each [
+              { v: h.peso,             l: 'Peso',         u: 'kg' },
+              { v: h.imc,              l: 'IMC',          u: '' },
+              { v: h.bodyScore,        l: 'Score',        u: '/100' },
+              { v: h.fat,              l: 'Gordura',      u: '%' },
+              { v: h.subcutaneousFat,  l: 'Subcutânea',   u: '%' },
+              { v: h.visceral,         l: 'Visceral',     u: '' },
+              { v: h.muscle,           l: 'Músculo',      u: 'kg' },
+              { v: h.skeletalMuscle,   l: 'Esquelético',  u: 'kg' },
+              { v: h.smi,              l: 'SMI',          u: 'kg/m²' },
+              { v: h.protein,          l: 'Proteína',     u: 'kg' },
+              { v: h.hydration,        l: 'Hidratação',   u: '%' },
+              { v: h.bone,             l: 'Óssea',        u: 'kg' },
+              { v: h.tmb,              l: 'TMB',          u: 'kcal' },
+              { v: h.metabolicAge,     l: 'Idade corp.',  u: 'a' },
+              { v: h.targetWeight,     l: 'Meta peso',    u: 'kg' },
+              { v: h.waist,            l: 'Cintura',      u: 'cm' },
+              { v: h.hip,              l: 'Quadril',      u: 'cm' },
+              { v: h.chest,            l: 'Peito',        u: 'cm' },
+              { v: h.abdomen,          l: 'Abdômen',      u: 'cm' },
+              { v: h.thigh,            l: 'Coxa',         u: 'cm' },
+              { v: h.calf,             l: 'Panturrilha',  u: 'cm' },
+              { v: h.arm,              l: 'Braço',        u: 'cm' },
+              { v: h.forearm,          l: 'Antebraço',    u: 'cm' },
+              { v: h.shoulder,         l: 'Ombros',       u: 'cm' },
+              { v: h.neck,             l: 'Pescoço',      u: 'cm' }
+            ].filter((f) => f.v != null && f.v !== 0) as field (field.l)}
+              <div>
+                <span class="hg-l">{field.l}</span>
+                <span class="hg-v mono">
+                  {typeof field.v === 'number' && field.v % 1 !== 0 ? field.v.toFixed(1) : field.v}{#if field.u}<em>{field.u}</em>{/if}
+                </span>
+              </div>
+            {/each}
           </div>
         </Card>
       {/each}

@@ -18,7 +18,6 @@
   import Button from '$lib/components/Button.svelte';
   import LineChart from '$lib/components/LineChart.svelte';
   import Heatmap from '$lib/components/Heatmap.svelte';
-  import MacroRing from '$lib/components/MacroRing.svelte';
   import ShareSheet from '$lib/components/ShareSheet.svelte';
   import type { ShareCardData } from '$lib/utils/shareCard';
 
@@ -412,31 +411,11 @@
         <div class="hero-card">
           <div class="hc-label">🍽️ Dieta hoje</div>
           {#if dietPlan}
-            <div class="diet-rings">
-              <div class="ring-small">
-                <MacroRing
-                  value={todayKcal}
-                  target={dietPlan.dailyTargets.kcal}
-                  size={48}
-                  strokeWidth={5}
-                  showCenter={false}
-                  color="#00e5ff"
-                />
-              </div>
-              <div class="ring-small">
-                <MacroRing
-                  value={todayProtein}
-                  target={dietPlan.dailyTargets.proteinG}
-                  size={48}
-                  strokeWidth={5}
-                  showCenter={false}
-                  color="#ff5ea0"
-                />
-              </div>
-              <div class="diet-info mono">
-                {todayKcal}<span class="sm">/{dietPlan.dailyTargets.kcal}</span>
-                <div class="diet-sub">kcal</div>
-              </div>
+            <div class="hc-value mono">
+              {todayKcal}<span class="hc-unit">/ {dietPlan.dailyTargets.kcal} kcal</span>
+            </div>
+            <div class="hc-sub">
+              {Math.round(todayProtein)}g de {Math.round(dietPlan.dailyTargets.proteinG)}g proteína
             </div>
           {:else}
             <div class="hc-value-sm">Sem plano</div>
@@ -882,30 +861,6 @@
   .hc-sub .up { color: var(--warn); font-weight: 700; }
   .hc-sub .down { color: var(--success); font-weight: 700; }
 
-  .diet-rings {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .ring-small :global(.ring-wrap) { --size: 32px !important; }
-  .diet-info {
-    font-size: var(--fs-sm);
-    font-weight: 800;
-    color: var(--accent);
-    margin-left: 4px;
-    line-height: 1.1;
-  }
-  .diet-info .sm {
-    font-size: 10px;
-    color: var(--text-mute);
-  }
-  .diet-sub {
-    font-size: 9px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-weight: 700;
-  }
 
   /* ─── Seção de stats ────────────────────── */
   .sec-head {
