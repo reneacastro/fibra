@@ -5,6 +5,8 @@
 
 import type { Session } from '$lib/types';
 import { CATEGORY_ICON, CATEGORY_LABEL, fmtDateShort, fmtDuration } from './format';
+import { buildStaticMapUrl } from './mapbox';
+import { fmtPace } from './exercise';
 
 const W = 1080;
 const H = 1920;
@@ -28,7 +30,7 @@ export type ShareTheme = keyof typeof SHARE_THEMES;
 export type ShareLayout = 'stats' | 'photo' | 'minimal';
 
 // ─── Templates ──────────────────────────────────────────
-export type ShareTemplate = 'session' | 'pr' | 'streak' | 'week';
+export type ShareTemplate = 'session' | 'pr' | 'streak' | 'week' | 'run';
 
 export interface Sticker {
   id: string;
@@ -73,7 +75,20 @@ export interface WeekCardData {
   avatar?: string;
 }
 
-export type ShareCardData = SessionCardData | PRCardData | StreakCardData | WeekCardData;
+export interface RunCardData {
+  template: 'run';
+  distanceM: number;
+  paceSecPerKm: number;
+  durationSec: number;
+  calories?: number;
+  date: string;
+  userName: string;
+  avatar?: string;
+  track: { lat: number; lng: number }[];
+  mapStyle?: 'outdoors' | 'satellite' | 'dark';
+}
+
+export type ShareCardData = SessionCardData | PRCardData | StreakCardData | WeekCardData | RunCardData;
 
 export interface CaptionStyle {
   x: number; // 0-1 relative center
@@ -111,12 +126,19 @@ export async function renderShareCard(
   canvas.height = H;
   const ctx = canvas.getContext('2d')!;
 
-  // Background: foto se tiver, gradient se não
-  if (custom.photoDataUrl) {
-    await drawPhotoBackground(ctx, custom.photoDataUrl, custom.layout);
+  // Background: foto > mapa (se corrida) > gradient
+  const hasPhoto = !!custom.photoDataUrl;
+  const isRun = data.template === 'run';
+  if (hasPhoto) {
+    await drawPhotoBackground(ctx, custom.photoDataUrl!, custom.layout);
+  } else if (isRun && (data as RunCardData).track.length > 1) {
+    await drawMapBackground(ctx, data as RunCardData);
   }
-  drawThemeOverlay(ctx, custom.theme, !!custom.photoDataUrl);
-  drawBrand(ctx, custom.theme);
+  drawThemeOverlay(ctx, custom.theme, hasPhoto || isRun);
+
+  // Corrida: só o mark (F). Outros templates: F + palavra FIBRA.
+  if (isRun) drawLogoMark(ctx, custom.theme);
+  else drawBrand(ctx, custom.theme);
 
   // Conteúdo baseado no template + layout
   switch (data.template) {
@@ -131,6 +153,9 @@ export async function renderShareCard(
       break;
     case 'week':
       drawWeekCard(ctx, data, custom);
+      break;
+    case 'run':
+      await drawRunCard(ctx, data, custom);
       break;
   }
 
@@ -218,6 +243,208 @@ function drawBrand(ctx: Ctx, themeKey: ShareTheme) {
   ctx.textAlign = 'left';
   (ctx as any).letterSpacing = '8px';
   ctx.fillText('FIBRA', 170, 136);
+}
+
+/** Só o mark F (sem o wordmark), pra uso em cards tipo corrida. */
+function drawLogoMark(ctx: Ctx, themeKey: ShareTheme) {
+  const theme = SHARE_THEMES[themeKey];
+  // Fundo escuro atrás pro contraste quando mapa for claro
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+  ctx.beginPath();
+  ctx.arc(96, 96, 54, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.save();
+  ctx.translate(72, 66);
+  const s = 60;
+  ctx.fillStyle = theme.primary;
+  ctx.transform(1, 0, -0.1, 1, 6, 0);
+  ctx.fillRect(0, 0, s * 0.21, s * 0.75);
+  ctx.fillRect(0, 0, s * 0.58, s * 0.21);
+  ctx.fillRect(0, s * 0.31, s * 0.42, s * 0.19);
+  ctx.restore();
+}
+
+async function drawMapBackground(ctx: Ctx, data: RunCardData) {
+  const MAP_H = 1180; // topo cobre ~60% da imagem
+  const style =
+    data.mapStyle === 'satellite' ? 'mapbox/satellite-streets-v12' :
+    data.mapStyle === 'dark'      ? 'mapbox/dark-v11' :
+                                    'mapbox/outdoors-v12';
+  const url = buildStaticMapUrl({
+    track: data.track,
+    width: Math.floor(W / 2),
+    height: Math.floor(MAP_H / 2),
+    style,
+    strokeColor: '22d3ee',
+    strokeWidth: 6
+  });
+  // Fundo escuro de base (caso mapa falhe)
+  ctx.fillStyle = '#0b1220';
+  ctx.fillRect(0, 0, W, H);
+  if (!url) return;
+  try {
+    const img = await loadImage(url);
+    ctx.drawImage(img, 0, 0, W, MAP_H);
+    // Fade pro preto antes da área de stats
+    const fade = ctx.createLinearGradient(0, MAP_H - 220, 0, MAP_H + 40);
+    fade.addColorStop(0, 'rgba(11, 18, 32, 0)');
+    fade.addColorStop(1, 'rgba(11, 18, 32, 1)');
+    ctx.fillStyle = fade;
+    ctx.fillRect(0, MAP_H - 220, W, 260);
+    // Gradient do fundo pra baixo
+    const bot = ctx.createLinearGradient(0, MAP_H, 0, H);
+    bot.addColorStop(0, '#0b1220');
+    bot.addColorStop(1, '#050810');
+    ctx.fillStyle = bot;
+    ctx.fillRect(0, MAP_H, W, H - MAP_H);
+  } catch {
+    // já temos o fundo escuro
+  }
+}
+
+async function drawRunCard(ctx: Ctx, d: RunCardData, c: ShareCustomization) {
+  const theme = SHARE_THEMES[c.theme];
+  const mapBottom = c.photoDataUrl ? 0 : 1180; // se usuário botou foto, usa layout de foto
+
+  // Data top-right
+  ctx.font = '600 32px -apple-system, system-ui, sans-serif';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+  ctx.textAlign = 'right';
+  ctx.fillText(formatRunDate(d.date), W - 60, 94);
+  ctx.textAlign = 'left';
+
+  // Bloco de stats
+  const statsTop = c.photoDataUrl ? 1100 : mapBottom + 80;
+
+  // KM gigante com unidade inline
+  const km = (d.distanceM / 1000).toFixed(2);
+  ctx.textAlign = 'center';
+  ctx.font = '900 240px -apple-system, system-ui, sans-serif';
+  ctx.fillStyle = TEXT;
+  const kmWidth = ctx.measureText(km).width;
+  ctx.fillText(km, W / 2, statsTop + 200);
+
+  // "km" como sufixo pequeno à direita
+  ctx.font = '700 56px -apple-system, system-ui, sans-serif';
+  ctx.fillStyle = theme.primary;
+  ctx.textAlign = 'left';
+  ctx.fillText('km', W / 2 + kmWidth / 2 + 16, statsTop + 200);
+
+  // Linha de stats: PACE | TEMPO | KCAL
+  const rowY = statsTop + 340;
+  const cellW = W / 3;
+  drawRunStat(ctx, cellW / 2, rowY, 'PACE', d.paceSecPerKm > 0 ? fmtPace(d.paceSecPerKm) : '—', '/km', theme.primary);
+  drawRunStat(ctx, cellW * 1.5, rowY, 'TEMPO', fmtRunDuration(d.durationSec), '', theme.primary);
+  if (d.calories !== undefined) {
+    drawRunStat(ctx, cellW * 2.5, rowY, 'KCAL', String(d.calories), '', theme.primary);
+  } else {
+    drawRunStat(ctx, cellW * 2.5, rowY, 'PONTOS', String(d.track.length), '', theme.primary);
+  }
+
+  // Avatar + nome no rodapé
+  await drawUserFooter(ctx, d.userName, d.avatar);
+
+  ctx.textAlign = 'left';
+}
+
+function drawRunStat(ctx: Ctx, x: number, y: number, label: string, value: string, unit: string, accent: string) {
+  ctx.textAlign = 'center';
+  ctx.font = '700 30px -apple-system, system-ui, sans-serif';
+  ctx.fillStyle = TEXT_MUTE;
+  ctx.fillText(label, x, y);
+
+  ctx.font = '800 82px -apple-system, system-ui, sans-serif';
+  ctx.fillStyle = TEXT;
+  if (unit) {
+    const vw = ctx.measureText(value).width;
+    ctx.fillText(value, x, y + 82);
+    ctx.font = '600 30px -apple-system, system-ui, sans-serif';
+    ctx.fillStyle = accent;
+    ctx.textAlign = 'left';
+    ctx.fillText(unit, x + vw / 2 + 10, y + 76);
+  } else {
+    ctx.fillText(value, x, y + 82);
+  }
+}
+
+async function drawUserFooter(ctx: Ctx, name: string, avatar?: string) {
+  const cy = H - 130;
+  const size = 96;
+
+  // Desenha avatar (emoji ou URL) à esquerda do nome — layout centralizado
+  const nameText = name.toUpperCase();
+  ctx.font = '800 44px -apple-system, system-ui, sans-serif';
+  const nameWidth = ctx.measureText(nameText).width;
+
+  const totalWidth = size + 24 + nameWidth;
+  const startX = (W - totalWidth) / 2;
+  const avatarCx = startX + size / 2;
+  const nameX = startX + size + 24;
+
+  // Círculo do avatar
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(avatarCx, cy, size / 2, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.clip();
+
+  if (avatar) {
+    if (avatar.startsWith('http')) {
+      try {
+        const img = await loadImage(avatar);
+        ctx.drawImage(img, avatarCx - size / 2, cy - size / 2, size, size);
+      } catch {
+        drawEmojiAvatar(ctx, avatar, avatarCx, cy, size);
+      }
+    } else {
+      drawEmojiAvatar(ctx, avatar, avatarCx, cy, size);
+    }
+  } else {
+    drawEmojiAvatar(ctx, '🔥', avatarCx, cy, size);
+  }
+  ctx.restore();
+
+  // Nome ao lado
+  ctx.font = '800 44px -apple-system, system-ui, sans-serif';
+  ctx.fillStyle = TEXT;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(nameText, nameX, cy - 10);
+
+  // "CORRIDA" embaixo do nome
+  ctx.font = '700 26px -apple-system, system-ui, sans-serif';
+  ctx.fillStyle = TEXT_MUTE;
+  ctx.fillText('CORRIDA', nameX, cy + 28);
+
+  ctx.textBaseline = 'alphabetic';
+}
+
+function drawEmojiAvatar(ctx: Ctx, emoji: string, cx: number, cy: number, size: number) {
+  ctx.font = `${Math.floor(size * 0.7)}px -apple-system, system-ui, sans-serif`;
+  ctx.fillStyle = TEXT;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(emoji, cx, cy + 4);
+  ctx.textBaseline = 'alphabetic';
+}
+
+function formatRunDate(iso: string): string {
+  const d = new Date(iso + 'T12:00:00');
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' });
+}
+
+function fmtRunDuration(sec: number): string {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${m}:${String(s).padStart(2, '0')}`;
 }
 
 // ─── Cards por template ─────────────────────────────────
