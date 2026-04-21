@@ -88,7 +88,16 @@ export interface RunCardData {
   mapStyle?: 'outdoors' | 'satellite' | 'dark';
 }
 
-export type ShareCardData = SessionCardData | PRCardData | StreakCardData | WeekCardData | RunCardData;
+export interface RankCardData {
+  template: 'rank';
+  position: number;
+  metricLabel: string;
+  metricValue: string;
+  userName: string;
+  avatar?: string;
+}
+
+export type ShareCardData = SessionCardData | PRCardData | StreakCardData | WeekCardData | RunCardData | RankCardData;
 
 export interface CaptionStyle {
   x: number; // 0-1 relative center
@@ -156,6 +165,9 @@ export async function renderShareCard(
       break;
     case 'run':
       await drawRunCard(ctx, data, custom);
+      break;
+    case 'rank':
+      await drawRankCard(ctx, data, custom);
       break;
   }
 
@@ -441,6 +453,53 @@ function drawEmojiAvatar(ctx: Ctx, emoji: string, cx: number, cy: number, size: 
   ctx.textBaseline = 'middle';
   ctx.fillText(emoji, cx, cy + 4);
   ctx.textBaseline = 'alphabetic';
+}
+
+async function drawRankCard(ctx: Ctx, d: RankCardData, c: ShareCustomization) {
+  const theme = SHARE_THEMES[c.theme];
+  const medal = ['🥇', '🥈', '🥉'][d.position - 1] ?? '';
+
+  // Fundo gradiente radial (só se não tem foto)
+  if (!c.photoDataUrl) {
+    const rad = ctx.createRadialGradient(W / 2, 720, 100, W / 2, 720, 1000);
+    rad.addColorStop(0, `${theme.primary}40`);
+    rad.addColorStop(1, '#0a0e14');
+    ctx.fillStyle = rad;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Medalha gigante em cima
+  ctx.textAlign = 'center';
+  ctx.font = '400 400px -apple-system, system-ui, sans-serif';
+  ctx.fillText(medal || `#${d.position}`, W / 2, 720);
+
+  // "TOP" + posição
+  ctx.font = '800 56px -apple-system, system-ui, sans-serif';
+  ctx.fillStyle = theme.primary;
+  ctx.fillText('TOP', W / 2 - 110, 920);
+
+  ctx.font = '900 180px -apple-system, system-ui, sans-serif';
+  ctx.fillStyle = TEXT;
+  ctx.fillText(`#${d.position}`, W / 2 + 90, 960);
+
+  // Métrica
+  ctx.font = '700 34px -apple-system, system-ui, sans-serif';
+  ctx.fillStyle = TEXT_MUTE;
+  ctx.fillText(d.metricLabel.toUpperCase(), W / 2, 1090);
+
+  ctx.font = '800 88px -apple-system, system-ui, sans-serif';
+  ctx.fillStyle = TEXT;
+  ctx.fillText(d.metricValue, W / 2, 1190);
+
+  // "na comunidade FIBRA"
+  ctx.font = '300 32px -apple-system, system-ui, sans-serif';
+  ctx.fillStyle = TEXT_MUTE;
+  ctx.fillText('na comunidade FIBRA', W / 2, 1260);
+
+  // Footer unificado
+  await drawUserFooter(ctx, d.userName, d.avatar, new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }));
+
+  ctx.textAlign = 'left';
 }
 
 function formatRunDateFull(iso: string): string {

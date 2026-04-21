@@ -176,17 +176,49 @@
 
   let saveError = $state<string | null>(null);
 
-  // Publicar na comunidade
+  // Compartilhar com a comunidade — 2 modos: público ou direto pra alguém
   let publishing = $state(false);
   let publishDescription = $state('');
   let publishSheetOpen = $state(false);
   let publishedMsg = $state<string | null>(null);
+  let publishMode = $state<'public' | 'targeted'>('public');
+  let recipientUid = $state<string>('');
+  let recipientName = $state<string>('');
+  let recipientSearch = $state<string>('');
+  let recipients = $state<{ uid: string; name: string; avatar?: string }[]>([]);
+
+  async function loadRecipients() {
+    if (recipients.length > 0) return;
+    try {
+      const { listRanking } = await import('$lib/db/rankings');
+      const all = await listRanking({ orderBy: 'totalSessions', max: 200 });
+      recipients = all
+        .filter((r) => r.uid !== authStore.uid)
+        .map((r) => ({ uid: r.uid, name: r.displayName, avatar: r.avatar }));
+    } catch (e) {
+      console.warn('Falha ao carregar destinatários:', e);
+    }
+  }
+
+  const filteredRecipients = $derived.by(() => {
+    const q = recipientSearch.trim().toLowerCase();
+    if (!q) return recipients.slice(0, 20);
+    return recipients.filter((r) => r.name.toLowerCase().includes(q)).slice(0, 20);
+  });
+
+  async function openPublishSheet() {
+    publishSheetOpen = true;
+    loadRecipients();
+  }
 
   async function publish() {
     if (!authStore.uid || !workout.name.trim() || workout.exercises.length === 0) return;
+    if (publishMode === 'targeted' && !recipientUid) {
+      publishedMsg = 'Escolha um destinatário.';
+      return;
+    }
     publishing = true;
     try {
-      // Lazy imports pra nao atrapalhar o load inicial da edicao
       const [{ publishShared, newSharedId }, { getProfile }] = await Promise.all([
         import('$lib/db/sharedWorkouts'),
         import('$lib/db/profile')
@@ -203,14 +235,21 @@
         exercises: workout.exercises,
         crossfit: workout.crossfit,
         description: publishDescription.trim() || undefined,
+        visibility: publishMode,
+        targetUid: publishMode === 'targeted' ? recipientUid : undefined,
+        targetName: publishMode === 'targeted' ? recipientName : undefined,
         clonedCount: 0,
         likes: 0,
         publishedAt: Date.now(),
         updatedAt: Date.now()
       });
-      publishedMsg = 'Treino publicado! Aparece na aba Comunidade.';
+      publishedMsg = publishMode === 'public'
+        ? 'Treino público! Aparece pra todos em Comunidade.'
+        : `Treino enviado pra ${recipientName}. Vai aparecer em "Recebidos" pra ela.`;
       publishSheetOpen = false;
       publishDescription = '';
+      recipientUid = '';
+      recipientName = '';
       setTimeout(() => (publishedMsg = null), 4000);
     } catch (e) {
       publishedMsg = 'Erro: ' + (e as Error).message;
@@ -479,16 +518,16 @@
     <Card>
       <div class="publish-row">
         <div>
-          <div class="pub-t">Compartilhar com a comunidade</div>
-          <div class="pub-s">Outros usuários podem clonar esse treino pra eles.</div>
+          <div class="pub-t">Compartilhar</div>
+          <div class="pub-s">Publique pra todos ou envie direto pra alguém específico.</div>
         </div>
         <Button
           size="sm"
           variant="secondary"
           icon="ios_share"
-          onclick={() => (publishSheetOpen = true)}
+          onclick={openPublishSheet}
         >
-          Publicar
+          Compartilhar
         </Button>
       </div>
     </Card>
@@ -507,17 +546,95 @@
     <div class="pub-backdrop" role="presentation" onclick={() => (publishSheetOpen = false)}>
       <div class="pub-sheet" role="dialog" aria-modal="true" onclick={(e) => e.stopPropagation()}>
         <div class="pub-handle"></div>
-        <h3>Publicar "{workout.name}"</h3>
-        <p class="pub-desc">Adicione uma descrição opcional (pra quem serve, dicas, etc).</p>
+        <h3>Compartilhar "{workout.name}"</h3>
+
+        <!-- Modo: público vs direto -->
+        <div class="mode-row">
+          <button
+            class="mode-btn"
+            class:on={publishMode === 'public'}
+            onclick={() => (publishMode = 'public')}
+          >
+            <span class="mi">public</span>
+            <div class="mb-body">
+              <div class="mb-t">Público</div>
+              <div class="mb-s">Qualquer pessoa vê e pode pegar o treino</div>
+            </div>
+          </button>
+          <button
+            class="mode-btn"
+            class:on={publishMode === 'targeted'}
+            onclick={() => (publishMode = 'targeted')}
+          >
+            <span class="mi">send</span>
+            <div class="mb-body">
+              <div class="mb-t">Enviar pra alguém</div>
+              <div class="mb-s">Só essa pessoa vai receber</div>
+            </div>
+          </button>
+        </div>
+
+        {#if publishMode === 'targeted'}
+          <div class="recipient-wrap">
+            {#if recipientUid}
+              <div class="recipient-pill">
+                Pra: <strong>{recipientName}</strong>
+                <button onclick={() => { recipientUid = ''; recipientName = ''; }}>
+                  <span class="mi">close</span>
+                </button>
+              </div>
+            {:else}
+              <input
+                type="text"
+                placeholder="Buscar pessoa na comunidade…"
+                bind:value={recipientSearch}
+                class="rec-search"
+              />
+              {#if recipients.length === 0}
+                <div class="rec-hint">Só usuários que entraram na Comunidade aparecem aqui.</div>
+              {:else}
+                <div class="rec-list">
+                  {#each filteredRecipients as r (r.uid)}
+                    <button
+                      class="rec-item"
+                      onclick={() => { recipientUid = r.uid; recipientName = r.name; recipientSearch = ''; }}
+                    >
+                      <div class="rec-ava">
+                        {#if r.avatar?.startsWith('http')}
+                          <img src={r.avatar} alt={r.name} />
+                        {:else}
+                          <span>{r.avatar || '🔥'}</span>
+                        {/if}
+                      </div>
+                      <span class="rec-name">{r.name}</span>
+                    </button>
+                  {/each}
+                </div>
+              {/if}
+            {/if}
+          </div>
+        {/if}
+
+        <p class="pub-desc">Descrição (opcional — pra quem serve, dicas).</p>
         <textarea
           bind:value={publishDescription}
-          placeholder="Ex: Treino superior pesado pra quem já tem base. 45min."
-          rows="4"
+          placeholder={publishMode === 'targeted'
+            ? `Ex: Fiz esse ontem, é bom pra ${recipientName || 'você'}, tenta.`
+            : 'Ex: Treino superior pesado pra quem já tem base. 45min.'}
+          rows="3"
           maxlength="400"
         ></textarea>
+
         <div class="pub-actions">
           <Button variant="ghost" onclick={() => (publishSheetOpen = false)}>Cancelar</Button>
-          <Button icon="public" full loading={publishing} onclick={publish}>Publicar</Button>
+          <Button
+            icon={publishMode === 'public' ? 'public' : 'send'}
+            full
+            loading={publishing}
+            onclick={publish}
+          >
+            {publishMode === 'public' ? 'Publicar' : 'Enviar'}
+          </Button>
         </div>
       </div>
     </div>
@@ -929,6 +1046,86 @@
     display: flex; gap: var(--s-2);
     margin-top: var(--s-3);
   }
+
+  .mode-row {
+    display: flex;
+    gap: var(--s-2);
+    margin-bottom: var(--s-3);
+  }
+  .mode-btn {
+    flex: 1;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: var(--s-3);
+    background: var(--bg-3);
+    border: 2px solid transparent;
+    border-radius: var(--r-md);
+    text-align: left;
+    transition: border-color var(--dur-fast);
+  }
+  .mode-btn.on {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 8%, var(--bg-3));
+  }
+  .mode-btn .mi { color: var(--accent); font-size: 22px; flex-shrink: 0; }
+  .mb-t { font-weight: 700; font-size: var(--fs-sm); }
+  .mb-s { font-size: 11px; color: var(--text-mute); margin-top: 2px; line-height: 1.4; }
+
+  .recipient-wrap { margin-bottom: var(--s-3); }
+  .recipient-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--accent-glow);
+    color: var(--accent);
+    border-radius: var(--r-full);
+    font-size: var(--fs-sm);
+  }
+  .recipient-pill button {
+    width: 20px; height: 20px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    color: var(--accent);
+  }
+  .rec-search {
+    width: 100%;
+    padding: var(--s-2) var(--s-3);
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    color: var(--text);
+    font-size: var(--fs-sm);
+  }
+  .rec-hint { font-size: var(--fs-xs); color: var(--text-mute); margin-top: 8px; }
+  .rec-list {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .rec-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--bg-3);
+    border-radius: var(--r-sm);
+    text-align: left;
+  }
+  .rec-ava {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--bg-4);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .rec-ava img { width: 100%; height: 100%; object-fit: cover; }
+  .rec-name { font-size: var(--fs-sm); color: var(--text); }
 
   .save-error {
     display: flex;

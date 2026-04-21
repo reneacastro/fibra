@@ -233,19 +233,20 @@
   <WeeklySchedule />
 </Card>
 
-<!-- Extras -->
-<div class="sec-title">Extras</div>
-<Card onclick={() => goto('/comunidade')} padding="md">
-  <div class="integ">
-    <div class="integ-ic"><span class="mi">groups</span></div>
-    <div class="integ-body">
-      <div class="integ-name">Comunidade</div>
-      <div class="integ-sub">Ranking + treinos compartilhados entre usuários</div>
+<!-- Ranking da comunidade (destaque) -->
+<div class="sec-title">Ranking</div>
+<Card onclick={() => goto('/comunidade')} accent="glow" padding="md">
+  <div class="rank-promo">
+    <div class="rp-ic">🏆</div>
+    <div class="rp-body">
+      <div class="rp-t">Ranking da comunidade</div>
+      <div class="rp-s">Veja quem tá treinando mais. Troque treinos com outros atletas.</div>
     </div>
     <span class="mi chev">chevron_right</span>
   </div>
 </Card>
 
+<div class="sec-title">Extras</div>
 <Card onclick={() => goto('/instalar')} padding="md">
   <div class="integ">
     <div class="integ-ic"><span class="mi">add_to_home_screen</span></div>
@@ -398,6 +399,31 @@
   .mc-sub { color: var(--text-mute); font-size: var(--fs-xs); }
 
   .integ { display: flex; align-items: center; gap: var(--s-3); }
+
+  .rank-promo {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+  }
+  .rp-ic {
+    font-size: 40px;
+    flex-shrink: 0;
+  }
+  .rp-body { flex: 1; }
+  .rp-t {
+    font-size: var(--fs-lg);
+    font-weight: 800;
+    background: var(--grad-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: -0.01em;
+  }
+  .rp-s {
+    font-size: var(--fs-sm);
+    color: var(--text-mute);
+    margin-top: 2px;
+  }
   .integ-ic {
     width: 40px;
     height: 40px;

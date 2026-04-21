@@ -5,7 +5,7 @@
   import { catalogStore } from '$lib/stores/catalog.svelte';
   import { getProfile, saveProfile } from '$lib/db/profile';
   import { listRanking, type RankingOrder } from '$lib/db/rankings';
-  import { listShared, cloneToWorkout } from '$lib/db/sharedWorkouts';
+  import { listPublicShared, listReceived, cloneToWorkout } from '$lib/db/sharedWorkouts';
   import { listWorkouts, saveWorkout, newWorkoutId } from '$lib/db/workouts';
   import type { RankingEntry, SharedWorkout, WorkoutCategory, UserProfile } from '$lib/types';
   import { CATEGORY_LABEL, CATEGORY_ICON } from '$lib/utils/format';
@@ -14,13 +14,16 @@
   import Button from '$lib/components/Button.svelte';
   import Badge from '$lib/components/Badge.svelte';
   import Tabs from '$lib/components/Tabs.svelte';
+  import ShareSheet from '$lib/components/ShareSheet.svelte';
+  import type { ShareCardData } from '$lib/utils/shareCard';
 
-  type TabId = 'ranking' | 'treinos';
+  type TabId = 'ranking' | 'publicos' | 'recebidos';
   let active = $state<TabId>('ranking');
 
   let profile = $state<UserProfile | null>(null);
   let ranking = $state<RankingEntry[]>([]);
-  let shared = $state<SharedWorkout[]>([]);
+  let publicShared = $state<SharedWorkout[]>([]);
+  let received = $state<SharedWorkout[]>([]);
   let loading = $state(true);
   let loadError = $state<string | null>(null);
 
@@ -30,7 +33,6 @@
     { id: 'weekSessions',   label: 'Semana',            unit: 'na semana' },
     { id: 'currentStreak',  label: 'Sequência',         unit: 'dias' },
     { id: 'totalPRs',       label: 'Recordes',          unit: 'PRs' },
-    { id: 'totalVolumeKg',  label: 'Volume (kg)',       unit: 'kg' },
     { id: 'totalDistanceM', label: 'Distância',         unit: 'metros' }
   ];
   let orderBy = $state<RankingOrder>('totalSessions');
@@ -46,18 +48,20 @@
     loading = true;
     loadError = null;
     try {
-      const [p, r, sh] = await withTimeout(
+      const [p, r, pub, rec] = await withTimeout(
         Promise.all([
           authStore.uid ? getProfile(authStore.uid) : Promise.resolve(null),
           listRanking({ orderBy, category: filterCategory || undefined, max: 50 }),
-          listShared({ max: 50 })
+          listPublicShared({ max: 50 }),
+          authStore.uid ? listReceived(authStore.uid, 50) : Promise.resolve([])
         ]),
         12_000,
         'comunidade'
       );
       profile = p;
       ranking = r;
-      shared = sh;
+      publicShared = pub;
+      received = rec;
       await catalogStore.ensure();
     } catch (e) {
       loadError = (e as Error).message;
@@ -118,8 +122,8 @@
       case 'weekSessions':   return String(e.weekSessions);
       case 'currentStreak':  return String(e.currentStreak);
       case 'totalPRs':       return String(e.totalPRs);
-      case 'totalVolumeKg':  return `${e.totalVolumeKg.toLocaleString('pt-BR')} kg`;
       case 'totalDistanceM': return `${(e.totalDistanceM / 1000).toFixed(1)} km`;
+      default:               return '—';
     }
   }
 
@@ -127,12 +131,26 @@
     return ['🥇', '🥈', '🥉'][i] ?? '';
   }
 
+  // Share status no top 3
+  let shareData = $state<ShareCardData | null>(null);
+  function shareRank(r: RankingEntry, position: number) {
+    shareData = {
+      template: 'rank',
+      position,
+      metricLabel: ORDERS.find((o) => o.id === orderBy)?.label ?? 'Ranking',
+      metricValue: fmtMetric(r, orderBy),
+      userName: r.displayName,
+      avatar: r.avatar
+    };
+  }
+
   const iOptedIn = $derived(profile?.settings?.publicProfile === true);
 
-  const tabs = [
-    { id: 'ranking', label: 'Ranking', icon: '🏆' },
-    { id: 'treinos', label: 'Treinos', icon: '🏋️' }
-  ];
+  const tabs = $derived([
+    { id: 'ranking',   label: 'Ranking' },
+    { id: 'publicos',  label: 'Públicos' },
+    { id: 'recebidos', label: received.length > 0 ? `Recebidos (${received.length})` : 'Recebidos' }
+  ]);
 </script>
 
 <Tabs {tabs} value={active} onChange={(id) => (active = id as TabId)} />
@@ -224,6 +242,15 @@
             </div>
             <div class="rank-metric">
               <div class="m-v mono">{fmtMetric(r, orderBy)}</div>
+              {#if i < 3 && r.uid === authStore.uid}
+                <button
+                  class="rank-share"
+                  onclick={(e) => { e.stopPropagation(); shareRank(r, i + 1); }}
+                  aria-label="Compartilhar posição"
+                >
+                  <span class="mi">ios_share</span>
+                </button>
+              {/if}
             </div>
           </div>
         </Card>
@@ -232,21 +259,29 @@
   {/if}
 
 {:else}
-  <!-- Treinos compartilhados -->
-  {#if shared.length === 0}
+  <!-- Treinos compartilhados: públicos ou recebidos direto -->
+  {@const list = active === 'publicos' ? publicShared : received}
+  {@const isReceived = active === 'recebidos'}
+  {#if list.length === 0}
     <div class="empty">
-      <span class="mi">fitness_center</span>
+      <span class="mi">{isReceived ? 'inbox' : 'fitness_center'}</span>
       <div>
-        <div class="empty-t">Nenhum treino publicado ainda</div>
-        <div class="empty-s">
-          Vá em <strong>Treinos</strong>, abra um dos seus e toque em <strong>Publicar</strong>.
-          Ele aparece aqui pra comunidade clonar.
-        </div>
+        {#if isReceived}
+          <div class="empty-t">Nenhum treino recebido</div>
+          <div class="empty-s">
+            Quando alguém enviar um treino direto pra você, ele aparece aqui.
+          </div>
+        {:else}
+          <div class="empty-t">Nenhum treino público ainda</div>
+          <div class="empty-s">
+            Em <strong>Treinos</strong>, abra um dos seus e toque em <strong>Compartilhar → Público</strong>.
+          </div>
+        {/if}
       </div>
     </div>
   {:else}
     <div class="shared-list">
-      {#each shared as s (s.id)}
+      {#each list as s (s.id)}
         <Card>
           <div class="sh-head">
             <div class="sh-avatar">
@@ -257,7 +292,9 @@
               {/if}
             </div>
             <div class="sh-by">
-              <div class="sh-by-n">{s.ownerName}</div>
+              <div class="sh-by-n">
+                {#if isReceived}✉ {s.ownerName} enviou pra você{:else}{s.ownerName}{/if}
+              </div>
               <div class="sh-by-d">{new Date(s.publishedAt).toLocaleDateString('pt-BR')}</div>
             </div>
           </div>
@@ -272,18 +309,22 @@
           {/if}
           <div class="spacer-sm"></div>
           <Button
-            icon="content_copy"
+            icon="add_circle"
             full
             variant="secondary"
             loading={cloningId === s.id}
             onclick={() => clone(s)}
           >
-            Clonar pros meus treinos
+            Adicionar aos meus treinos
           </Button>
         </Card>
       {/each}
     </div>
   {/if}
+{/if}
+
+{#if shareData}
+  <ShareSheet data={shareData} onClose={() => (shareData = null)} />
 {/if}
 
 <style>
@@ -400,8 +441,17 @@
     margin-top: 2px;
   }
 
-  .rank-metric { text-align: right; flex-shrink: 0; }
+  .rank-metric { text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
   .m-v { font-weight: 800; color: var(--accent); font-size: var(--fs-md); }
+  .rank-share {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--accent-glow);
+    color: var(--accent);
+    display: grid;
+    place-items: center;
+  }
+  .rank-share .mi { font-size: 16px; }
 
   /* Shared workouts */
   .sh-head {

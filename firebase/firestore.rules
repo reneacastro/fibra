@@ -120,11 +120,18 @@ service cloud.firestore {
 
     // ─── Treinos compartilhados pela comunidade ──────────
     match /sharedWorkouts/{docId} {
-      allow read: if true;
-      // Só o dono pode criar/editar — ownerUid precisa bater com o auth.uid
+      // Leitura: público abre pra todos; targeted só pro destinatário + dono
+      allow read: if resource.data.visibility == 'public'
+        || (isSignedIn() && resource.data.ownerUid == request.auth.uid)
+        || (isSignedIn() && resource.data.targetUid == request.auth.uid);
+      // Listagem queryada: Firestore valida rule por doc — clients precisam
+      // filtrar por visibility=='public' ou ownerUid/targetUid do próprio user.
       allow create: if isSignedIn()
         && request.resource.data.ownerUid == request.auth.uid
-        && notTooLarge();
+        && notTooLarge()
+        && (request.resource.data.visibility == 'public'
+            || (request.resource.data.visibility == 'targeted'
+                && request.resource.data.targetUid is string));
       allow update: if isSignedIn()
         && resource.data.ownerUid == request.auth.uid
         && notTooLarge();

@@ -396,9 +396,9 @@ export interface RankingEntry {
   updatedAt: number;
 }
 
-/** Treino publicado pra comunidade clonar. */
+/** Treino compartilhado — pode ser público pra qualquer um ou direcionado a um usuário. */
 export interface SharedWorkout {
-  id: string;           // novo id pro shared (não o workoutId original)
+  id: string;
   sourceWorkoutId: string;
   ownerUid: string;
   ownerName: string;
@@ -407,8 +407,14 @@ export interface SharedWorkout {
   category: WorkoutCategory;
   exercises: WorkoutExercise[];
   crossfit?: CrossfitConfig;
-  description?: string; // nota do autor explicando o treino
-  clonedCount: number;  // quantos usuários já clonaram
+  description?: string;
+  // Visibilidade:
+  // - public: aparece pra todos na /comunidade
+  // - targeted: só aparece pro usuário com uid = targetUid (envio direto)
+  visibility: 'public' | 'targeted';
+  targetUid?: string;   // obrigatório se visibility=targeted
+  targetName?: string;  // pra exibir no remetente sem nova query
+  clonedCount: number;
   likes: number;
   publishedAt: number;
   updatedAt: number;

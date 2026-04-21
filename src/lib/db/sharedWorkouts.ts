@@ -11,15 +11,28 @@ export function newSharedId() {
   return 'sh_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 }
 
-export async function listShared(params: {
+/** Lista só treinos públicos (aba "Comunidade" geral). */
+export async function listPublicShared(params: {
   category?: WorkoutCategory;
   max?: number;
-  orderByField?: 'publishedAt' | 'clonedCount' | 'likes';
 }): Promise<SharedWorkout[]> {
-  const { category, max = 50, orderByField = 'publishedAt' } = params;
+  const { category, max = 50 } = params;
   const q = category
-    ? query(col(), where('category', '==', category), orderBy(orderByField, 'desc'), fsLimit(max))
-    : query(col(), orderBy(orderByField, 'desc'), fsLimit(max));
+    ? query(col(), where('visibility', '==', 'public'), where('category', '==', category), orderBy('publishedAt', 'desc'), fsLimit(max))
+    : query(col(), where('visibility', '==', 'public'), orderBy('publishedAt', 'desc'), fsLimit(max));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => d.data() as SharedWorkout);
+}
+
+/** Lista treinos que outros usuários enviaram diretamente pra mim. */
+export async function listReceived(myUid: string, max = 50): Promise<SharedWorkout[]> {
+  const q = query(
+    col(),
+    where('visibility', '==', 'targeted'),
+    where('targetUid', '==', myUid),
+    orderBy('publishedAt', 'desc'),
+    fsLimit(max)
+  );
   const snap = await getDocs(q);
   return snap.docs.map((d) => d.data() as SharedWorkout);
 }
