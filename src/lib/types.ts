@@ -367,3 +367,49 @@ export interface PublicProfile {
     currentWeight: boolean;
   };
 }
+
+// ─── Comunidade ─────────────────────────────────────────
+
+/** Entry do ranking público. Um doc por usuário, agregado a cada sessão salva. */
+export interface RankingEntry {
+  uid: string;
+  displayName: string;
+  avatar?: string; // emoji ou URL
+  // Métricas globais (desde o início)
+  totalSessions: number;
+  totalVolumeKg: number;
+  totalPRs: number;
+  totalDistanceM: number; // soma de corridas
+  totalDurationSec: number;
+  // Métricas da última semana (7 dias rolantes)
+  weekSessions: number;
+  weekVolumeKg: number;
+  weekDistanceM: number;
+  // Métricas do último mês (30 dias)
+  monthSessions: number;
+  // Por categoria (totalSessions por tipo de treino)
+  byCategory: Partial<Record<WorkoutCategory, number>>;
+  // Streak atual
+  currentStreak: number;
+  // Meta
+  lastActivityAt: number;
+  updatedAt: number;
+}
+
+/** Treino publicado pra comunidade clonar. */
+export interface SharedWorkout {
+  id: string;           // novo id pro shared (não o workoutId original)
+  sourceWorkoutId: string;
+  ownerUid: string;
+  ownerName: string;
+  ownerAvatar?: string;
+  name: string;
+  category: WorkoutCategory;
+  exercises: WorkoutExercise[];
+  crossfit?: CrossfitConfig;
+  description?: string; // nota do autor explicando o treino
+  clonedCount: number;  // quantos usuários já clonaram
+  likes: number;
+  publishedAt: number;
+  updatedAt: number;
+}

@@ -111,6 +111,26 @@ service cloud.firestore {
       allow delete: if isOwner(uid);
     }
 
+    // ─── Ranking público (opt-in via settings.publicProfile) ──
+    match /rankings/{uid} {
+      allow read: if true;
+      allow create, update: if isOwner(uid) && notTooLarge();
+      allow delete: if isOwner(uid);
+    }
+
+    // ─── Treinos compartilhados pela comunidade ──────────
+    match /sharedWorkouts/{docId} {
+      allow read: if true;
+      // Só o dono pode criar/editar — ownerUid precisa bater com o auth.uid
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && notTooLarge();
+      allow update: if isSignedIn()
+        && resource.data.ownerUid == request.auth.uid
+        && notTooLarge();
+      allow delete: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+    }
+
     // Negação catch-all
     match /{document=**} {
       allow read, write: if false;

@@ -176,6 +176,49 @@
 
   let saveError = $state<string | null>(null);
 
+  // Publicar na comunidade
+  let publishing = $state(false);
+  let publishDescription = $state('');
+  let publishSheetOpen = $state(false);
+  let publishedMsg = $state<string | null>(null);
+
+  async function publish() {
+    if (!authStore.uid || !workout.name.trim() || workout.exercises.length === 0) return;
+    publishing = true;
+    try {
+      // Lazy imports pra nao atrapalhar o load inicial da edicao
+      const [{ publishShared, newSharedId }, { getProfile }] = await Promise.all([
+        import('$lib/db/sharedWorkouts'),
+        import('$lib/db/profile')
+      ]);
+      const profile = await getProfile(authStore.uid);
+      await publishShared({
+        id: newSharedId(),
+        sourceWorkoutId: workout.id,
+        ownerUid: authStore.uid,
+        ownerName: profile?.name || authStore.user?.displayName || 'Atleta',
+        ownerAvatar: authStore.user?.photoURL || profile?.avatar,
+        name: workout.name,
+        category: workout.category,
+        exercises: workout.exercises,
+        crossfit: workout.crossfit,
+        description: publishDescription.trim() || undefined,
+        clonedCount: 0,
+        likes: 0,
+        publishedAt: Date.now(),
+        updatedAt: Date.now()
+      });
+      publishedMsg = 'Treino publicado! Aparece na aba Comunidade.';
+      publishSheetOpen = false;
+      publishDescription = '';
+      setTimeout(() => (publishedMsg = null), 4000);
+    } catch (e) {
+      publishedMsg = 'Erro: ' + (e as Error).message;
+    } finally {
+      publishing = false;
+    }
+  }
+
   async function save() {
     if (!authStore.uid) return;
     if (!workout.name.trim()) {
@@ -425,6 +468,32 @@
     </div>
   {/if}
 
+  {#if publishedMsg}
+    <div class="save-error" style="background: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success); border-color: var(--success);">
+      <span class="mi">check_circle</span>
+      <span>{publishedMsg}</span>
+    </div>
+  {/if}
+
+  {#if !isNew && canSave}
+    <Card>
+      <div class="publish-row">
+        <div>
+          <div class="pub-t">Compartilhar com a comunidade</div>
+          <div class="pub-s">Outros usuários podem clonar esse treino pra eles.</div>
+        </div>
+        <Button
+          size="sm"
+          variant="secondary"
+          icon="ios_share"
+          onclick={() => (publishSheetOpen = true)}
+        >
+          Publicar
+        </Button>
+      </div>
+    </Card>
+  {/if}
+
   <div class="footer">
     {#if !isNew}
       <Button variant="ghost" icon="delete" onclick={remove}>Apagar</Button>
@@ -433,6 +502,26 @@
       {isNew ? 'Criar treino' : 'Salvar alterações'}
     </Button>
   </div>
+
+  {#if publishSheetOpen}
+    <div class="pub-backdrop" role="presentation" onclick={() => (publishSheetOpen = false)}>
+      <div class="pub-sheet" role="dialog" aria-modal="true" onclick={(e) => e.stopPropagation()}>
+        <div class="pub-handle"></div>
+        <h3>Publicar "{workout.name}"</h3>
+        <p class="pub-desc">Adicione uma descrição opcional (pra quem serve, dicas, etc).</p>
+        <textarea
+          bind:value={publishDescription}
+          placeholder="Ex: Treino superior pesado pra quem já tem base. 45min."
+          rows="4"
+          maxlength="400"
+        ></textarea>
+        <div class="pub-actions">
+          <Button variant="ghost" onclick={() => (publishSheetOpen = false)}>Cancelar</Button>
+          <Button icon="public" full loading={publishing} onclick={publish}>Publicar</Button>
+        </div>
+      </div>
+    </div>
+  {/if}
 {/if}
 
 <!-- Detail sheet -->
@@ -788,6 +877,58 @@
     font-size: var(--fs-xs);
   }
   .rest-input .suf { font-size: var(--fs-xs); color: var(--text-mute); }
+
+  .publish-row {
+    display: flex;
+    gap: var(--s-2);
+    align-items: center;
+    justify-content: space-between;
+  }
+  .pub-t { font-weight: 700; font-size: var(--fs-sm); }
+  .pub-s { font-size: var(--fs-xs); color: var(--text-mute); margin-top: 2px; }
+
+  .pub-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(10px);
+    z-index: 320;
+    display: flex; justify-content: center; align-items: flex-end;
+    animation: fade 200ms;
+  }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  .pub-sheet {
+    width: 100%; max-width: 520px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-top-left-radius: var(--r-2xl);
+    border-top-right-radius: var(--r-2xl);
+    padding: var(--s-4) var(--s-4) calc(var(--s-6) + var(--safe-bottom));
+  }
+  .pub-handle {
+    width: 40px; height: 4px;
+    background: var(--bg-4);
+    border-radius: var(--r-full);
+    margin: 0 auto var(--s-3);
+  }
+  .pub-sheet h3 { font-size: var(--fs-lg); font-weight: 800; margin-bottom: 4px; }
+  .pub-desc { color: var(--text-mute); font-size: var(--fs-sm); margin-bottom: var(--s-3); }
+  .pub-sheet textarea {
+    width: 100%;
+    padding: var(--s-3);
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    color: var(--text);
+    font-family: inherit;
+    font-size: var(--fs-md);
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 120px;
+  }
+  .pub-actions {
+    display: flex; gap: var(--s-2);
+    margin-top: var(--s-3);
+  }
 
   .save-error {
     display: flex;

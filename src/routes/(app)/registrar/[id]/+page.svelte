@@ -6,6 +6,7 @@
   import { catalogStore } from '$lib/stores/catalog.svelte';
   import { getWorkout } from '$lib/db/workouts';
   import { saveSession, newSessionId } from '$lib/db/sessions';
+  import { syncRanking } from '$lib/db/rankings';
   import type {
     Workout, Session, PerformedExercise, PerformedSet,
     WorkoutCategory as WCat, WorkoutExercise
@@ -297,6 +298,20 @@
         createdAt: Date.now()
       };
       const { prsEarned } = await saveSession(authStore.uid, session);
+
+      // Sincroniza ranking publico se o usuario optou. Nao bloqueia o fluxo
+      // — se falhar, so nao aparece no ranking nessa rodada.
+      try {
+        const profile = await getProfile(authStore.uid);
+        if (profile?.settings?.publicProfile) {
+          await syncRanking(authStore.uid, profile, {
+            displayName: profile.name || authStore.user?.displayName || 'Atleta',
+            avatar: authStore.user?.photoURL || profile.avatar
+          });
+        }
+      } catch (e) {
+        console.warn('Ranking nao sincronizou:', e);
+      }
 
       // Salvar como template se solicitado (só em treino livre ou "novo")
       if (saveAsTemplate && templateName.trim() && workout.id === 'livre' && performed.length > 0) {

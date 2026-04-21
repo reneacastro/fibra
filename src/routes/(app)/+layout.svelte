@@ -13,6 +13,7 @@
     '/corpo':       { t: 'Composição', s: 'Bioimpedância e medidas', back: true },
     '/dieta':       { t: 'Dieta', s: 'Macros e rotina alimentar' },
     '/instalar':    { t: 'Instalar app', s: 'Salvar na tela inicial', back: true },
+    '/comunidade':  { t: 'Comunidade', s: 'Ranking e treinos compartilhados' },
     '/perfil':      { t: 'Perfil', s: 'Seus dados e ajustes', back: true }
   };
 

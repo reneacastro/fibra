@@ -1,0 +1,436 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { authStore } from '$lib/stores/auth.svelte';
+  import { catalogStore } from '$lib/stores/catalog.svelte';
+  import { getProfile, saveProfile } from '$lib/db/profile';
+  import { listRanking, type RankingOrder } from '$lib/db/rankings';
+  import { listShared, cloneToWorkout } from '$lib/db/sharedWorkouts';
+  import { listWorkouts, saveWorkout, newWorkoutId } from '$lib/db/workouts';
+  import type { RankingEntry, SharedWorkout, WorkoutCategory, UserProfile } from '$lib/types';
+  import { CATEGORY_LABEL, CATEGORY_ICON } from '$lib/utils/format';
+  import { withTimeout } from '$lib/utils/withTimeout';
+  import Card from '$lib/components/Card.svelte';
+  import Button from '$lib/components/Button.svelte';
+  import Badge from '$lib/components/Badge.svelte';
+  import Tabs from '$lib/components/Tabs.svelte';
+
+  type TabId = 'ranking' | 'treinos';
+  let active = $state<TabId>('ranking');
+
+  let profile = $state<UserProfile | null>(null);
+  let ranking = $state<RankingEntry[]>([]);
+  let shared = $state<SharedWorkout[]>([]);
+  let loading = $state(true);
+  let loadError = $state<string | null>(null);
+
+  // Filtros do ranking
+  const ORDERS: { id: RankingOrder; label: string; unit?: string }[] = [
+    { id: 'totalSessions',  label: 'Mais treinos',      unit: 'treinos' },
+    { id: 'weekSessions',   label: 'Semana',            unit: 'na semana' },
+    { id: 'currentStreak',  label: 'Sequência',         unit: 'dias' },
+    { id: 'totalPRs',       label: 'Recordes',          unit: 'PRs' },
+    { id: 'totalVolumeKg',  label: 'Volume (kg)',       unit: 'kg' },
+    { id: 'totalDistanceM', label: 'Distância',         unit: 'metros' }
+  ];
+  let orderBy = $state<RankingOrder>('totalSessions');
+  let filterCategory = $state<WorkoutCategory | ''>('');
+
+  const categories: WorkoutCategory[] = [
+    'superior', 'inferior', 'fullbody', 'forca', 'pump', 'core',
+    'funcional', 'calistenia', 'crossfit', 'hiit', 'cardio',
+    'mobilidade', 'alongamento', 'livre'
+  ];
+
+  async function load() {
+    loading = true;
+    loadError = null;
+    try {
+      const [p, r, sh] = await withTimeout(
+        Promise.all([
+          authStore.uid ? getProfile(authStore.uid) : Promise.resolve(null),
+          listRanking({ orderBy, category: filterCategory || undefined, max: 50 }),
+          listShared({ max: 50 })
+        ]),
+        12_000,
+        'comunidade'
+      );
+      profile = p;
+      ranking = r;
+      shared = sh;
+      await catalogStore.ensure();
+    } catch (e) {
+      loadError = (e as Error).message;
+    } finally {
+      loading = false;
+    }
+  }
+
+  onMount(() => { load(); });
+
+  $effect(() => {
+    // Recarrega ranking quando o filtro muda
+    orderBy; filterCategory;
+    if (!loading) reloadRanking();
+  });
+
+  async function reloadRanking() {
+    try {
+      ranking = await listRanking({ orderBy, category: filterCategory || undefined, max: 50 });
+    } catch (e) {
+      console.warn('Falha ao carregar ranking:', e);
+    }
+  }
+
+  async function optIn() {
+    if (!profile || !authStore.uid) return;
+    const next = {
+      ...profile,
+      settings: { ...profile.settings, publicProfile: true }
+    };
+    await saveProfile(authStore.uid, next);
+    profile = next;
+    alert('Você entrou na comunidade. O ranking aparece depois do próximo treino que você salvar.');
+  }
+
+  // Clone a shared workout
+  let cloningId = $state<string | null>(null);
+  async function clone(s: SharedWorkout) {
+    if (!authStore.uid) return;
+    cloningId = s.id;
+    try {
+      const existing = await listWorkouts(authStore.uid);
+      const w = cloneToWorkout(s, newWorkoutId(), existing.length);
+      await saveWorkout(authStore.uid, w);
+      if (confirm(`"${w.name}" foi adicionado aos seus treinos. Ir ver?`)) {
+        goto(`/treinos/${w.id}`);
+      }
+    } catch (e) {
+      alert('Falha ao clonar: ' + (e as Error).message);
+    } finally {
+      cloningId = null;
+    }
+  }
+
+  function fmtMetric(e: RankingEntry, ord: RankingOrder): string {
+    switch (ord) {
+      case 'totalSessions':  return String(e.totalSessions);
+      case 'weekSessions':   return String(e.weekSessions);
+      case 'currentStreak':  return String(e.currentStreak);
+      case 'totalPRs':       return String(e.totalPRs);
+      case 'totalVolumeKg':  return `${e.totalVolumeKg.toLocaleString('pt-BR')} kg`;
+      case 'totalDistanceM': return `${(e.totalDistanceM / 1000).toFixed(1)} km`;
+    }
+  }
+
+  function rankMedal(i: number): string {
+    return ['🥇', '🥈', '🥉'][i] ?? '';
+  }
+
+  const iOptedIn = $derived(profile?.settings?.publicProfile === true);
+
+  const tabs = [
+    { id: 'ranking', label: 'Ranking', icon: '🏆' },
+    { id: 'treinos', label: 'Treinos', icon: '🏋️' }
+  ];
+</script>
+
+<Tabs {tabs} value={active} onChange={(id) => (active = id as TabId)} />
+
+<div class="spacer"></div>
+
+{#if !iOptedIn && !loading && profile}
+  <Card accent="glow">
+    <div class="opt-in">
+      <div class="opt-ic">🫂</div>
+      <div>
+        <div class="opt-t">Entra na comunidade</div>
+        <div class="opt-s">
+          Seu nome + foto + stats agregadas (treinos, sequência, PRs) aparecem no ranking público.
+          Nenhum dado privado (bioimpedância, dieta, fotos) é exposto.
+        </div>
+        <div class="spacer-sm"></div>
+        <Button icon="group_add" onclick={optIn}>Quero entrar</Button>
+      </div>
+    </div>
+  </Card>
+{/if}
+
+{#if loadError}
+  <button class="retry-box" onclick={load}>
+    <span class="mi">refresh</span>
+    <span>Falha ao carregar. Toque pra tentar de novo.</span>
+  </button>
+{:else if loading}
+  <div class="empty"><span class="mi spin">progress_activity</span>Carregando…</div>
+{:else if active === 'ranking'}
+
+  <!-- Filtros do ranking -->
+  <Card>
+    <div class="filter-head">Ordenar por</div>
+    <div class="chips">
+      {#each ORDERS as o (o.id)}
+        <button class="chip" class:on={orderBy === o.id} onclick={() => (orderBy = o.id)}>
+          {o.label}
+        </button>
+      {/each}
+    </div>
+    <div class="spacer-sm"></div>
+    <div class="filter-head">Categoria</div>
+    <div class="chips">
+      <button class="chip" class:on={filterCategory === ''} onclick={() => (filterCategory = '')}>
+        Todas
+      </button>
+      {#each categories as c (c)}
+        <button class="chip" class:on={filterCategory === c} onclick={() => (filterCategory = c)}>
+          {CATEGORY_ICON[c]} {CATEGORY_LABEL[c]}
+        </button>
+      {/each}
+    </div>
+  </Card>
+
+  {#if ranking.length === 0}
+    <div class="empty">
+      <span class="mi">emoji_people</span>
+      <div>
+        <div class="empty-t">Ranking vazio ainda</div>
+        <div class="empty-s">Seja o primeiro: registre um treino e você aparece aqui.</div>
+      </div>
+    </div>
+  {:else}
+    <div class="rank-list">
+      {#each ranking as r, i (r.uid)}
+        <Card>
+          <div class="rank-row" class:me={r.uid === authStore.uid}>
+            <div class="rank-pos">
+              {#if rankMedal(i)}
+                <span class="medal">{rankMedal(i)}</span>
+              {:else}
+                <span class="pos-n">{i + 1}</span>
+              {/if}
+            </div>
+            <div class="rank-avatar">
+              {#if r.avatar?.startsWith('http')}
+                <img src={r.avatar} alt={r.displayName} />
+              {:else}
+                <span class="emo">{r.avatar || '🔥'}</span>
+              {/if}
+            </div>
+            <div class="rank-body">
+              <div class="rank-name">{r.displayName}</div>
+              <div class="rank-sub">
+                {r.totalSessions} treinos · {r.currentStreak}d streak · {r.totalPRs} PRs
+              </div>
+            </div>
+            <div class="rank-metric">
+              <div class="m-v mono">{fmtMetric(r, orderBy)}</div>
+            </div>
+          </div>
+        </Card>
+      {/each}
+    </div>
+  {/if}
+
+{:else}
+  <!-- Treinos compartilhados -->
+  {#if shared.length === 0}
+    <div class="empty">
+      <span class="mi">fitness_center</span>
+      <div>
+        <div class="empty-t">Nenhum treino publicado ainda</div>
+        <div class="empty-s">
+          Vá em <strong>Treinos</strong>, abra um dos seus e toque em <strong>Publicar</strong>.
+          Ele aparece aqui pra comunidade clonar.
+        </div>
+      </div>
+    </div>
+  {:else}
+    <div class="shared-list">
+      {#each shared as s (s.id)}
+        <Card>
+          <div class="sh-head">
+            <div class="sh-avatar">
+              {#if s.ownerAvatar?.startsWith('http')}
+                <img src={s.ownerAvatar} alt={s.ownerName} />
+              {:else}
+                <span class="emo">{s.ownerAvatar || '🔥'}</span>
+              {/if}
+            </div>
+            <div class="sh-by">
+              <div class="sh-by-n">{s.ownerName}</div>
+              <div class="sh-by-d">{new Date(s.publishedAt).toLocaleDateString('pt-BR')}</div>
+            </div>
+          </div>
+          <Badge category={s.category}>{CATEGORY_ICON[s.category]} {CATEGORY_LABEL[s.category]}</Badge>
+          <div class="sh-name">{s.name}</div>
+          <div class="sh-meta">
+            {s.exercises.length} exercícios ·
+            {s.exercises.reduce((a, e) => a + e.sets.length, 0)} séries
+          </div>
+          {#if s.description}
+            <div class="sh-desc">{s.description}</div>
+          {/if}
+          <div class="spacer-sm"></div>
+          <Button
+            icon="content_copy"
+            full
+            variant="secondary"
+            loading={cloningId === s.id}
+            onclick={() => clone(s)}
+          >
+            Clonar pros meus treinos
+          </Button>
+        </Card>
+      {/each}
+    </div>
+  {/if}
+{/if}
+
+<style>
+  .spacer { height: var(--s-3); }
+  .spacer-sm { height: var(--s-2); }
+
+  .opt-in { display: flex; gap: var(--s-3); align-items: flex-start; }
+  .opt-ic { font-size: 40px; flex-shrink: 0; }
+  .opt-t { font-weight: 800; font-size: var(--fs-md); margin-bottom: 4px; }
+  .opt-s { font-size: var(--fs-xs); color: var(--text-mute); line-height: 1.5; }
+
+  .retry-box {
+    width: 100%;
+    display: flex;
+    gap: var(--s-2);
+    align-items: center;
+    justify-content: center;
+    padding: var(--s-4);
+    background: color-mix(in srgb, var(--warning) 12%, transparent);
+    border: 1px solid var(--warning);
+    border-radius: var(--r-lg);
+    color: var(--warning);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+  }
+
+  .filter-head {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-mute);
+    margin-bottom: var(--s-2);
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .chip {
+    padding: 8px 12px;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: var(--r-full);
+    color: var(--text-mute);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+  }
+  .chip.on {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--s-2);
+    padding: var(--s-8) var(--s-3);
+    color: var(--text-mute);
+    text-align: center;
+  }
+  .empty .mi { font-size: 32px; color: var(--text-dim); }
+  .empty-t { font-weight: 700; color: var(--text); font-size: var(--fs-md); }
+  .empty-s { font-size: var(--fs-sm); }
+
+  .rank-list, .shared-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    margin-top: var(--s-3);
+  }
+
+  .rank-row {
+    display: flex;
+    gap: var(--s-3);
+    align-items: center;
+  }
+  .rank-row.me {
+    outline: 2px solid var(--accent);
+    outline-offset: -12px;
+    border-radius: var(--r-lg);
+    padding: 4px 0;
+  }
+  .rank-pos { width: 38px; text-align: center; flex-shrink: 0; }
+  .medal { font-size: 24px; }
+  .pos-n { font-family: var(--font-mono); font-weight: 700; color: var(--text-mute); font-size: var(--fs-md); }
+
+  .rank-avatar {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .rank-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .rank-avatar .emo { font-size: 24px; }
+
+  .rank-body { flex: 1; min-width: 0; }
+  .rank-name {
+    font-weight: 700;
+    font-size: var(--fs-sm);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+  .rank-sub {
+    font-size: var(--fs-xs);
+    color: var(--text-mute);
+    margin-top: 2px;
+  }
+
+  .rank-metric { text-align: right; flex-shrink: 0; }
+  .m-v { font-weight: 800; color: var(--accent); font-size: var(--fs-md); }
+
+  /* Shared workouts */
+  .sh-head {
+    display: flex;
+    gap: var(--s-2);
+    align-items: center;
+    margin-bottom: var(--s-2);
+  }
+  .sh-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--bg-3);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .sh-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .sh-by-n { font-size: var(--fs-xs); font-weight: 700; }
+  .sh-by-d { font-size: 10px; color: var(--text-mute); }
+  .sh-name { font-weight: 800; font-size: var(--fs-md); margin-top: 6px; }
+  .sh-meta { font-size: var(--fs-xs); color: var(--text-mute); margin-top: 4px; }
+  .sh-desc {
+    margin-top: var(--s-2);
+    padding: var(--s-2);
+    background: var(--bg-3);
+    border-radius: var(--r-sm);
+    font-size: var(--fs-xs);
+    color: var(--text);
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+</style>
