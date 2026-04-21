@@ -5,6 +5,7 @@
   import { authStore } from '$lib/stores/auth.svelte';
   import { catalogStore } from '$lib/stores/catalog.svelte';
   import { listWorkouts, deleteWorkout, saveWorkoutsOrder } from '$lib/db/workouts';
+  import { withTimeout } from '$lib/utils/withTimeout';
   import type { Workout, WorkoutCategory } from '$lib/types';
   import { CATEGORY_LABEL, CATEGORY_ICON } from '$lib/utils/format';
   import Card from '$lib/components/Card.svelte';
@@ -27,10 +28,20 @@
   let search = $state('');
   let loading = $state(true);
 
-  onMount(async () => {
-    await catalogStore.ensure();
-    await reloadWorkouts();
-  });
+  let loadError = $state<string | null>(null);
+
+  onMount(() => { initLoad(); });
+
+  async function initLoad() {
+    loadError = null;
+    try {
+      await catalogStore.ensure();
+      await reloadWorkouts();
+    } catch (e) {
+      loadError = (e as Error).message;
+      loading = false;
+    }
+  }
 
   let listEl: HTMLDivElement | undefined = $state();
   let sortable: Sortable | null = null;
@@ -81,9 +92,10 @@
     if (!authStore.uid) { loading = false; return; }
     loading = true;
     try {
-      workouts = await listWorkouts(authStore.uid);
+      workouts = await withTimeout(listWorkouts(authStore.uid), 10_000, 'listar treinos');
     } catch (e) {
       console.error('Falha ao carregar treinos:', e);
+      loadError = (e as Error).message;
     } finally {
       loading = false;
     }
@@ -246,7 +258,12 @@
 <div class="spacer"></div>
 
 {#if active === 'meus'}
-  {#if loading}
+  {#if loadError}
+    <button class="retry-box" onclick={initLoad}>
+      <span class="mi">refresh</span>
+      <span>Falha ao carregar. Toque pra tentar de novo.</span>
+    </button>
+  {:else if loading}
     <div class="empty"><span class="mi spin">progress_activity</span>Carregando…</div>
   {:else if workouts.length === 0}
     <Card>
@@ -444,6 +461,22 @@
   .icon-btn.danger:hover { color: var(--danger); }
   .icon-btn .mi { font-size: 18px; }
 
+  .retry-box {
+    width: 100%;
+    display: flex;
+    gap: var(--s-2);
+    align-items: center;
+    justify-content: center;
+    padding: var(--s-4);
+    margin-top: var(--s-3);
+    background: color-mix(in srgb, var(--warning) 12%, transparent);
+    border: 1px solid var(--warning);
+    border-radius: var(--r-lg);
+    color: var(--warning);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+  }
+  .retry-box .mi { font-size: 20px; }
   .empty {
     text-align: center;
     color: var(--text-mute);

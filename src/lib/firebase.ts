@@ -7,7 +7,6 @@ import {
 import {
   initializeFirestore,
   persistentLocalCache,
-  persistentMultipleTabManager,
   type Firestore
 } from 'firebase/firestore';
 import { browser } from '$app/environment';
@@ -43,10 +42,11 @@ export function auth(): Auth {
 
 export function db(): Firestore {
   if (!_db) {
+    // Cache local persistente single-tab. persistentMultipleTabManager
+    // estava causando hang em PWA iOS quando a coordenação entre "tabs"
+    // (na verdade single instance) falhava.
     _db = initializeFirestore(getFirebase(), {
-      localCache: persistentLocalCache({
-        tabManager: persistentMultipleTabManager()
-      })
+      localCache: persistentLocalCache()
     });
   }
   return _db;
