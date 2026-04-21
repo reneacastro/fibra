@@ -24,9 +24,14 @@
   interface Props {
     plan: DietPlan | null;
     onSaved: () => void;
+    /** Quando trainer/nutri edita cliente, passar o uid do cliente.
+     *  Default = usuário logado. */
+    targetUid?: string;
   }
 
-  let { plan, onSaved }: Props = $props();
+  let { plan, onSaved, targetUid }: Props = $props();
+  // Uid efetivo: onde os dados são lidos/escritos
+  const uid = $derived(targetUid ?? authStore.uid);
 
   let profile = $state<UserProfile | null>(null);
   let latestWeight = $state<number | null>(null);
@@ -39,9 +44,9 @@
   let saving = $state(false);
 
   onMount(async () => {
-    if (!authStore.uid) return;
-    profile = await getProfile(authStore.uid);
-    const body = await listBodyComp(authStore.uid, 1);
+    if (!uid) return;
+    profile = await getProfile(uid);
+    const body = await listBodyComp(uid, 1);
     latestWeight = body[0]?.peso ?? profile?.weight ?? null;
     if (body[0]?.tmb) tmb = body[0].tmb;
     else if (profile?.birthDate && profile?.sex) {
@@ -73,7 +78,7 @@
   }
 
   async function save() {
-    if (!authStore.uid) return;
+    if (!uid) return;
     saving = true;
     try {
       const p: DietPlan = {
@@ -84,7 +89,7 @@
         active: true,
         createdAt: plan?.createdAt ?? Date.now()
       };
-      await saveDietPlan(authStore.uid, p);
+      await saveDietPlan(uid, p);
       onSaved();
     } finally {
       saving = false;
@@ -100,11 +105,11 @@
   let aiPreview = $state<DietPlanBlueprint | null>(null);
 
   async function generateDiet(prompt: string) {
-    if (!authStore.uid || !profile) return;
+    if (!uid || !profile) return;
     aiBusy = true;
     aiError = null;
     try {
-      const ownFoods = await listUserFoods(authStore.uid);
+      const ownFoods = await listUserFoods(uid);
       const allFoods = [...TACO_BASICS, ...ownFoods];
 
       const bp = await buildDietFromPrompt({
@@ -148,7 +153,7 @@
   }
 
   async function acceptAIDiet() {
-    if (!authStore.uid || !aiPreview) return;
+    if (!uid || !aiPreview) return;
     aiBusy = true;
     try {
       // Atualiza targets do form local
@@ -173,7 +178,7 @@
         active: true,
         createdAt: plan?.createdAt ?? Date.now()
       };
-      await saveDiet(authStore.uid, p);
+      await saveDiet(uid, p);
       aiOpen = false;
       aiPreview = null;
       onSaved();
@@ -219,7 +224,7 @@
   }
 
   async function acceptImport() {
-    if (!authStore.uid || !importPreview) return;
+    if (!uid || !importPreview) return;
     importing = true;
     try {
       // Monta targets: usa os do import, senão computa a partir das refeições
@@ -271,7 +276,7 @@
         active: true,
         createdAt: plan?.createdAt ?? Date.now()
       };
-      await saveDiet(authStore.uid, p);
+      await saveDiet(uid, p);
       importPreview = null;
       onSaved();
     } finally {

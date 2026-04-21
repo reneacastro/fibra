@@ -192,6 +192,20 @@
     </Button>
   {/if}
 
+  {#if rel.scope.includes('diet')}
+    <div class="sec-title">Plano alimentar</div>
+    <Card onclick={() => goto(`/trainer/cliente/${clientUid}/dieta`)} padding="md">
+      <div class="diet-row">
+        <div class="diet-ic">🥗</div>
+        <div class="diet-body">
+          <div class="diet-t">Editar dieta</div>
+          <div class="diet-s">Macros, refeições, horários — vai direto pro app do cliente</div>
+        </div>
+        <span class="mi chev">chevron_right</span>
+      </div>
+    </Card>
+  {/if}
+
   <!-- Histórico de sessões -->
   {#if clientSessions.length > 0}
     <div class="sec-title">Últimos treinos feitos</div>
@@ -285,4 +299,10 @@
   .sess-name { font-weight: 600; font-size: var(--fs-sm); }
 
   .footer-back { margin-top: var(--s-5); }
+
+  .diet-row { display: flex; gap: var(--s-3); align-items: center; }
+  .diet-ic { font-size: 32px; flex-shrink: 0; }
+  .diet-body { flex: 1; }
+  .diet-t { font-weight: 700; font-size: var(--fs-md); }
+  .diet-s { font-size: var(--fs-xs); color: var(--text-mute); margin-top: 2px; }
 </style>
