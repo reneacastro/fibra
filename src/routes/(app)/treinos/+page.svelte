@@ -46,7 +46,8 @@
   const filteredAll = $derived.by(() => {
     const q = search.trim().toLowerCase();
     if (active === 'meus') return [];
-    const list = catalogStore.byCategory(active);
+    // Com busca: percorre todas categorias. Sem busca: só a selecionada.
+    const list = q ? catalogStore.all : catalogStore.byCategory(active);
     if (!q) return list;
     return list.filter((e) => e.name.toLowerCase().includes(q));
   });

@@ -95,17 +95,17 @@
     'cardio','mobilidade','alongamento','livre'
   ];
 
+  // Quando há busca, procura em TODAS as categorias. Sem busca, filtra só pela ativa.
   const pickerResults = $derived.by(() => {
     const q = pickerSearch.trim().toLowerCase();
-    const list = catalogStore.byCategory(pickerCat);
+    const list = q ? catalogStore.all : catalogStore.byCategory(pickerCat);
     const already = new Set(workout.exercises.map((e) => e.exerciseId));
     const filtered = list.filter((e) => !already.has(e.id) && (!q || e.name.toLowerCase().includes(q)));
-    // Limita a 100 pra performance (catálogo tem 873)
     return filtered.slice(0, 100);
   });
   const pickerTotal = $derived.by(() => {
     const q = pickerSearch.trim().toLowerCase();
-    const list = catalogStore.byCategory(pickerCat);
+    const list = q ? catalogStore.all : catalogStore.byCategory(pickerCat);
     const already = new Set(workout.exercises.map((e) => e.exerciseId));
     return list.filter((e) => !already.has(e.id) && (!q || e.name.toLowerCase().includes(q))).length;
   });
