@@ -38,19 +38,19 @@
     distanceM > 50 ? Math.round(elapsedSec / (distanceM / 1000)) : 0
   );
   const currentKm = $derived(distanceM / 1000);
-  // Kcal em tempo real: MET × peso × horas. Ajusta MET conforme pace real:
-  // corrida lenta (pace 7+) ≈ 6 MET; corrida média (6) ≈ 9; rápida (5-) ≈ 11.
-  const dynamicMet = $derived.by(() => {
+  // Kcal ao vivo: intensidade (baseada no pace) × peso × horas.
+  // Fórmula equivalente à usada por Apple Watch e Strava quando não há HR.
+  const intensityFactor = $derived.by(() => {
     if (paceSecPerKm === 0) return exerciseMets;
     const minPerKm = paceSecPerKm / 60;
     if (minPerKm > 9) return 5;   // caminhada
-    if (minPerKm > 7) return 7;   // trote
+    if (minPerKm > 7) return 7;   // trote leve
     if (minPerKm > 6) return 9;   // corrida moderada
     if (minPerKm > 5) return 11;  // corrida forte
     return 13;                     // sprint
   });
   const calories = $derived(
-    Math.round((dynamicMet * userWeightKg * (elapsedSec / 3600)))
+    Math.round((intensityFactor * userWeightKg * (elapsedSec / 3600)))
   );
 
   // Celebration a cada km completo
@@ -198,9 +198,21 @@
         <span class="mi big">location_on</span>
         <p class="title">Pronto pra medir distância + pace</p>
         <p class="sub">
-          O FIBRA usa o GPS do celular pra rastrear sua corrida.
-          Deixe o app aberto e o celular com a tela ligada (vamos tentar segurar ela pra você).
+          O FIBRA vai usar o GPS do celular pra rastrear seu percurso.
         </p>
+
+        <div class="warn-card">
+          <span class="mi warn-ic">warning_amber</span>
+          <div>
+            <div class="warn-t">Mantenha o app aberto</div>
+            <div class="warn-s">
+              Enquanto a corrida está rolando, <strong>não feche o app nem bloqueie a tela</strong>.
+              O GPS de navegador para se o celular entrar em modo de espera.
+              O FIBRA vai tentar manter a tela acesa pra você.
+            </div>
+          </div>
+        </div>
+
         <Button icon="play_arrow" full size="lg" onclick={start}>Iniciar</Button>
         {#if error}<div class="error">{error}</div>{/if}
       </div>
@@ -226,10 +238,15 @@
           </div>
         </div>
 
+        <div class="keep-open">
+          <span class="mi">visibility</span>
+          <span>Não feche o app nem bloqueie a tela</span>
+        </div>
+
         {#if accuracy !== null}
-          <div class="acc" class:weak={accuracy > 20}>
+          <div class="acc" class:weak={accuracy > 30}>
             <span class="mi">gps_fixed</span>
-            <span>Precisão: {accuracy.toFixed(0)}m {accuracy > 30 ? '— pontos serão ignorados' : ''}</span>
+            <span>Precisão: {accuracy.toFixed(0)}m {accuracy > 65 ? '— pontos ignorados' : ''}</span>
           </div>
         {/if}
 
@@ -292,7 +309,22 @@
   .intro { text-align: center; padding: var(--s-3) 0; }
   .intro .big { font-size: 56px; color: var(--accent); display: block; margin-bottom: var(--s-3); }
   .intro .title { font-size: var(--fs-lg); font-weight: 700; margin-bottom: 6px; }
-  .intro .sub { color: var(--text-mute); font-size: var(--fs-sm); line-height: 1.5; margin-bottom: var(--s-4); }
+  .intro .sub { color: var(--text-mute); font-size: var(--fs-sm); line-height: 1.5; margin-bottom: var(--s-3); }
+
+  .warn-card {
+    display: flex;
+    gap: var(--s-3);
+    align-items: flex-start;
+    text-align: left;
+    padding: var(--s-3) var(--s-4);
+    margin-bottom: var(--s-4);
+    background: color-mix(in srgb, var(--warning) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--warning) 50%, transparent);
+    border-radius: var(--r-md);
+  }
+  .warn-ic { color: var(--warning); font-size: 28px; flex-shrink: 0; }
+  .warn-t { font-weight: 700; color: var(--text); font-size: var(--fs-sm); margin-bottom: 4px; }
+  .warn-s { font-size: var(--fs-xs); color: var(--text-mute); line-height: 1.5; }
 
   .live { display: flex; flex-direction: column; gap: var(--s-3); }
 
@@ -325,6 +357,17 @@
   }
   .acc.weak { color: var(--warning); }
   .acc .mi { font-size: 16px; }
+
+  .keep-open {
+    display: flex; gap: 8px; align-items: center; justify-content: center;
+    padding: 8px 12px;
+    background: color-mix(in srgb, var(--warning) 12%, transparent);
+    border-radius: var(--r-sm);
+    color: var(--warning);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+  }
+  .keep-open .mi { font-size: 16px; }
 
   .controls { display: flex; gap: var(--s-2); margin-top: var(--s-2); }
 

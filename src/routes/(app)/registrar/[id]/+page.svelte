@@ -245,9 +245,8 @@
     ), 0
   ));
 
-  // Estimativa de calorias no estilo Apple Health: MET × peso(kg) × horas.
-  // Pra cada exercício com séries concluídas, usa seu MET próprio.
-  // Sem HR: é uma estimativa; Apple Watch só é melhor porque mede BPM real.
+  // Kcal estimada: intensidade do exercício × peso × tempo. Mesma fórmula
+  // que Apple Health e Strava usam quando não há frequência cardíaca.
   const suggestedCalories = $derived.by(() => {
     const weight = Number(finalWeight) || userBodyWeight || 70;
     const totalMinutes = Math.max(1, elapsed / 60000);
@@ -606,7 +605,7 @@
       {#if suggestedCalories > 0}
         <div class="kcal-hint">
           <span class="mi">bolt</span>
-          <span>Estimado: <strong>{suggestedCalories} kcal</strong> (MET × peso × tempo). Edite se tiver dado real.</span>
+          <span>Estimativa: <strong>{suggestedCalories} kcal</strong> com base na intensidade dos exercícios, seu peso e duração. Edite se tiver o número real.</span>
         </div>
       {/if}
       <div class="spacer"></div>
