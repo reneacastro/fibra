@@ -158,17 +158,29 @@
 
   const canSave = $derived(workout.name.trim().length > 0 && workout.exercises.length > 0);
 
+  let saveError = $state<string | null>(null);
+
   async function save() {
-    if (!authStore.uid || !canSave) return;
+    if (!authStore.uid) return;
+    if (!workout.name.trim()) {
+      saveError = 'Dê um nome ao treino antes de salvar.';
+      return;
+    }
+    if (workout.exercises.length === 0) {
+      saveError = 'Adicione pelo menos 1 exercício.';
+      return;
+    }
     saving = true;
+    saveError = null;
     try {
       await saveWorkout(authStore.uid, workout);
-      // Se veio do /registrar pra montar, já inicia a sessão com esse treino
       if (page.url.searchParams.get('then') === 'register') {
         goto(`/registrar/${workout.id}`);
       } else {
         goto('/treinos');
       }
+    } catch (e) {
+      saveError = 'Erro ao salvar: ' + (e as Error).message;
     } finally {
       saving = false;
     }
@@ -349,11 +361,18 @@
     </Button>
   </div>
 
+  {#if saveError}
+    <div class="save-error">
+      <span class="mi">error</span>
+      <span>{saveError}</span>
+    </div>
+  {/if}
+
   <div class="footer">
     {#if !isNew}
       <Button variant="ghost" icon="delete" onclick={remove}>Apagar</Button>
     {/if}
-    <Button icon="save" full loading={saving} disabled={!canSave} onclick={save}>
+    <Button icon="save" full loading={saving} onclick={save}>
       {isNew ? 'Criar treino' : 'Salvar alterações'}
     </Button>
   </div>
@@ -710,6 +729,18 @@
   }
   .rest-input .suf { font-size: var(--fs-xs); color: var(--text-mute); }
 
+  .save-error {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: var(--s-2) var(--s-3);
+    margin: var(--s-2) 0;
+    background: color-mix(in oklab, var(--warning) 15%, transparent);
+    border: 1px solid var(--warning);
+    border-radius: var(--r-2);
+    color: var(--warning);
+    font-size: .875rem;
+  }
   .footer {
     position: sticky;
     bottom: calc(var(--nav-h) + var(--safe-bottom) + var(--s-3));
