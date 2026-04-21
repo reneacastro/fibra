@@ -78,7 +78,10 @@ export interface Exercise {
   category: WorkoutCategory | WorkoutCategory[];
   muscleGroup: MuscleGroup | MuscleGroup[];
   equipment: Equipment;
+  /** Imagem inicial / posição de partida (ou GIF animado completo) */
   gifUrl?: string;
+  /** Imagem final / posição de chegada (alterna com gifUrl pra simular movimento) */
+  gifEndUrl?: string;
   thumbUrl?: string;
   instructions?: string;
   tips?: string[];

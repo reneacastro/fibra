@@ -17,7 +17,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['superior', 'forca'],
     muscleGroup: ['peito', 'triceps', 'ombros'],
     equipment: 'halteres',
-    gifUrl: '/exercises/supino-halteres.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bench_Press/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bench_Press/1.jpg',
     mets: 6,
     tags: ['push', 'composto']
   },
@@ -27,7 +28,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: 'superior',
     muscleGroup: 'peito',
     equipment: 'halteres',
-    gifUrl: '/exercises/crucifixo-halteres.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Flyes/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Flyes/1.jpg',
     mets: 5,
     tags: ['push', 'isolador']
   },
@@ -37,7 +39,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: 'superior',
     muscleGroup: ['peito', 'costas'],
     equipment: 'halteres',
-    gifUrl: '/exercises/pull-over-halteres.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent-Arm_Dumbbell_Pullover/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent-Arm_Dumbbell_Pullover/1.jpg',
     mets: 5
   },
   {
@@ -46,7 +49,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['superior', 'calistenia', 'funcional'],
     muscleGroup: ['peito', 'triceps'],
     equipment: 'peso-corporal',
-    gifUrl: '/exercises/flexao-bracos.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pushups/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pushups/1.jpg',
     mets: 6,
     tags: ['push', 'funcional']
   },
@@ -58,7 +62,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['superior', 'forca'],
     muscleGroup: 'costas',
     equipment: 'polia',
-    gifUrl: '/exercises/puxada-frontal-polia.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Lat_Pulldown/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Wide-Grip_Lat_Pulldown/1.jpg',
     mets: 5,
     tags: ['pull']
   },
@@ -68,7 +73,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: 'superior',
     muscleGroup: 'costas',
     equipment: 'polia',
-    gifUrl: '/exercises/remada-sentada-polia.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Cable_Rows/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Cable_Rows/1.jpg',
     mets: 5,
     tags: ['pull']
   },
@@ -78,7 +84,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['superior', 'forca'],
     muscleGroup: 'costas',
     equipment: 'halteres',
-    gifUrl: '/exercises/remada-unilateral-haltere.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Dumbbell_Row/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Dumbbell_Row/1.jpg',
     mets: 5,
     tags: ['pull', 'unilateral']
   },
@@ -88,7 +95,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: 'superior',
     muscleGroup: ['ombros', 'costas'],
     equipment: 'polia',
-    gifUrl: '/exercises/face-pull-polia.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Face_Pull/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Face_Pull/1.jpg',
     mets: 4,
     tags: ['saude-ombro']
   },
@@ -100,7 +108,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['superior', 'forca'],
     muscleGroup: 'ombros',
     equipment: 'halteres',
-    gifUrl: '/exercises/desenvolvimento-halteres.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Dumbbell_Press/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Dumbbell_Press/1.jpg',
     mets: 6,
     tags: ['push', 'composto']
   },
@@ -110,7 +119,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: 'superior',
     muscleGroup: 'ombros',
     equipment: 'halteres',
-    gifUrl: '/exercises/elevacao-lateral.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Lateral_Raise/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Lateral_Raise/1.jpg',
     mets: 4,
     tags: ['isolador']
   },
@@ -122,7 +132,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: 'superior',
     muscleGroup: 'biceps',
     equipment: 'halteres',
-    gifUrl: '/exercises/rosca-direta-halteres.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bicep_Curl/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Bicep_Curl/1.jpg',
     mets: 4
   },
   {
@@ -131,7 +142,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: 'superior',
     muscleGroup: ['biceps', 'antebraco'],
     equipment: 'halteres',
-    gifUrl: '/exercises/rosca-martelo.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hammer_Curls/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hammer_Curls/1.jpg',
     mets: 4
   },
   {
@@ -140,7 +152,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: 'superior',
     muscleGroup: 'triceps',
     equipment: 'halteres',
-    gifUrl: '/exercises/triceps-testa-haltere.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Dumbbell_Tricep_Extension/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Dumbbell_Tricep_Extension/1.jpg',
     mets: 4
   },
   {
@@ -149,7 +162,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: 'superior',
     muscleGroup: 'triceps',
     equipment: 'polia',
-    gifUrl: '/exercises/triceps-pulley.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Tricep_Dumbbell_Kickback/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Tricep_Dumbbell_Kickback/1.jpg',
     mets: 4
   },
 
@@ -160,7 +174,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['inferior', 'forca', 'pump'],
     muscleGroup: ['quadriceps', 'adutores', 'gluteos'],
     equipment: 'halteres',
-    gifUrl: '/exercises/agachamento-sumo.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/1.jpg',
     mets: 7,
     tags: ['composto']
   },
@@ -170,7 +185,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['inferior', 'forca'],
     muscleGroup: 'quadriceps',
     equipment: 'halteres',
-    gifUrl: '/exercises/goblet-squat-haltere.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Goblet_Squat/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Goblet_Squat/1.jpg',
     mets: 7,
     tags: ['composto']
   },
@@ -180,7 +196,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: 'inferior',
     muscleGroup: ['quadriceps', 'gluteos'],
     equipment: 'halteres',
-    gifUrl: '/exercises/afundo-halteres.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lunges/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lunges/1.jpg',
     mets: 6,
     tags: ['unilateral']
   },
@@ -190,7 +207,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: 'inferior',
     muscleGroup: ['quadriceps', 'gluteos'],
     equipment: 'halteres',
-    gifUrl: '/exercises/avanco-halteres.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Walking_Lunge/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Walking_Lunge/1.jpg',
     mets: 6,
     tags: ['unilateral']
   },
@@ -200,7 +218,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['inferior', 'forca'],
     muscleGroup: 'quadriceps',
     equipment: 'maquina',
-    gifUrl: '/exercises/leg-press-45.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Press/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Press/1.jpg',
     mets: 6,
     tags: ['composto']
   },
@@ -210,7 +229,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: 'inferior',
     muscleGroup: 'quadriceps',
     equipment: 'maquina',
-    gifUrl: '/exercises/extensao-joelhos.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Extensions/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Leg_Extensions/1.jpg',
     mets: 4,
     tags: ['isolador']
   },
@@ -220,7 +240,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: 'inferior',
     muscleGroup: ['quadriceps', 'gluteos'],
     equipment: 'caixa',
-    gifUrl: '/exercises/step-up-halteres.webp',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Step_Ups/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Step_Ups/1.jpg',
     mets: 6,
     tags: ['unilateral', 'funcional']
   },
@@ -232,7 +253,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['inferior', 'forca', 'pump'],
     muscleGroup: ['posterior', 'gluteos', 'lombar'],
     equipment: 'halteres',
-    gifUrl: '/exercises/stiff-halteres.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/1.jpg',
     mets: 6
   },
   {
@@ -241,7 +263,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: 'inferior',
     muscleGroup: 'posterior',
     equipment: 'maquina',
-    gifUrl: '/exercises/mesa-flexora.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Leg_Curls/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Lying_Leg_Curls/1.jpg',
     mets: 4,
     tags: ['isolador']
   },
@@ -251,7 +274,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['inferior', 'pump'],
     muscleGroup: 'gluteos',
     equipment: 'halteres',
-    gifUrl: '/exercises/hip-thrust-haltere.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Glute_Bridge/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Glute_Bridge/1.jpg',
     mets: 5
   },
   {
@@ -260,7 +284,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['inferior', 'pump'],
     muscleGroup: 'gluteos',
     equipment: 'peso-corporal',
-    gifUrl: '/exercises/elevacao-pelvica-banco.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Butt_Lift_(Bridge)/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Butt_Lift_(Bridge)/1.jpg',
     mets: 4
   },
 
@@ -271,7 +296,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['inferior', 'pump'],
     muscleGroup: 'abdutores',
     equipment: 'maquina',
-    gifUrl: '/exercises/cadeira-abdutora.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hip_Lift_with_Band/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hip_Lift_with_Band/1.jpg',
     mets: 3
   },
   {
@@ -280,7 +306,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['inferior', 'pump'],
     muscleGroup: ['abdutores', 'gluteos'],
     equipment: 'polia',
-    gifUrl: '/exercises/abducao-cabo.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Hip_Adduction/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cable_Hip_Adduction/1.jpg',
     mets: 3
   },
   {
@@ -289,7 +316,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: 'inferior',
     muscleGroup: 'panturrilha',
     equipment: 'maquina',
-    gifUrl: '/exercises/panturrilha-em-pe.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Calf_Raises/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Calf_Raises/1.jpg',
     mets: 3
   },
 
@@ -300,7 +328,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['core', 'funcional', 'fullbody'],
     muscleGroup: ['core', 'lombar'],
     equipment: 'peso-corporal',
-    gifUrl: '/exercises/prancha-isometrica.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plank/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Plank/1.jpg',
     mets: 4,
     tags: ['isometrica']
   },
@@ -310,7 +339,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['core', 'funcional'],
     muscleGroup: 'core',
     equipment: 'peso-corporal',
-    gifUrl: '/exercises/prancha-lateral.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Bridge/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Bridge/1.jpg',
     mets: 4,
     tags: ['isometrica', 'unilateral']
   },
@@ -320,7 +350,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['core', 'funcional'],
     muscleGroup: 'core',
     equipment: 'peso-corporal',
-    gifUrl: '/exercises/abdominal-bicicleta.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Air_Bike/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Air_Bike/1.jpg',
     mets: 5
   },
   {
@@ -329,7 +360,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['core', 'funcional', 'mobilidade'],
     muscleGroup: ['core', 'lombar'],
     equipment: 'peso-corporal',
-    gifUrl: '/exercises/dead-bug.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sit-Up/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Sit-Up/1.jpg',
     mets: 3,
     tags: ['controle-motor', 'reabilitacao']
   },
@@ -349,7 +381,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['core', 'funcional'],
     muscleGroup: ['lombar', 'gluteos'],
     equipment: 'peso-corporal',
-    gifUrl: '/exercises/superman-alternado.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hyperextensions_With_No_Hyperextension_Bench/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hyperextensions_With_No_Hyperextension_Bench/1.jpg',
     mets: 3
   },
   {
@@ -358,7 +391,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['core', 'funcional', 'hiit', 'crossfit', 'fullbody', 'cardio'],
     muscleGroup: ['core', 'cardio'],
     equipment: 'peso-corporal',
-    gifUrl: '/exercises/mountain-climber.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Mountain_Climbers/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Mountain_Climbers/1.jpg',
     mets: 8,
     tags: ['metcon']
   },
@@ -380,7 +414,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['crossfit', 'funcional', 'fullbody', 'calistenia'],
     muscleGroup: ['quadriceps', 'gluteos', 'panturrilha'],
     equipment: 'caixa',
-    gifUrl: '/exercises/box-jump.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bench_Jump/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bench_Jump/1.jpg',
     mets: 9,
     tags: ['pliometria']
   },
@@ -390,7 +425,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['crossfit', 'funcional', 'fullbody'],
     muscleGroup: ['gluteos', 'posterior', 'core'],
     equipment: 'kettlebell',
-    gifUrl: '/exercises/kettlebell-swing.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Kettlebell_Swings/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/One-Arm_Kettlebell_Swings/1.jpg',
     mets: 9,
     tags: ['balistico']
   },
@@ -412,7 +448,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['cardio', 'livre'],
     muscleGroup: 'cardio',
     equipment: 'eliptico',
-    gifUrl: '/exercises/eliptico.gif',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Elliptical_Trainer/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Elliptical_Trainer/1.jpg',
     mets: 7,
     tags: ['cardio', 'baixo-impacto']
   },
@@ -422,7 +459,8 @@ export const SEED_EXERCISES: Exercise[] = [
     category: ['cardio', 'livre'],
     muscleGroup: ['cardio', 'costas'],
     equipment: 'maquina',
-    gifUrl: '/exercises/remo-ergometrico.webp',
+    gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rowing_Stationary/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rowing_Stationary/1.jpg',
     mets: 8,
     tags: ['cardio', 'fullbody']
   },
@@ -435,6 +473,7 @@ export const SEED_EXERCISES: Exercise[] = [
     muscleGroup: ['quadriceps', 'gluteos', 'lombar'],
     equipment: 'barra',
     gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/1.jpg',
     mets: 8,
     tags: ['composto', 'big-three']
   },
@@ -445,6 +484,7 @@ export const SEED_EXERCISES: Exercise[] = [
     muscleGroup: ['posterior', 'gluteos', 'lombar', 'costas'],
     equipment: 'barra',
     gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Deadlift/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Deadlift/1.jpg',
     mets: 8,
     tags: ['composto', 'big-three']
   },
@@ -455,6 +495,7 @@ export const SEED_EXERCISES: Exercise[] = [
     muscleGroup: ['peito', 'triceps', 'ombros'],
     equipment: 'barra',
     gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press_-_Medium_Grip/1.jpg',
     mets: 6,
     tags: ['composto', 'push', 'big-three']
   },
@@ -465,6 +506,7 @@ export const SEED_EXERCISES: Exercise[] = [
     muscleGroup: ['ombros', 'triceps', 'core'],
     equipment: 'barra',
     gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Military_Press/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Military_Press/1.jpg',
     mets: 6,
     tags: ['composto', 'push']
   },
@@ -475,6 +517,7 @@ export const SEED_EXERCISES: Exercise[] = [
     muscleGroup: ['costas', 'biceps'],
     equipment: 'barra',
     gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_Barbell_Row/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bent_Over_Barbell_Row/1.jpg',
     mets: 6,
     tags: ['composto', 'pull']
   },
@@ -511,6 +554,7 @@ export const SEED_EXERCISES: Exercise[] = [
     muscleGroup: ['quadriceps', 'gluteos'],
     equipment: 'halteres',
     gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bodyweight_Walking_Lunge/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bodyweight_Walking_Lunge/1.jpg',
     mets: 7,
     tags: ['unilateral']
   },
@@ -523,6 +567,7 @@ export const SEED_EXERCISES: Exercise[] = [
     muscleGroup: 'core',
     equipment: 'peso-corporal',
     gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Crunches/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Crunches/1.jpg',
     mets: 4
   },
   {
@@ -532,6 +577,7 @@ export const SEED_EXERCISES: Exercise[] = [
     muscleGroup: 'core',
     equipment: 'peso-corporal',
     gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Jackknife_Sit-Up/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Jackknife_Sit-Up/1.jpg',
     mets: 5
   },
   {
@@ -541,6 +587,7 @@ export const SEED_EXERCISES: Exercise[] = [
     muscleGroup: ['core', 'ombros'],
     equipment: 'nenhum',
     gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ab_Roller/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Ab_Roller/1.jpg',
     mets: 5
   },
   {
@@ -550,6 +597,7 @@ export const SEED_EXERCISES: Exercise[] = [
     muscleGroup: 'core',
     equipment: 'halteres',
     gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Russian_Twist/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Russian_Twist/1.jpg',
     mets: 5
   },
   {
@@ -559,6 +607,7 @@ export const SEED_EXERCISES: Exercise[] = [
     muscleGroup: 'core',
     equipment: 'barra',
     gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hanging_Leg_Raise/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Hanging_Leg_Raise/1.jpg',
     mets: 5
   },
 
@@ -579,6 +628,7 @@ export const SEED_EXERCISES: Exercise[] = [
     muscleGroup: ['cardio', 'panturrilha'],
     equipment: 'corda',
     gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rope_Jumping/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Rope_Jumping/1.jpg',
     mets: 11,
     tags: ['cardio', 'hiit']
   },
@@ -600,6 +650,7 @@ export const SEED_EXERCISES: Exercise[] = [
     muscleGroup: ['costas', 'biceps'],
     equipment: 'barra',
     gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pullups/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pullups/1.jpg',
     mets: 8,
     tags: ['pull', 'composto']
   },
@@ -610,6 +661,7 @@ export const SEED_EXERCISES: Exercise[] = [
     muscleGroup: ['costas', 'biceps'],
     equipment: 'barra',
     gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chin-Up/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Chin-Up/1.jpg',
     mets: 8,
     tags: ['pull']
   },
@@ -620,6 +672,7 @@ export const SEED_EXERCISES: Exercise[] = [
     muscleGroup: ['peito', 'triceps', 'ombros'],
     equipment: 'nenhum',
     gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dips_-_Chest_Version/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dips_-_Chest_Version/1.jpg',
     mets: 7,
     tags: ['push']
   },
@@ -630,6 +683,7 @@ export const SEED_EXERCISES: Exercise[] = [
     muscleGroup: ['triceps', 'peito'],
     equipment: 'peso-corporal',
     gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-Ups_-_Close_Triceps_Position/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Push-Ups_-_Close_Triceps_Position/1.jpg',
     mets: 6
   },
   {
@@ -648,6 +702,7 @@ export const SEED_EXERCISES: Exercise[] = [
     muscleGroup: ['quadriceps', 'gluteos'],
     equipment: 'peso-corporal',
     gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_Pistol_Squat/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Kettlebell_Pistol_Squat/1.jpg',
     mets: 7,
     tags: ['unilateral']
   },
@@ -660,6 +715,7 @@ export const SEED_EXERCISES: Exercise[] = [
     muscleGroup: ['gluteos', 'quadriceps'],
     equipment: 'peso-corporal',
     gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Lying_Groin_Stretch/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Lying_Groin_Stretch/1.jpg',
     mets: 2,
     tags: ['isometrica', 'yoga']
   },
@@ -670,6 +726,7 @@ export const SEED_EXERCISES: Exercise[] = [
     muscleGroup: ['lombar', 'core'],
     equipment: 'peso-corporal',
     gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cat_Stretch/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Cat_Stretch/1.jpg',
     mets: 2,
     tags: ['yoga', 'coluna']
   },
@@ -680,6 +737,7 @@ export const SEED_EXERCISES: Exercise[] = [
     muscleGroup: ['posterior', 'ombros', 'panturrilha'],
     equipment: 'peso-corporal',
     gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Behind_Head_Chest_Stretch/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Behind_Head_Chest_Stretch/1.jpg',
     mets: 3,
     tags: ['yoga', 'isometrica']
   },
@@ -690,6 +748,7 @@ export const SEED_EXERCISES: Exercise[] = [
     muscleGroup: ['quadriceps', 'gluteos'],
     equipment: 'peso-corporal',
     gifUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/All_Fours_Quad_Stretch/0.jpg',
+    gifEndUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/All_Fours_Quad_Stretch/1.jpg',
     mets: 2,
     tags: ['isometrica']
   },

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Exercise } from '$lib/types';
   import { CATEGORY_ICON } from '$lib/utils/format';
+  import ExerciseImageZoom from './ExerciseImageZoom.svelte';
 
   interface Props {
     exercise: Exercise;
@@ -8,9 +9,11 @@
     onclick?: () => void;
     onInfo?: () => void;
     compact?: boolean;
+    /** Quando true, NÃO abre modal de zoom ao clicar na thumb (caller controla) */
+    disableZoom?: boolean;
   }
 
-  let { exercise, selected = false, onclick, onInfo, compact = false }: Props = $props();
+  let { exercise, selected = false, onclick, onInfo, compact = false, disableZoom = false }: Props = $props();
 
   const primaryCat = $derived(
     Array.isArray(exercise.category) ? exercise.category[0] : exercise.category
@@ -18,6 +21,31 @@
   const primaryMuscle = $derived(
     Array.isArray(exercise.muscleGroup) ? exercise.muscleGroup[0] : exercise.muscleGroup
   );
+
+  // Alterna entre 0.jpg e 1.jpg pra simular movimento
+  let frame = $state(0);
+  let interval: ReturnType<typeof setInterval> | undefined;
+
+  $effect(() => {
+    // Inicia ciclo só se houver gifEndUrl
+    if (exercise.gifEndUrl && exercise.gifUrl) {
+      interval = setInterval(() => {
+        frame = frame === 0 ? 1 : 0;
+      }, 1000);
+    }
+    return () => { if (interval) clearInterval(interval); };
+  });
+
+  const currentSrc = $derived(
+    frame === 1 && exercise.gifEndUrl ? exercise.gifEndUrl : exercise.gifUrl
+  );
+
+  let zoomOpen = $state(false);
+
+  function handleThumbClick(e: MouseEvent) {
+    e.stopPropagation();
+    if (!disableZoom && exercise.gifUrl) zoomOpen = true;
+  }
 </script>
 
 <div
@@ -30,13 +58,18 @@
   onkeydown={(e) => { if (onclick && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onclick(); } }}
 >
   {#if exercise.gifUrl}
-    <div class="ex-thumb">
+    <button
+      class="ex-thumb"
+      type="button"
+      onclick={handleThumbClick}
+      aria-label="Ver imagem ampliada"
+      disabled={disableZoom}
+    >
       <img
-        src={exercise.gifUrl}
+        src={currentSrc}
         alt={exercise.name}
         loading="lazy"
         onerror={(e) => {
-          // Se a URL externa falhar, esconde img e mostra placeholder
           const img = e.currentTarget as HTMLImageElement;
           img.style.display = 'none';
           const parent = img.parentElement;
@@ -44,7 +77,10 @@
         }}
       />
       <span class="mi placeholder-icon">fitness_center</span>
-    </div>
+      {#if exercise.gifEndUrl && !disableZoom}
+        <span class="zoom-hint mi">zoom_in</span>
+      {/if}
+    </button>
   {:else}
     <div class="ex-thumb placeholder">
       <span class="mi">fitness_center</span>
@@ -76,6 +112,13 @@
   {/if}
 </div>
 
+{#if zoomOpen && exercise.gifUrl}
+  <ExerciseImageZoom
+    exercise={exercise}
+    onClose={() => (zoomOpen = false)}
+  />
+{/if}
+
 <style>
   .ex-card {
     display: flex;
@@ -100,6 +143,7 @@
   }
 
   .ex-thumb {
+    position: relative;
     width: 64px;
     height: 64px;
     border-radius: var(--r-md);
@@ -108,11 +152,16 @@
     flex-shrink: 0;
     display: grid;
     place-items: center;
+    padding: 0;
+    border: 0;
+    cursor: zoom-in;
   }
+  .ex-thumb:disabled { cursor: default; }
   .ex-thumb img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: opacity 200ms;
   }
   .placeholder-icon {
     display: none;
@@ -124,10 +173,23 @@
     font-size: 28px;
   }
 
+  .zoom-hint {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    padding: 1px 3px;
+    border-radius: 4px;
+    font-size: 12px !important;
+    line-height: 1;
+  }
+
   .compact .ex-thumb {
     width: 44px;
     height: 44px;
   }
+  .compact .zoom-hint { display: none; }
 
   .ex-body {
     flex: 1;
