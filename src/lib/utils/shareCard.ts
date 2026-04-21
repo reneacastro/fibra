@@ -201,41 +201,24 @@ function drawThemeOverlay(ctx: Ctx, themeKey: ShareTheme, hasPhoto: boolean) {
 function drawBrand(ctx: Ctx, themeKey: ShareTheme) {
   const theme = SHARE_THEMES[themeKey];
   ctx.save();
-  ctx.translate(80, 90);
-  const s = 64;
-  // Gradient tricolor
-  const g = ctx.createLinearGradient(0, 0, s, s);
-  g.addColorStop(0, theme.primary);
-  g.addColorStop(0.6, theme.secondary);
-  g.addColorStop(1, theme.primary);
-  ctx.fillStyle = g;
-  // Italic skew
-  ctx.transform(1, 0, -0.14, 1, 8, 0);
-  // Stem
-  roundRect(ctx, 0, 0, s * 0.13, s * 0.75, 4); ctx.fill();
-  // 3 fibras
-  roundRect(ctx, 0, 0, s * 0.6, s * 0.13, 4); ctx.fill();
-  ctx.globalAlpha = 0.9;
-  roundRect(ctx, 0, s * 0.27, s * 0.45, s * 0.13, 4); ctx.fill();
-  ctx.globalAlpha = 0.75;
-  roundRect(ctx, 0, s * 0.54, s * 0.28, s * 0.13, 4); ctx.fill();
-  ctx.restore();
-  // Spark
+  ctx.translate(80, 80);
+  const s = 72;
   ctx.fillStyle = theme.primary;
-  ctx.beginPath();
-  ctx.arc(142, 100, 4, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.globalAlpha = 0.3;
-  ctx.beginPath();
-  ctx.arc(142, 100, 10, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.globalAlpha = 1;
+  // Italic skew leve
+  ctx.transform(1, 0, -0.1, 1, 6, 0);
+  // Stem grosso
+  ctx.fillRect(0, 0, s * 0.21, s * 0.75);
+  // Braço superior
+  ctx.fillRect(0, 0, s * 0.58, s * 0.21);
+  // Braço do meio
+  ctx.fillRect(0, s * 0.31, s * 0.42, s * 0.19);
+  ctx.restore();
 
   ctx.fillStyle = TEXT;
-  ctx.font = 'bold 40px "Plus Jakarta Sans", sans-serif';
+  ctx.font = 'bold 44px "Plus Jakarta Sans", sans-serif';
   ctx.textAlign = 'left';
   (ctx as any).letterSpacing = '8px';
-  ctx.fillText('FIBRA', 170, 142);
+  ctx.fillText('FIBRA', 170, 136);
 }
 
 // ─── Cards por template ─────────────────────────────────

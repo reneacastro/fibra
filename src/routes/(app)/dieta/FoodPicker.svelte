@@ -213,7 +213,7 @@
           ⭐ <span class="c">{ownFoods.length}</span>
         </button>
         <button class="t" class:on={activeTab === 'basicos'} onclick={() => (activeTab = 'basicos')}>
-          🇧🇷 TACO
+          🇧🇷 Básicos
         </button>
         <button class="t" class:on={activeTab === 'off'} onclick={() => (activeTab = 'off')}>
           🔎 Buscar

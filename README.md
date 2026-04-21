@@ -138,7 +138,7 @@ Todas as coleções protegidas por `request.auth.uid == uid`. Catálogos globais
 | **F1 — Paridade + Treinos** | ✅ | 41 exercícios seed, CRUD de treinos, editor de séries, registro com timer, PR detection automática, grade semanal, perfil editável |
 | **F2 — Treinos 2.0** | ✅ | Histórico por exercício dentro do card (sparkline + último + PR), modal de detalhe completo com charts, drag-n-drop (SortableJS), alongamento/isométrica com cronômetro, CrossFit WOD timer (AMRAP/EMOM/ForTime/RFT/Chipper/Tabata) com round counter |
 | **F4 — Corpo + Relax Fit** | ✅ | Formulário completo (básico + bioimpedância + 9 medidas), IMC/BF/WHR classificados automaticamente, importação de PDF da Relax Fit (PDF.js + regex pt-BR) com fallback Gemini, charts de peso/gordura/músculo/medidas, histórico com badge de origem |
-| **F3 — Dieta** | ✅ | Plano de macros com sugestão automática (TMB + atividade + objetivos), agenda de refeições template, log diário com anéis estilo Apple Watch, FoodPicker com TACO/custom/Open Food Facts, editor de refeição com múltiplos alimentos |
+| **F3 — Dieta** | ✅ | Plano de macros com sugestão automática (TMB + atividade + objetivos), agenda de refeições template, log diário com anéis estilo Apple Watch, FoodPicker com alimentos brasileiros/custom/Open Food Facts, editor de refeição com múltiplos alimentos |
 | **F5 — Social + AI** | ✅ | Dashboard /progresso (stats, streak, heatmap 17 semanas, charts), Gemini Coach com análise semanal cacheada 24h, 4 templates de share card (sessão, PR, streak, semana) via Canvas API 1080×1920, ShareSheet com navigator.share, webhook Apple Watch via Cloud Function |
 
 ---

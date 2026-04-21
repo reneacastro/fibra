@@ -380,6 +380,81 @@ Responda JSON com:
   return parseJson(text);
 }
 
+// ═══ AI DIET PARSER ═══════════════════════════════════════════
+// Lê PDF/imagem de dieta do nutricionista e monta o plano completo
+
+export interface ParsedDietPlan {
+  name: string;
+  dailyTargets?: { kcal?: number; proteinG?: number; carbG?: number; fatG?: number };
+  meals: {
+    name: string;
+    time: string;
+    items: {
+      foodName: string;
+      grams: number;
+      kcalPer100g?: number;
+      proteinPer100g?: number;
+      carbPer100g?: number;
+      fatPer100g?: number;
+    }[];
+  }[];
+  notes?: string;
+}
+
+const DIET_EXTRACT_PROMPT = `Você recebe um documento de plano alimentar de nutricionista (dieta prescrita).
+Extraia TODAS as refeições com seus horários e alimentos. Para cada alimento, converta a quantidade pra gramas.
+Se o documento especifica unidades (1 ovo, 2 fatias, 1 colher), faça a conversão assumindo:
+- 1 ovo ≈ 50g
+- 1 fatia (pão, queijo) ≈ 30g
+- 1 colher de sopa ≈ 15g
+- 1 xícara ≈ 240g (líquido) ou 100g (sólido)
+- 1 copo ≈ 200g
+- 1 unidade de fruta padrão (banana, maçã) ≈ 100g
+
+Se o doc mostra os macros por item, inclua kcalPer100g/proteinPer100g/carbPer100g/fatPer100g.
+Se só há macros totais da refeição ou do dia, use esses valores em dailyTargets.
+
+Responda APENAS com JSON válido, sem \`\`\`json nem comentários.
+Estrutura:
+{
+  "name": "string (ex: Dieta hipertrofia 2500 kcal)",
+  "dailyTargets": { "kcal": number, "proteinG": number, "carbG": number, "fatG": number },
+  "meals": [
+    {
+      "name": "Café da manhã",
+      "time": "07:00",
+      "items": [
+        { "foodName": "Aveia em flocos", "grams": 40, "kcalPer100g": 394, "proteinPer100g": 13.9, "carbPer100g": 66.6, "fatPer100g": 8.5 }
+      ]
+    }
+  ],
+  "notes": "observações do nutri, se houver"
+}`;
+
+export async function extractDietFromImage(base64: string, mimeType: string): Promise<ParsedDietPlan> {
+  const text = await askGemini(DIET_EXTRACT_PROMPT, {
+    responseMimeType: 'application/json',
+    temperature: 0.1,
+    maxOutputTokens: 8192
+  }, [{ inlineData: { mimeType, data: base64 } }]);
+  return parseJson(text);
+}
+
+export async function extractDietFromText(rawText: string): Promise<ParsedDietPlan> {
+  const prompt = `${DIET_EXTRACT_PROMPT}
+
+Texto do documento:
+"""
+${rawText.slice(0, 16000)}
+"""`;
+  const text = await askGemini(prompt, {
+    responseMimeType: 'application/json',
+    temperature: 0.1,
+    maxOutputTokens: 8192
+  });
+  return parseJson(text);
+}
+
 // ═══ AI BODY ANALYZER ══════════════════════════════════════════
 
 export interface BodyAnalyzerResult {

@@ -51,25 +51,24 @@
         const meals: LoggedMeal[] = (plan?.meals ?? []).map((pm) => {
           const items: LoggedFoodItem[] = pm.items.map((pi) => {
             const food = foodIndex.get(pi.foodId);
-            if (!food) {
-              return {
-                id: newLoggedItemId(),
-                foodId: pi.foodId,
-                foodName: pi.foodName,
-                grams: pi.grams,
-                kcal: 0,
-                proteinG: 0,
-                carbG: 0,
-                fatG: 0
-              };
+            // Tenta 3 vias, em ordem: catálogo → macros inline do plano → zero
+            let kcal = 0, proteinG = 0, carbG = 0, fatG = 0;
+            if (food) {
+              const m = computeItemMacros(food, pi.grams);
+              kcal = m.kcal; proteinG = m.proteinG; carbG = m.carbG; fatG = m.fatG;
+            } else if (pi.kcalPer100g != null) {
+              const f = pi.grams / 100;
+              kcal = Math.round((pi.kcalPer100g ?? 0) * f);
+              proteinG = Math.round((pi.proteinPer100g ?? 0) * f * 10) / 10;
+              carbG = Math.round((pi.carbPer100g ?? 0) * f * 10) / 10;
+              fatG = Math.round((pi.fatPer100g ?? 0) * f * 10) / 10;
             }
-            const macros = computeItemMacros(food, pi.grams);
             return {
               id: newLoggedItemId(),
               foodId: pi.foodId,
               foodName: pi.foodName,
               grams: pi.grams,
-              ...macros
+              kcal, proteinG, carbG, fatG
             };
           });
           return {
@@ -118,6 +117,18 @@
   function deleteMeal(idx: number) {
     if (!log || !confirm('Apagar essa refeição do dia?')) return;
     log.meals = log.meals.filter((_, i) => i !== idx);
+    persist();
+  }
+
+  function toggleMealDone(idx: number) {
+    if (!log) return;
+    const m = log.meals[idx];
+    if (m.completed) {
+      log.meals[idx] = { ...m, completed: false, completedAt: undefined };
+    } else {
+      log.meals[idx] = { ...m, completed: true, completedAt: Date.now() };
+      if (navigator.vibrate) navigator.vibrate(50);
+    }
     persist();
   }
 </script>
@@ -199,7 +210,13 @@
     </div>
 
     <!-- Refeições do dia -->
-    <div class="sec-title">Refeições de {fmtDateShort(today)}</div>
+    {@const doneCount = log?.meals.filter((m) => m.completed).length ?? 0}
+    <div class="sec-title-row">
+      <div class="sec-title">Refeições de {fmtDateShort(today)}</div>
+      {#if log && log.meals.length > 0}
+        <div class="done-count mono">{doneCount}/{log.meals.length} feitas</div>
+      {/if}
+    </div>
 
     {#if log && log.meals.length > 0}
       <div class="meals">
@@ -209,13 +226,27 @@
             { kcal: 0, protein: 0 }
           )}
           <Card padding="sm">
-            <div class="meal-head" onclick={() => (editingMealIdx = idx)} role="button" tabindex="0" onkeydown={(e) => e.key === 'Enter' && (editingMealIdx = idx)}>
-              <div class="meal-time mono">{meal.time}</div>
-              <div class="meal-info">
-                <div class="meal-name">{meal.name}</div>
+            <div class="meal-head">
+              <!-- Check: marca como feita -->
+              <button
+                class="meal-check"
+                class:on={meal.completed}
+                onclick={() => toggleMealDone(idx)}
+                aria-label={meal.completed ? 'Desmarcar' : 'Marcar como feita'}
+              >
+                {#if meal.completed}
+                  <span class="mi">check</span>
+                {/if}
+              </button>
+
+              <div class="meal-info" onclick={() => (editingMealIdx = idx)} role="button" tabindex="0" onkeydown={(e) => e.key === 'Enter' && (editingMealIdx = idx)}>
+                <div class="meal-name-row">
+                  <div class="meal-time mono">{meal.time}</div>
+                  <div class="meal-name" class:done={meal.completed}>{meal.name}</div>
+                </div>
                 <div class="meal-sub">
                   {#if meal.items.length === 0}
-                    <span class="pending">Vazia</span>
+                    <span class="pending">Vazia — toque pra adicionar</span>
                   {:else}
                     <span>{meal.items.length} {meal.items.length === 1 ? 'item' : 'itens'}</span>
                     <span class="dot">·</span>
@@ -230,7 +261,7 @@
               </button>
             </div>
             {#if meal.items.length > 0}
-              <div class="items-preview">
+              <div class="items-preview" class:done={meal.completed}>
                 {#each meal.items.slice(0, 3) as item (item.id)}
                   <div class="it">
                     <span class="it-n">{item.foodName}</span>
@@ -338,21 +369,68 @@
   .meal-head {
     display: flex;
     align-items: center;
-    gap: var(--s-3);
-    cursor: pointer;
+    gap: var(--s-2);
   }
+  .meal-check {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--bg-3);
+    border: 2px solid var(--border-strong);
+    display: grid;
+    place-items: center;
+    color: var(--text);
+    flex-shrink: 0;
+    transition: all var(--dur-fast);
+  }
+  .meal-check:hover { border-color: var(--accent); }
+  .meal-check.on {
+    background: var(--success);
+    border-color: var(--success);
+    color: var(--bg-0);
+  }
+  .meal-check .mi {
+    font-size: 18px;
+    font-variation-settings: 'FILL' 1, 'wght' 700;
+  }
+
   .meal-time {
-    width: 56px;
-    text-align: center;
     font-weight: 800;
-    font-size: var(--fs-sm);
+    font-size: 11px;
     color: var(--accent);
-    padding: 6px;
+    padding: 3px 8px;
     background: var(--accent-glow);
     border-radius: var(--r-sm);
+    height: fit-content;
   }
-  .meal-info { flex: 1; min-width: 0; }
-  .meal-name { font-weight: 700; font-size: var(--fs-sm); }
+  .meal-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .meal-info { flex: 1; min-width: 0; cursor: pointer; }
+  .meal-name { font-weight: 700; font-size: var(--fs-sm); transition: all var(--dur-fast); }
+  .meal-name.done {
+    text-decoration: line-through;
+    color: var(--text-mute);
+  }
+  .items-preview.done { opacity: 0.5; }
+
+  .sec-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0 0 var(--s-2);
+  }
+  .done-count {
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    color: var(--accent);
+    padding: 3px 10px;
+    background: var(--accent-glow);
+    border-radius: var(--r-full);
+  }
   .meal-sub {
     font-size: var(--fs-xs);
     color: var(--text-mute);

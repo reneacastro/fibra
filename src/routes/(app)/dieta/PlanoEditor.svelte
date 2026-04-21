@@ -13,9 +13,13 @@
   import Input from '$lib/components/Input.svelte';
   import Badge from '$lib/components/Badge.svelte';
   import AIPromptSheet from '$lib/components/AIPromptSheet.svelte';
-  import { buildDietFromPrompt, type DietPlanBlueprint } from '$lib/db/gemini';
+  import {
+    buildDietFromPrompt, extractDietFromImage, extractDietFromText,
+    type DietPlanBlueprint, type ParsedDietPlan
+  } from '$lib/db/gemini';
   import { listUserFoods, saveDietPlan as saveDiet, newPlanId as newId } from '$lib/db/diet';
   import { TACO_BASICS } from '$lib/db/openFoodFacts';
+  import { extractPdfText } from '$lib/utils/pdfRelaxFit';
 
   interface Props {
     plan: DietPlan | null;
@@ -184,15 +188,170 @@
     aiPreview = null;
     aiError = null;
   }
+
+  // ─── Import de dieta (PDF/imagem do nutri) ──────
+  let importing = $state(false);
+  let importPreview = $state<ParsedDietPlan | null>(null);
+  let importWarn = $state<string | null>(null);
+  let fileInput: HTMLInputElement;
+
+  function fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve((r.result as string).split(',')[1] ?? '');
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+  }
+
+  async function onImportFile(e: Event) {
+    const file = (e.currentTarget as HTMLInputElement).files?.[0];
+    if (!file) return;
+    importing = true;
+    importWarn = null;
+    importPreview = null;
+    try {
+      const isImage = file.type.startsWith('image/');
+      const isPdf = file.type === 'application/pdf';
+      if (!isImage && !isPdf) throw new Error('Envie PDF ou imagem (PNG/JPG)');
+
+      if (isImage) {
+        importWarn = 'Analisando imagem com Gemini…';
+        const base64 = await fileToBase64(file);
+        importPreview = await extractDietFromImage(base64, file.type);
+      } else {
+        importWarn = 'Extraindo PDF…';
+        const raw = await extractPdfText(file);
+        importWarn = 'Analisando com Gemini…';
+        importPreview = await extractDietFromText(raw);
+      }
+      importWarn = null;
+    } catch (err) {
+      importWarn = 'Erro: ' + (err as Error).message;
+    } finally {
+      importing = false;
+      if (fileInput) fileInput.value = '';
+    }
+  }
+
+  async function acceptImport() {
+    if (!authStore.uid || !importPreview) return;
+    importing = true;
+    try {
+      // Monta targets: usa os do import, senão computa a partir das refeições
+      const parsedTargets = importPreview.dailyTargets;
+      const computed = importPreview.meals.reduce(
+        (acc, m) => {
+          for (const it of m.items) {
+            const f = it.grams / 100;
+            acc.kcal += (it.kcalPer100g ?? 0) * f;
+            acc.proteinG += (it.proteinPer100g ?? 0) * f;
+            acc.carbG += (it.carbPer100g ?? 0) * f;
+            acc.fatG += (it.fatPer100g ?? 0) * f;
+          }
+          return acc;
+        },
+        { kcal: 0, proteinG: 0, carbG: 0, fatG: 0 }
+      );
+
+      const finalTargets = {
+        kcal: Math.round(parsedTargets?.kcal ?? computed.kcal),
+        proteinG: Math.round(parsedTargets?.proteinG ?? computed.proteinG),
+        carbG: Math.round(parsedTargets?.carbG ?? computed.carbG),
+        fatG: Math.round(parsedTargets?.fatG ?? computed.fatG),
+        fiberG: 25,
+        waterMl: Math.round((latestWeight ?? 80) * 35)
+      };
+
+      name = importPreview.name;
+      targets = finalTargets;
+
+      const p: DietPlan = {
+        id: plan?.id ?? newId(),
+        name: importPreview.name,
+        dailyTargets: finalTargets,
+        meals: importPreview.meals.map((m, i) => ({
+          id: 'mp_' + Math.random().toString(36).slice(2, 8) + i,
+          name: m.name,
+          time: m.time,
+          items: m.items.map((it) => ({
+            foodId: 'nutri_' + Math.random().toString(36).slice(2, 10),
+            foodName: it.foodName,
+            grams: it.grams,
+            kcalPer100g: it.kcalPer100g,
+            proteinPer100g: it.proteinPer100g,
+            carbPer100g: it.carbPer100g,
+            fatPer100g: it.fatPer100g
+          }))
+        })),
+        active: true,
+        createdAt: plan?.createdAt ?? Date.now()
+      };
+      await saveDiet(authStore.uid, p);
+      importPreview = null;
+      onSaved();
+    } finally {
+      importing = false;
+    }
+  }
 </script>
 
 <Card title="Plano de macros" icon="target">
   <Input label="Nome do plano" value={name} oninput={(e) => (name = (e.currentTarget as HTMLInputElement).value)} />
   <div class="spacer"></div>
 
-  <Button icon="auto_awesome" variant="secondary" full onclick={() => (aiOpen = true)}>
-    Gerar plano completo com IA
-  </Button>
+  <div class="ai-buttons">
+    <Button icon="auto_awesome" variant="secondary" full onclick={() => (aiOpen = true)}>
+      Gerar com IA
+    </Button>
+    <Button icon="upload_file" variant="secondary" full loading={importing} onclick={() => fileInput.click()}>
+      Importar do nutri
+    </Button>
+  </div>
+  <input
+    type="file"
+    accept="application/pdf,image/png,image/jpeg,image/webp,image/heic"
+    bind:this={fileInput}
+    onchange={onImportFile}
+    style="display:none"
+  />
+
+  {#if importWarn}
+    <div class="warn-box">
+      <span class="mi">info</span>
+      <span>{importWarn}</span>
+    </div>
+  {/if}
+
+  {#if importPreview}
+    <div class="import-preview">
+      <div class="ip-head">
+        <span class="mi">fact_check</span>
+        <div>
+          <div class="ip-title">{importPreview.name}</div>
+          {#if importPreview.dailyTargets?.kcal}
+            <div class="ip-sub">{importPreview.dailyTargets.kcal} kcal · {importPreview.meals.length} refeições</div>
+          {/if}
+        </div>
+      </div>
+      <div class="ip-meals">
+        {#each importPreview.meals as m (m.name + m.time)}
+          <div class="ip-meal">
+            <span class="ip-time mono">{m.time}</span>
+            <span class="ip-meal-name">{m.name}</span>
+            <span class="ip-count mono">{m.items.length} itens</span>
+          </div>
+        {/each}
+      </div>
+      <div class="ip-btns">
+        <Button variant="ghost" size="sm" onclick={() => (importPreview = null)}>Descartar</Button>
+        <Button variant="success" icon="check" full size="sm" loading={importing} onclick={acceptImport}>
+          Usar esse plano
+        </Button>
+      </div>
+    </div>
+  {/if}
+
   <div class="spacer"></div>
 
   {#if canSuggest}
@@ -291,7 +450,7 @@
 {#if aiOpen}
   <AIPromptSheet
     title="Plano com IA"
-    subtitle="A IA calcula macros e monta agenda alimentar com os alimentos TACO."
+    subtitle="A IA calcula macros e monta agenda alimentar com alimentos brasileiros."
     placeholder="Ex: Plano pra hipertrofia 2500 kcal, 5 refeições, sem lactose"
     suggestions={[
       'Bulking limpo 2800 kcal, 5 refeições',
@@ -449,6 +608,65 @@
   @media (max-width: 480px) {
     .grid-3 { grid-template-columns: 1fr 1fr; }
   }
+
+  .ai-buttons {
+    display: flex;
+    gap: var(--s-2);
+  }
+  @media (max-width: 380px) {
+    .ai-buttons { flex-direction: column; }
+  }
+
+  .warn-box {
+    display: flex;
+    gap: var(--s-2);
+    align-items: center;
+    padding: var(--s-2) var(--s-3);
+    background: color-mix(in srgb, var(--warn) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent);
+    border-radius: var(--r-md);
+    color: var(--warn);
+    font-size: var(--fs-xs);
+    margin-top: var(--s-2);
+  }
+  .warn-box .mi { font-size: 16px; flex-shrink: 0; }
+
+  .import-preview {
+    margin-top: var(--s-3);
+    padding: var(--s-3);
+    background: var(--accent-glow);
+    border: 1px solid var(--accent);
+    border-radius: var(--r-md);
+  }
+  .ip-head {
+    display: flex;
+    gap: var(--s-2);
+    align-items: center;
+    margin-bottom: var(--s-2);
+  }
+  .ip-head .mi { color: var(--accent); font-size: 22px; }
+  .ip-title { font-weight: 800; color: var(--accent); }
+  .ip-sub { font-size: var(--fs-xs); color: var(--text-mute); margin-top: 2px; }
+  .ip-meals {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: var(--s-3);
+    max-height: 180px;
+    overflow-y: auto;
+  }
+  .ip-meal {
+    display: flex;
+    gap: var(--s-2);
+    align-items: center;
+    padding: 6px var(--s-2);
+    background: var(--bg-2);
+    border-radius: var(--r-sm);
+  }
+  .ip-time { font-size: 11px; color: var(--accent); font-weight: 800; min-width: 40px; }
+  .ip-meal-name { flex: 1; font-size: var(--fs-xs); font-weight: 600; }
+  .ip-count { font-size: 10px; color: var(--text-mute); }
+  .ip-btns { display: flex; gap: var(--s-2); }
 
   .ai-preview { display: flex; flex-direction: column; gap: var(--s-3); }
   .ap-title { font-size: var(--fs-lg); font-weight: 800; }

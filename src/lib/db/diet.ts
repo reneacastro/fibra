@@ -85,7 +85,28 @@ export function newLoggedItemId() {
   return 'li_' + Math.random().toString(36).slice(2, 8);
 }
 
+/** Soma totais — só refeições marcadas como completed contam */
 export function computeMealLogTotals(meals: LoggedMeal[]) {
+  const totals = { kcal: 0, proteinG: 0, carbG: 0, fatG: 0 };
+  for (const meal of meals) {
+    if (!meal.completed) continue;
+    for (const item of meal.items) {
+      totals.kcal += item.kcal;
+      totals.proteinG += item.proteinG;
+      totals.carbG += item.carbG;
+      totals.fatG += item.fatG;
+    }
+  }
+  return {
+    kcal: Math.round(totals.kcal),
+    proteinG: Math.round(totals.proteinG * 10) / 10,
+    carbG: Math.round(totals.carbG * 10) / 10,
+    fatG: Math.round(totals.fatG * 10) / 10
+  };
+}
+
+/** Soma planejada (todas as refeições) — pra mostrar preview sem confirmar */
+export function computePlannedTotals(meals: LoggedMeal[]) {
   const totals = { kcal: 0, proteinG: 0, carbG: 0, fatG: 0 };
   for (const meal of meals) {
     for (const item of meal.items) {

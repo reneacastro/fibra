@@ -278,6 +278,11 @@ export interface PlannedFoodItem {
   grams: number;
   /** Qtd em unidades (se o alimento for medido em unidades). */
   units?: number;
+  /** Macros por 100g — usado quando foodId não existe no catálogo (ex: dieta importada de nutri) */
+  kcalPer100g?: number;
+  proteinPer100g?: number;
+  carbPer100g?: number;
+  fatPer100g?: number;
 }
 
 export interface Food {
@@ -314,6 +319,9 @@ export interface LoggedMeal {
   name: string;
   time: string;
   items: LoggedFoodItem[];
+  /** Marca que a refeição foi de fato consumida — só refeições concluídas contam nos totais */
+  completed?: boolean;
+  completedAt?: number;
 }
 
 export interface LoggedFoodItem {
