@@ -150,7 +150,12 @@
     saving = true;
     try {
       await saveWorkout(authStore.uid, workout);
-      goto('/treinos');
+      // Se veio do /registrar pra montar, já inicia a sessão com esse treino
+      if (page.url.searchParams.get('then') === 'register') {
+        goto(`/registrar/${workout.id}`);
+      } else {
+        goto('/treinos');
+      }
     } finally {
       saving = false;
     }

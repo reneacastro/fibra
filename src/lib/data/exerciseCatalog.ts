@@ -14,7 +14,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'supino-halteres',
     name: 'Supino com halteres',
-    category: 'superior',
+    category: ['superior', 'forca'],
     muscleGroup: ['peito', 'triceps', 'ombros'],
     equipment: 'halteres',
     gifUrl: '/exercises/supino-halteres.gif',
@@ -43,7 +43,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'flexao-bracos',
     name: 'Flexão de braços',
-    category: 'superior',
+    category: ['superior', 'calistenia', 'funcional'],
     muscleGroup: ['peito', 'triceps'],
     equipment: 'peso-corporal',
     gifUrl: '/exercises/flexao-bracos.gif',
@@ -55,7 +55,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'puxada-frontal-polia',
     name: 'Puxada frontal na polia',
-    category: 'superior',
+    category: ['superior', 'forca'],
     muscleGroup: 'costas',
     equipment: 'polia',
     gifUrl: '/exercises/puxada-frontal-polia.gif',
@@ -75,7 +75,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'remada-unilateral-haltere',
     name: 'Remada unilateral com haltere',
-    category: 'superior',
+    category: ['superior', 'forca'],
     muscleGroup: 'costas',
     equipment: 'halteres',
     gifUrl: '/exercises/remada-unilateral-haltere.gif',
@@ -97,7 +97,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'desenvolvimento-halteres',
     name: 'Desenvolvimento com halteres',
-    category: 'superior',
+    category: ['superior', 'forca'],
     muscleGroup: 'ombros',
     equipment: 'halteres',
     gifUrl: '/exercises/desenvolvimento-halteres.gif',
@@ -157,7 +157,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'agachamento-sumo',
     name: 'Agachamento sumo',
-    category: 'inferior',
+    category: ['inferior', 'forca', 'pump'],
     muscleGroup: ['quadriceps', 'adutores', 'gluteos'],
     equipment: 'halteres',
     gifUrl: '/exercises/agachamento-sumo.gif',
@@ -167,7 +167,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'goblet-squat-haltere',
     name: 'Goblet squat com haltere',
-    category: 'inferior',
+    category: ['inferior', 'forca'],
     muscleGroup: 'quadriceps',
     equipment: 'halteres',
     gifUrl: '/exercises/goblet-squat-haltere.gif',
@@ -197,7 +197,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'leg-press-45',
     name: 'Leg press 45°',
-    category: 'inferior',
+    category: ['inferior', 'forca'],
     muscleGroup: 'quadriceps',
     equipment: 'maquina',
     gifUrl: '/exercises/leg-press-45.gif',
@@ -229,7 +229,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'stiff-halteres',
     name: 'Stiff com halteres',
-    category: 'inferior',
+    category: ['inferior', 'forca', 'pump'],
     muscleGroup: ['posterior', 'gluteos', 'lombar'],
     equipment: 'halteres',
     gifUrl: '/exercises/stiff-halteres.gif',
@@ -248,7 +248,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'hip-thrust-haltere',
     name: 'Hip thrust com haltere',
-    category: 'inferior',
+    category: ['inferior', 'pump'],
     muscleGroup: 'gluteos',
     equipment: 'halteres',
     gifUrl: '/exercises/hip-thrust-haltere.gif',
@@ -257,7 +257,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'elevacao-pelvica-banco',
     name: 'Elevação pélvica no banco',
-    category: 'inferior',
+    category: ['inferior', 'pump'],
     muscleGroup: 'gluteos',
     equipment: 'peso-corporal',
     gifUrl: '/exercises/elevacao-pelvica-banco.gif',
@@ -268,7 +268,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'cadeira-abdutora',
     name: 'Cadeira abdutora',
-    category: 'inferior',
+    category: ['inferior', 'pump'],
     muscleGroup: 'abdutores',
     equipment: 'maquina',
     gifUrl: '/exercises/cadeira-abdutora.gif',
@@ -277,7 +277,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'abducao-cabo',
     name: 'Abdução no cabo',
-    category: 'inferior',
+    category: ['inferior', 'pump'],
     muscleGroup: ['abdutores', 'gluteos'],
     equipment: 'polia',
     gifUrl: '/exercises/abducao-cabo.gif',
@@ -297,7 +297,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'prancha-isometrica',
     name: 'Prancha isométrica',
-    category: ['funcional', 'fullbody'],
+    category: ['core', 'funcional', 'fullbody'],
     muscleGroup: ['core', 'lombar'],
     equipment: 'peso-corporal',
     gifUrl: '/exercises/prancha-isometrica.gif',
@@ -307,7 +307,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'prancha-lateral',
     name: 'Prancha lateral',
-    category: 'funcional',
+    category: ['core', 'funcional'],
     muscleGroup: 'core',
     equipment: 'peso-corporal',
     gifUrl: '/exercises/prancha-lateral.gif',
@@ -317,7 +317,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'abdominal-bicicleta',
     name: 'Abdominal bicicleta',
-    category: 'funcional',
+    category: ['core', 'funcional'],
     muscleGroup: 'core',
     equipment: 'peso-corporal',
     gifUrl: '/exercises/abdominal-bicicleta.gif',
@@ -326,7 +326,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'dead-bug',
     name: 'Dead bug',
-    category: ['funcional', 'alongamento'],
+    category: ['core', 'funcional', 'mobilidade'],
     muscleGroup: ['core', 'lombar'],
     equipment: 'peso-corporal',
     gifUrl: '/exercises/dead-bug.gif',
@@ -336,7 +336,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'bird-dog',
     name: 'Bird dog',
-    category: ['funcional', 'alongamento'],
+    category: ['core', 'funcional', 'mobilidade'],
     muscleGroup: ['core', 'lombar', 'gluteos'],
     equipment: 'peso-corporal',
     gifUrl: '/exercises/bird-dog.gif',
@@ -346,7 +346,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'superman-alternado',
     name: 'Superman alternado',
-    category: 'funcional',
+    category: ['core', 'funcional'],
     muscleGroup: ['lombar', 'gluteos'],
     equipment: 'peso-corporal',
     gifUrl: '/exercises/superman-alternado.gif',
@@ -355,7 +355,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'mountain-climber',
     name: 'Mountain climber',
-    category: ['funcional', 'hiit', 'crossfit', 'fullbody'],
+    category: ['core', 'funcional', 'hiit', 'crossfit', 'fullbody', 'cardio'],
     muscleGroup: ['core', 'cardio'],
     equipment: 'peso-corporal',
     gifUrl: '/exercises/mountain-climber.gif',
@@ -367,7 +367,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'burpee',
     name: 'Burpee',
-    category: ['crossfit', 'hiit', 'funcional', 'fullbody'],
+    category: ['crossfit', 'hiit', 'funcional', 'fullbody', 'cardio', 'calistenia'],
     muscleGroup: 'fullbody',
     equipment: 'peso-corporal',
     gifUrl: '/exercises/burpee.gif',
@@ -377,7 +377,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'box-jump',
     name: 'Box jump',
-    category: ['crossfit', 'funcional', 'fullbody'],
+    category: ['crossfit', 'funcional', 'fullbody', 'calistenia'],
     muscleGroup: ['quadriceps', 'gluteos', 'panturrilha'],
     equipment: 'caixa',
     gifUrl: '/exercises/box-jump.gif',
@@ -399,7 +399,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'corrida',
     name: 'Corrida',
-    category: 'livre',
+    category: ['cardio', 'livre'],
     muscleGroup: 'cardio',
     equipment: 'nenhum',
     gifUrl: '/exercises/corrida.gif',
@@ -409,7 +409,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'eliptico',
     name: 'Elíptico',
-    category: 'livre',
+    category: ['cardio', 'livre'],
     muscleGroup: 'cardio',
     equipment: 'eliptico',
     gifUrl: '/exercises/eliptico.gif',
@@ -419,12 +419,275 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: 'remo-ergometrico',
     name: 'Remo ergométrico',
-    category: 'livre',
+    category: ['cardio', 'livre'],
     muscleGroup: ['cardio', 'costas'],
     equipment: 'maquina',
     gifUrl: '/exercises/remo-ergometrico.webp',
     mets: 8,
     tags: ['cardio', 'fullbody']
+  },
+
+  // ═══ FORÇA (powerlifting / low-rep compostos) ══════════
+  {
+    id: 'agachamento-livre',
+    name: 'Agachamento livre com barra',
+    category: ['inferior', 'forca'],
+    muscleGroup: ['quadriceps', 'gluteos', 'lombar'],
+    equipment: 'barra',
+    mets: 8,
+    tags: ['composto', 'big-three']
+  },
+  {
+    id: 'levantamento-terra',
+    name: 'Levantamento terra',
+    category: ['fullbody', 'forca'],
+    muscleGroup: ['posterior', 'gluteos', 'lombar', 'costas'],
+    equipment: 'barra',
+    mets: 8,
+    tags: ['composto', 'big-three']
+  },
+  {
+    id: 'supino-reto-barra',
+    name: 'Supino reto com barra',
+    category: ['superior', 'forca'],
+    muscleGroup: ['peito', 'triceps', 'ombros'],
+    equipment: 'barra',
+    mets: 6,
+    tags: ['composto', 'push', 'big-three']
+  },
+  {
+    id: 'desenvolvimento-militar',
+    name: 'Desenvolvimento militar (overhead press)',
+    category: ['superior', 'forca'],
+    muscleGroup: ['ombros', 'triceps', 'core'],
+    equipment: 'barra',
+    mets: 6,
+    tags: ['composto', 'push']
+  },
+  {
+    id: 'remada-curvada',
+    name: 'Remada curvada com barra',
+    category: ['superior', 'forca'],
+    muscleGroup: ['costas', 'biceps'],
+    equipment: 'barra',
+    mets: 6,
+    tags: ['composto', 'pull']
+  },
+
+  // ═══ PUMP (glúteo/estético) ═══════════════════════════
+  {
+    id: 'cadeira-adutora',
+    name: 'Cadeira adutora',
+    category: ['inferior', 'pump'],
+    muscleGroup: 'adutores',
+    equipment: 'maquina',
+    mets: 3
+  },
+  {
+    id: 'eleva-perna-polia',
+    name: 'Elevação posterior de perna na polia',
+    category: ['inferior', 'pump'],
+    muscleGroup: ['gluteos', 'posterior'],
+    equipment: 'polia',
+    mets: 4
+  },
+  {
+    id: 'coice-quadrupede',
+    name: 'Coice quadrúpede (donkey kick)',
+    category: ['inferior', 'pump'],
+    muscleGroup: 'gluteos',
+    equipment: 'peso-corporal',
+    mets: 4
+  },
+  {
+    id: 'agachamento-bulgaro',
+    name: 'Agachamento búlgaro',
+    category: ['inferior', 'pump', 'forca'],
+    muscleGroup: ['quadriceps', 'gluteos'],
+    equipment: 'halteres',
+    mets: 7,
+    tags: ['unilateral']
+  },
+
+  // ═══ CORE / ABS ════════════════════════════════════════
+  {
+    id: 'abdominal-crunch',
+    name: 'Abdominal crunch',
+    category: 'core',
+    muscleGroup: 'core',
+    equipment: 'peso-corporal',
+    mets: 4
+  },
+  {
+    id: 'abdominal-canivete',
+    name: 'Abdominal canivete',
+    category: 'core',
+    muscleGroup: 'core',
+    equipment: 'peso-corporal',
+    mets: 5
+  },
+  {
+    id: 'ab-wheel',
+    name: 'Ab wheel (rolinho abdominal)',
+    category: ['core', 'calistenia'],
+    muscleGroup: ['core', 'ombros'],
+    equipment: 'nenhum',
+    mets: 5
+  },
+  {
+    id: 'russian-twist',
+    name: 'Russian twist',
+    category: ['core', 'funcional'],
+    muscleGroup: 'core',
+    equipment: 'halteres',
+    mets: 5
+  },
+  {
+    id: 'elevacao-pernas',
+    name: 'Elevação de pernas (na barra ou deitado)',
+    category: ['core', 'calistenia'],
+    muscleGroup: 'core',
+    equipment: 'barra',
+    mets: 5
+  },
+
+  // ═══ CARDIO ═══════════════════════════════════════════
+  {
+    id: 'bike-ergometrica',
+    name: 'Bike ergométrica',
+    category: ['cardio', 'livre'],
+    muscleGroup: 'cardio',
+    equipment: 'bike',
+    mets: 7,
+    tags: ['baixo-impacto']
+  },
+  {
+    id: 'pular-corda',
+    name: 'Pular corda',
+    category: ['cardio', 'hiit'],
+    muscleGroup: ['cardio', 'panturrilha'],
+    equipment: 'corda',
+    mets: 11,
+    tags: ['cardio', 'hiit']
+  },
+  {
+    id: 'caminhada-esteira',
+    name: 'Caminhada na esteira',
+    category: ['cardio', 'livre'],
+    muscleGroup: 'cardio',
+    equipment: 'esteira',
+    mets: 4,
+    tags: ['baixo-impacto', 'recuperacao']
+  },
+
+  // ═══ CALISTENIA ═══════════════════════════════════════
+  {
+    id: 'pull-up',
+    name: 'Barra fixa (pull-up)',
+    category: ['superior', 'calistenia'],
+    muscleGroup: ['costas', 'biceps'],
+    equipment: 'barra',
+    mets: 8,
+    tags: ['pull', 'composto']
+  },
+  {
+    id: 'chin-up',
+    name: 'Chin-up (palmas invertidas)',
+    category: ['superior', 'calistenia'],
+    muscleGroup: ['costas', 'biceps'],
+    equipment: 'barra',
+    mets: 8,
+    tags: ['pull']
+  },
+  {
+    id: 'dip-paralela',
+    name: 'Paralela (dip)',
+    category: ['superior', 'calistenia'],
+    muscleGroup: ['peito', 'triceps', 'ombros'],
+    equipment: 'nenhum',
+    mets: 7,
+    tags: ['push']
+  },
+  {
+    id: 'flexao-diamante',
+    name: 'Flexão diamante',
+    category: ['superior', 'calistenia'],
+    muscleGroup: ['triceps', 'peito'],
+    equipment: 'peso-corporal',
+    mets: 6
+  },
+  {
+    id: 'l-sit',
+    name: 'L-sit',
+    category: ['core', 'calistenia'],
+    muscleGroup: ['core', 'quadriceps'],
+    equipment: 'peso-corporal',
+    mets: 5,
+    tags: ['isometrica']
+  },
+  {
+    id: 'pistol-squat',
+    name: 'Pistol squat (agachamento unilateral)',
+    category: ['inferior', 'calistenia', 'forca'],
+    muscleGroup: ['quadriceps', 'gluteos'],
+    equipment: 'peso-corporal',
+    mets: 7,
+    tags: ['unilateral']
+  },
+
+  // ═══ MOBILIDADE / ALONGAMENTO ══════════════════════════
+  {
+    id: 'pigeon-pose',
+    name: 'Pigeon pose (alongamento glúteo)',
+    category: ['mobilidade', 'alongamento'],
+    muscleGroup: ['gluteos', 'quadriceps'],
+    equipment: 'peso-corporal',
+    mets: 2,
+    tags: ['isometrica', 'yoga']
+  },
+  {
+    id: 'cat-cow',
+    name: 'Cat-cow (coluna)',
+    category: ['mobilidade', 'alongamento'],
+    muscleGroup: ['lombar', 'core'],
+    equipment: 'peso-corporal',
+    mets: 2,
+    tags: ['yoga', 'coluna']
+  },
+  {
+    id: 'down-dog',
+    name: 'Downward dog (cachorro olhando pra baixo)',
+    category: ['mobilidade', 'alongamento'],
+    muscleGroup: ['posterior', 'ombros', 'panturrilha'],
+    equipment: 'peso-corporal',
+    mets: 3,
+    tags: ['yoga', 'isometrica']
+  },
+  {
+    id: 'flexor-quadril',
+    name: 'Alongamento de flexor do quadril',
+    category: ['mobilidade', 'alongamento'],
+    muscleGroup: ['quadriceps', 'gluteos'],
+    equipment: 'peso-corporal',
+    mets: 2,
+    tags: ['isometrica']
+  },
+  {
+    id: 'circulos-ombro',
+    name: 'Círculos de ombro',
+    category: 'mobilidade',
+    muscleGroup: 'ombros',
+    equipment: 'peso-corporal',
+    mets: 2
+  },
+  {
+    id: 'world-greatest-stretch',
+    name: "World's greatest stretch",
+    category: ['mobilidade', 'alongamento'],
+    muscleGroup: 'fullbody',
+    equipment: 'peso-corporal',
+    mets: 3,
+    tags: ['dinamico']
   }
 ];
 

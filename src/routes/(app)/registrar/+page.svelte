@@ -28,22 +28,35 @@
   }
 </script>
 
-<!-- Ação rápida: treino livre -->
-<Card accent="gradient" padding="lg">
-  <div class="quick">
-    <div class="quick-ic">⚡</div>
-    <div class="quick-body">
-      <div class="quick-title">Treino Livre</div>
-      <div class="quick-sub">Registre sem plano definido — escolha exercícios na hora</div>
+<!-- 3 ações top -->
+<div class="sec-title">Como você quer começar?</div>
+<div class="actions-top">
+  <!-- Treino Livre: sem plano, pode salvar como template no fim -->
+  <Card padding="md" onclick={() => goto('/registrar/livre')} accent="gradient">
+    <div class="quick">
+      <div class="quick-ic">⚡</div>
+      <div class="quick-body">
+        <div class="quick-title">Treino Livre</div>
+        <div class="quick-sub">Escolha exercícios na hora. Salva como template no fim</div>
+      </div>
+      <span class="mi chev">chevron_right</span>
     </div>
-  </div>
-  <div class="spacer"></div>
-  <Button icon="play_arrow" full onclick={() => goto('/registrar/livre')}>
-    Começar treino livre
-  </Button>
-</Card>
+  </Card>
 
-<div class="sec-title">Seus treinos</div>
+  <!-- Montar novo treino: vai pro builder, depois começa -->
+  <Card padding="md" onclick={() => goto('/treinos/novo?then=register')}>
+    <div class="quick">
+      <div class="quick-ic alt">📝</div>
+      <div class="quick-body">
+        <div class="quick-title">Montar treino novo</div>
+        <div class="quick-sub">Monte agora, salve no banco, já começa</div>
+      </div>
+      <span class="mi chev">chevron_right</span>
+    </div>
+  </Card>
+</div>
+
+<div class="sec-title">Ou escolha um treino salvo</div>
 
 {#if loading}
   <div class="empty"><span class="mi spin">progress_activity</span></div>
@@ -51,10 +64,8 @@
   <Card>
     <div class="empty-card">
       <div class="empty-ic">📁</div>
-      <div class="empty-title">Nenhum treino montado</div>
-      <div class="empty-sub">Monte seu primeiro treino no Banco.</div>
-      <div class="spacer"></div>
-      <Button icon="library_add" onclick={() => goto('/treinos/novo')}>Montar agora</Button>
+      <div class="empty-title">Sem treinos salvos ainda</div>
+      <div class="empty-sub">Use uma das opções acima. Ao fim, você pode salvar o que fez como um treino reutilizável.</div>
     </div>
   </Card>
 {:else}
@@ -105,30 +116,43 @@
 {/if}
 
 <style>
+  .actions-top {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    margin-bottom: var(--s-4);
+  }
   .quick {
     display: flex;
     gap: var(--s-3);
     align-items: center;
   }
   .quick-ic {
-    font-size: 32px;
-    width: 56px;
-    height: 56px;
-    border-radius: var(--r-lg);
+    font-size: 24px;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--r-md);
     background: var(--grad-fire);
     display: grid;
     place-items: center;
+    flex-shrink: 0;
   }
+  .quick-ic.alt {
+    background: var(--grad-primary);
+  }
+  .quick-body { flex: 1; min-width: 0; }
   .quick-title {
-    font-weight: 800;
-    font-size: var(--fs-lg);
-    letter-spacing: -0.02em;
+    font-weight: 700;
+    font-size: var(--fs-md);
+    letter-spacing: -0.01em;
   }
   .quick-sub {
     color: var(--text-mute);
-    font-size: var(--fs-sm);
+    font-size: var(--fs-xs);
     margin-top: 2px;
+    line-height: 1.3;
   }
+  .chev { color: var(--text-dim); flex-shrink: 0; }
 
   .spacer { height: var(--s-3); }
 
