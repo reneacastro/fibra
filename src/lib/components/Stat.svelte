@@ -35,10 +35,15 @@
     background: var(--bg-2);
     border: 1px solid var(--border);
     border-radius: var(--r-lg);
-    padding: var(--s-4);
+    padding: var(--s-3);
     display: flex;
-    gap: var(--s-3);
+    gap: var(--s-2);
     align-items: flex-start;
+    min-width: 0;
+    overflow: hidden;
+  }
+  @media (min-width: 480px) {
+    .stat { padding: var(--s-4); gap: var(--s-3); }
   }
   .a-accent  { border-color: color-mix(in srgb, var(--accent) 30%, var(--border)); }
   .a-success { border-color: color-mix(in srgb, var(--success) 30%, var(--border)); }
@@ -56,7 +61,12 @@
   }
   .a-accent .icon-wrap { background: var(--accent-glow); color: var(--accent); }
 
-  .body { flex: 1; min-width: 0; }
+  .body { flex: 1; min-width: 0; overflow: hidden; }
+  .body .lbl {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   .val-row {
     display: flex;

@@ -65,20 +65,32 @@
   }
 
   // ─── Stickers ───────────────────────────────────
+  // Zonas "seguras" pra stickers — cantos e bordas, evitando centro (rosto)
+  const SAFE_ZONES = [
+    { xMin: 0.06, xMax: 0.3, yMin: 0.12, yMax: 0.24 },  // canto sup esq
+    { xMin: 0.7,  xMax: 0.94, yMin: 0.12, yMax: 0.24 }, // canto sup dir
+    { xMin: 0.06, xMax: 0.3, yMin: 0.72, yMax: 0.84 },  // canto inf esq (acima footer)
+    { xMin: 0.7,  xMax: 0.94, yMin: 0.72, yMax: 0.84 }  // canto inf dir
+  ];
+
   function addSticker(emoji: string) {
     const existing = custom.stickers.find((s) => s.emoji === emoji);
     if (existing) {
-      // Remove se já existe
       custom = { ...custom, stickers: custom.stickers.filter((s) => s.id !== existing.id) };
       return;
     }
+    // Distribui em zona ainda não ocupada, se possível
+    const used = new Set(custom.stickers.map((s) => s.zoneIndex));
+    const zoneIdx = [0, 1, 2, 3].find((i) => !used.has(i)) ?? (custom.stickers.length % 4);
+    const zone = SAFE_ZONES[zoneIdx];
     const newSticker: Sticker = {
       id: 's_' + Math.random().toString(36).slice(2, 8),
       emoji,
-      x: 0.15 + Math.random() * 0.7,
-      y: 0.3 + Math.random() * 0.4,
-      scale: 0.8 + Math.random() * 0.4,
-      rotation: (Math.random() - 0.5) * 0.6
+      x: zone.xMin + Math.random() * (zone.xMax - zone.xMin),
+      y: zone.yMin + Math.random() * (zone.yMax - zone.yMin),
+      scale: 0.85 + Math.random() * 0.3,
+      rotation: (Math.random() - 0.5) * 0.35,
+      zoneIndex: zoneIdx
     };
     custom = { ...custom, stickers: [...custom.stickers, newSticker] };
   }
@@ -324,15 +336,18 @@
     background: #000;
     border-radius: var(--r-lg);
     overflow: hidden;
-    margin-bottom: var(--s-3);
-    height: 42dvh;
+    margin: 0 auto var(--s-3);
+    aspect-ratio: 9 / 16;
+    max-height: 44dvh;
+    width: auto;
+    max-width: 100%;
     position: relative;
     transition: opacity var(--dur-fast);
   }
   .preview img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
   .preview.rendering img { opacity: 0.6; }
   .rendering-dot {

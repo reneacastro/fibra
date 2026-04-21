@@ -145,6 +145,22 @@
     grid-template-columns: repeat(7, 1fr);
     gap: 4px;
   }
+  /* Em mobile narrow, vira scroll horizontal pra não cortar dias */
+  @media (max-width: 480px) {
+    .grid {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      padding-bottom: 4px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .grid::-webkit-scrollbar { display: none; }
+    .day {
+      flex: 0 0 calc((100% - 24px) / 4);
+      scroll-snap-align: start;
+    }
+  }
   .day {
     padding: var(--s-2);
     background: var(--bg-3);

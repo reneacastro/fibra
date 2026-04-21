@@ -37,6 +37,7 @@ export interface Sticker {
   y: number; // 0-1 relative
   scale: number; // 0.3 - 2.0
   rotation: number; // radianos
+  zoneIndex?: number; // 0-3, identifica zona segura ocupada
 }
 
 export interface SessionCardData {
@@ -383,25 +384,38 @@ function drawWeekCard(ctx: Ctx, d: WeekCardData, c: ShareCustomization) {
 
 // ─── Caption ────────────────────────────────────────────
 function drawCaption(ctx: Ctx, text: string) {
-  ctx.fillStyle = TEXT;
-  ctx.font = 'italic 42px "Plus Jakarta Sans", sans-serif';
+  ctx.font = 'italic 44px "Plus Jakarta Sans", sans-serif';
   ctx.textAlign = 'center';
   (ctx as any).letterSpacing = '0';
 
-  // Background tenue pra legibilidade
-  const maxWidth = W - 120;
-  const lines = wrapLines(ctx, `"${text}"`, maxWidth);
-  const lineHeight = 54;
+  const maxWidth = W - 160;
+  const quoted = `"${text}"`;
+  const lines = wrapLines(ctx, quoted, maxWidth);
+  const lineHeight = 58;
   const blockHeight = lines.length * lineHeight;
-  const blockY = H - 400 - blockHeight;
+  const blockY = H - 380 - blockHeight;
 
-  // Sombra/background
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-  roundRect(ctx, 60, blockY - 30, W - 120, blockHeight + 60, 20);
+  // Largura do fundo = maior linha + padding horizontal
+  let maxLineWidth = 0;
+  for (const l of lines) {
+    const w = ctx.measureText(l).width;
+    if (w > maxLineWidth) maxLineWidth = w;
+  }
+  const padX = 36;
+  const padY = 20;
+  const bgW = maxLineWidth + padX * 2;
+  const bgH = blockHeight + padY * 2;
+  const bgX = (W - bgW) / 2;
+  const bgY = blockY - padY - 10;
+
+  // Fundo arredondado centralizado no texto
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+  roundRect(ctx, bgX, bgY, bgW, bgH, bgH / 2.4);
   ctx.fill();
 
   // Texto
   ctx.fillStyle = TEXT;
+  ctx.textBaseline = 'alphabetic';
   lines.forEach((l, i) => ctx.fillText(l, W / 2, blockY + i * lineHeight));
 }
 
