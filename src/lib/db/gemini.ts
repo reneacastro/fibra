@@ -335,7 +335,7 @@ Responda JSON com:
   const text = await askGemini(prompt, {
     responseMimeType: 'application/json',
     temperature: 0.5,
-    maxOutputTokens: 8192
+    maxOutputTokens: 4096
   });
 
   return parseJson(text);

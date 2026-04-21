@@ -114,6 +114,10 @@
         })
       );
 
+      // Limita o catálogo enviado pra IA — modelos free engasgam com prompt gigante.
+      // Curados (PT-BR) vêm primeiro no store, então os 150 primeiros cobrem tudo que importa.
+      const aiCatalog = catalogStore.all.slice(0, 150);
+
       const blueprint = await buildWorkoutFromPrompt({
         userPrompt: prompt,
         userProfile: {
@@ -122,7 +126,7 @@
           latestWeight,
           activityLevel: profile?.activityLevel
         },
-        catalog: catalogStore.all.map((e) => ({
+        catalog: aiCatalog.map((e) => ({
           id: e.id, name: e.name,
           category: e.category, muscleGroup: e.muscleGroup, equipment: e.equipment
         })),
