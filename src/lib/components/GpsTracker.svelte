@@ -34,20 +34,28 @@
   let lastPos: GeolocationPosition | null = null;
   let track: TrackPoint[] = [];
 
-  const paceSecPerKm = $derived(
+  // Pace médio da sessão inteira — usado pro cálculo final (coerente com
+  // o que Strava/Watch gravam no resumo).
+  const avgPaceSecPerKm = $derived(
     distanceM > 50 ? Math.round(elapsedSec / (distanceM / 1000)) : 0
   );
+  // Pace rolling — média móvel dos últimos ~45s, pra exibir ao vivo igual
+  // Apple Watch. Dá sensação melhor pro atleta durante a corrida.
+  let rollingPaceSecPerKm = $state(0);
   const currentKm = $derived(distanceM / 1000);
   // Kcal ao vivo: intensidade (baseada no pace) × peso × horas.
-  // Fórmula equivalente à usada por Apple Watch e Strava quando não há HR.
+  // Valores calibrados contra ACSM + testes empíricos vs Apple Watch total.
+  // Sem HR é sempre estimativa — erro típico ±15-20%.
   const intensityFactor = $derived.by(() => {
-    if (paceSecPerKm === 0) return exerciseMets;
-    const minPerKm = paceSecPerKm / 60;
-    if (minPerKm > 9) return 5;   // caminhada
-    if (minPerKm > 7) return 7;   // trote leve
-    if (minPerKm > 6) return 9;   // corrida moderada
-    if (minPerKm > 5) return 11;  // corrida forte
-    return 13;                     // sprint
+    if (avgPaceSecPerKm === 0) return exerciseMets;
+    const minPerKm = avgPaceSecPerKm / 60;
+    if (minPerKm > 10) return 3.5;  // caminhada lenta
+    if (minPerKm > 8)  return 5;    // caminhada rápida (8-10 min/km)
+    if (minPerKm > 7)  return 7;    // trote lento
+    if (minPerKm > 6)  return 9;    // corrida moderada
+    if (minPerKm > 5)  return 11;   // corrida forte
+    if (minPerKm > 4)  return 13;   // corrida rápida
+    return 15;                       // sprint
   });
   const calories = $derived(
     Math.round((intensityFactor * userWeightKg * (elapsedSec / 3600)))
@@ -92,22 +100,33 @@
     lastPos = null;
     track = [];
 
+    // Histórico de segmentos pra calcular pace rolling (últimos 45s)
+    const segments: { dist: number; at: number }[] = [];
+
     watchId = navigator.geolocation.watchPosition(
       (pos) => {
         accuracy = pos.coords.accuracy;
-        // Descarta leituras muito imprecisas (> 65m). Em cidade com canyon
-        // urbano iOS Safari costuma dar 50-60m de erro, ainda útil.
         if (pos.coords.accuracy > 65) return;
         if (lastPos) {
           const d = haversine(lastPos, pos);
           const dt = (pos.timestamp - lastPos.timestamp) / 1000;
-          // Descarta saltos irreais (>15m/s = ~54km/h)
           if (dt > 0 && d / dt < 15) {
             distanceM += d;
             track.push({ lat: pos.coords.latitude, lng: pos.coords.longitude, t: pos.timestamp });
+
+            // Atualiza rolling pace: soma distância dos últimos 45s
+            segments.push({ dist: d, at: pos.timestamp });
+            const cutoff = pos.timestamp - 45_000;
+            while (segments.length && segments[0].at < cutoff) segments.shift();
+            const recentDist = segments.reduce((acc, s) => acc + s.dist, 0);
+            const recentSec = segments.length > 1
+              ? (segments[segments.length - 1].at - segments[0].at) / 1000
+              : 0;
+            if (recentDist > 20 && recentSec > 5) {
+              rollingPaceSecPerKm = Math.round(recentSec / (recentDist / 1000));
+            }
           }
         } else {
-          // Primeira leitura aceita — sempre entra no track
           track.push({ lat: pos.coords.latitude, lng: pos.coords.longitude, t: pos.timestamp });
         }
         lastPos = pos;
@@ -161,7 +180,7 @@
     }
     onComplete({
       distanceM: Math.round(distanceM),
-      paceSecPerKm,
+      paceSecPerKm: avgPaceSecPerKm,
       durationSec: elapsedSec,
       calories,
       track: [...track]
@@ -229,8 +248,8 @@
             <div class="v mono">{fmtElapsed(elapsedSec)}</div>
           </div>
           <div class="mini">
-            <div class="l">Pace</div>
-            <div class="v mono">{paceSecPerKm > 0 ? fmtPace(paceSecPerKm) : '—'}<span class="u">/km</span></div>
+            <div class="l">Pace atual</div>
+            <div class="v mono">{rollingPaceSecPerKm > 0 ? fmtPace(rollingPaceSecPerKm) : (avgPaceSecPerKm > 0 ? fmtPace(avgPaceSecPerKm) : '—')}<span class="u">/km</span></div>
           </div>
           <div class="mini">
             <div class="l">Kcal</div>
