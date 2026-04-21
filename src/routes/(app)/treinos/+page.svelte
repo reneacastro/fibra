@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import Sortable from 'sortablejs';
   import { authStore } from '$lib/stores/auth.svelte';
   import { catalogStore } from '$lib/stores/catalog.svelte';
-  import { listWorkouts, deleteWorkout } from '$lib/db/workouts';
+  import { listWorkouts, deleteWorkout, saveWorkoutsOrder } from '$lib/db/workouts';
   import type { Workout, WorkoutCategory } from '$lib/types';
   import { CATEGORY_LABEL, CATEGORY_ICON } from '$lib/utils/format';
   import Card from '$lib/components/Card.svelte';
@@ -29,6 +30,41 @@
   onMount(async () => {
     await catalogStore.ensure();
     await reloadWorkouts();
+  });
+
+  let listEl: HTMLDivElement | undefined = $state();
+  let sortable: Sortable | null = null;
+
+  $effect(() => {
+    if (!listEl || active !== 'meus' || workouts.length === 0) {
+      sortable?.destroy();
+      sortable = null;
+      return;
+    }
+    sortable?.destroy();
+    sortable = Sortable.create(listEl, {
+      animation: 180,
+      handle: '.wk-drag',
+      ghostClass: 'dragging',
+      delay: 100,
+      delayOnTouchOnly: true,
+      onEnd: async (evt) => {
+        if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
+        if (evt.oldIndex === evt.newIndex) return;
+        const next = [...workouts];
+        const [moved] = next.splice(evt.oldIndex, 1);
+        next.splice(evt.newIndex, 0, moved);
+        workouts = next;
+        if (authStore.uid) {
+          try {
+            await saveWorkoutsOrder(authStore.uid, next);
+          } catch (e) {
+            console.error('Falha ao salvar ordem:', e);
+          }
+        }
+      }
+    });
+    return () => sortable?.destroy();
   });
 
   async function reloadWorkouts() {
@@ -213,36 +249,45 @@
       </div>
     </Card>
   {:else}
-    <div class="wk-list">
+    <div class="wk-list" bind:this={listEl}>
       {#each workouts as w (w.id)}
-        <Card onclick={() => goto(`/treinos/${w.id}`)}>
-          <div class="wk">
-            <div class="wk-main">
-              <div class="wk-badge-row">
-                <Badge category={w.category} icon={CATEGORY_ICON[w.category]}>
-                  {CATEGORY_LABEL[w.category]}
-                </Badge>
-                {#if w.favorite}<Badge variant="warn" icon="star">Favorito</Badge>{/if}
+        <div class="wk-wrap">
+          <Card onclick={() => goto(`/treinos/${w.id}`)}>
+            <div class="wk">
+              <button
+                class="wk-drag"
+                aria-label="Arrastar para reordenar"
+                onclick={(e) => e.stopPropagation()}
+              >
+                <span class="mi">drag_indicator</span>
+              </button>
+              <div class="wk-main">
+                <div class="wk-badge-row">
+                  <Badge category={w.category} icon={CATEGORY_ICON[w.category]}>
+                    {CATEGORY_LABEL[w.category]}
+                  </Badge>
+                  {#if w.favorite}<Badge variant="warn" icon="star">Favorito</Badge>{/if}
+                </div>
+                <div class="wk-name">{w.name}</div>
+                <div class="wk-meta">
+                  <span>{w.exercises.length} exercícios</span>
+                  <span class="dot">·</span>
+                  <span>
+                    {w.exercises.reduce((acc, e) => acc + e.sets.length, 0)} séries
+                  </span>
+                </div>
               </div>
-              <div class="wk-name">{w.name}</div>
-              <div class="wk-meta">
-                <span>{w.exercises.length} exercícios</span>
-                <span class="dot">·</span>
-                <span>
-                  {w.exercises.reduce((acc, e) => acc + e.sets.length, 0)} séries
-                </span>
+              <div class="wk-actions">
+                <button class="icon-btn" onclick={(e) => { e.stopPropagation(); goto(`/treinos/${w.id}`); }} aria-label="Editar">
+                  <span class="mi">edit</span>
+                </button>
+                <button class="icon-btn danger" onclick={(e) => { e.stopPropagation(); remove(w); }} aria-label="Apagar">
+                  <span class="mi">delete</span>
+                </button>
               </div>
             </div>
-            <div class="wk-actions">
-              <button class="icon-btn" onclick={(e) => { e.stopPropagation(); goto(`/treinos/${w.id}`); }} aria-label="Editar">
-                <span class="mi">edit</span>
-              </button>
-              <button class="icon-btn danger" onclick={(e) => { e.stopPropagation(); remove(w); }} aria-label="Apagar">
-                <span class="mi">delete</span>
-              </button>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
       {/each}
     </div>
   {/if}
@@ -357,6 +402,24 @@
   .dot { color: var(--text-dim); }
 
   .wk-actions { display: flex; gap: 4px; }
+
+  .wk-drag {
+    width: 28px;
+    height: 48px;
+    margin: -4px -4px -4px -8px;
+    color: var(--text-dim);
+    display: grid;
+    place-items: center;
+    cursor: grab;
+    touch-action: none;
+    flex-shrink: 0;
+  }
+  .wk-drag:active { cursor: grabbing; color: var(--accent); }
+  .wk-drag .mi { font-size: 22px; }
+
+  .wk-wrap :global(.dragging) {
+    opacity: 0.4;
+  }
 
   .icon-btn {
     width: 36px;

@@ -1,5 +1,5 @@
 import {
-  collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy
+  collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, orderBy, writeBatch
 } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import type { Workout } from '$lib/types';
@@ -29,6 +29,15 @@ export async function saveWorkout(uid: string, w: Workout) {
 
 export async function deleteWorkout(uid: string, id: string) {
   await deleteDoc(doc(col(uid), id));
+}
+
+/** Atualiza apenas o campo `order` de vários treinos de uma vez. */
+export async function saveWorkoutsOrder(uid: string, ordered: Workout[]) {
+  const batch = writeBatch(db());
+  ordered.forEach((w, i) => {
+    batch.update(doc(col(uid), w.id), { order: i, updatedAt: Date.now() });
+  });
+  await batch.commit();
 }
 
 export function newWorkoutId() {

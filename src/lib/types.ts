@@ -121,6 +121,7 @@ export interface ExerciseSet {
   weight?: number; // kg sugerido
   durationSec?: number; // para alongamento/isométrica
   distanceM?: number; // para corrida
+  paceSecPerKm?: number; // ritmo alvo (corrida/cardio)
   rpeTarget?: number; // 1-10
   tempo?: string; // ex: "3-1-1-0"
 }
@@ -171,6 +172,7 @@ export interface PerformedSet {
   weight?: number;
   durationSec?: number;
   distanceM?: number;
+  paceSecPerKm?: number;
   rpe?: number;
   completed: boolean;
 }

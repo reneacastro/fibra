@@ -21,7 +21,7 @@
   import ExerciseHistoryCompact from '$lib/components/ExerciseHistoryCompact.svelte';
   import ExerciseDetailSheet from '$lib/components/ExerciseDetailSheet.svelte';
   import CrossfitTimer from '$lib/components/CrossfitTimer.svelte';
-  import { isDurationBased, fmtSec } from '$lib/utils/exercise';
+  import { isDurationBased, isCardio, fmtSec, fmtPace, parsePace } from '$lib/utils/exercise';
   import { suggestNextLoad } from '$lib/db/gemini';
   import { historyForExercise } from '$lib/db/sessions';
   import { getProfile } from '$lib/db/profile';
@@ -160,9 +160,22 @@
     }
   }
 
-  function updateSetValue(exIdx: number, setIdx: number, field: 'reps'|'weight'|'durationSec', value: string) {
+  function updateSetValue(exIdx: number, setIdx: number, field: 'reps'|'weight'|'durationSec'|'distanceM'|'paceSecPerKm', value: string) {
     const next = [...performed];
     next[exIdx].sets[setIdx][field] = Number(value) || undefined;
+    performed = next;
+  }
+
+  function updateSetPace(exIdx: number, setIdx: number, value: string) {
+    const next = [...performed];
+    next[exIdx].sets[setIdx].paceSecPerKm = parsePace(value);
+    performed = next;
+  }
+
+  function updateSetKm(exIdx: number, setIdx: number, value: string) {
+    const next = [...performed];
+    const km = Number(value);
+    next[exIdx].sets[setIdx].distanceM = km > 0 ? Math.round(km * 1000) : undefined;
     performed = next;
   }
 
@@ -346,7 +359,7 @@
                 onOpenDetail={() => (detailExId = pe.exerciseId)}
               />
 
-              {#if !isDurationBased(meta)}
+              {#if !isDurationBased(meta) && !isCardio(meta)}
                 {@const sug = suggestions[pe.exerciseId]}
                 {#if sug}
                   <div class="sug-card">
@@ -376,13 +389,44 @@
               {/if}
             </div>
             {@const duration = isDurationBased(meta)}
+            {@const cardio = isCardio(meta)}
             <div class="sets-list">
               {#each pe.sets as set, sIdx (sIdx)}
                 <div class="set-row" class:done={set.completed}>
                   <button class="set-check" class:on={set.completed} onclick={() => toggleSet(idx, sIdx)}>
                     {#if set.completed}<span class="mi">check</span>{:else}<span class="mono">{sIdx + 1}</span>{/if}
                   </button>
-                  {#if duration}
+                  {#if cardio}
+                    <div class="set-inputs">
+                      <label class="inp-wrap">
+                        <span>km</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          inputmode="decimal"
+                          value={set.distanceM ? (set.distanceM / 1000).toString() : ''}
+                          placeholder={workoutEx.sets[sIdx]?.distanceM ? (workoutEx.sets[sIdx].distanceM! / 1000).toString() : '5'}
+                          oninput={(e) => updateSetKm(idx, sIdx, e.currentTarget.value)}
+                        />
+                      </label>
+                      <label class="inp-wrap">
+                        <span>pace</span>
+                        <input
+                          type="text"
+                          inputmode="numeric"
+                          value={fmtPace(set.paceSecPerKm)}
+                          placeholder={fmtPace(workoutEx.sets[sIdx]?.paceSecPerKm) || '5:30'}
+                          oninput={(e) => updateSetPace(idx, sIdx, e.currentTarget.value)}
+                        />
+                      </label>
+                    </div>
+                    <div class="target mono">
+                      {#if workoutEx.sets[sIdx]?.distanceM}
+                        alvo: {(workoutEx.sets[sIdx].distanceM! / 1000).toFixed(1)}km{workoutEx.sets[sIdx]?.paceSecPerKm ? ` @ ${fmtPace(workoutEx.sets[sIdx].paceSecPerKm)}` : ''}
+                      {:else}—{/if}
+                    </div>
+                  {:else if duration}
                     <div class="set-inputs">
                       <label class="inp-wrap">
                         <span>segundos</span>

@@ -22,7 +22,7 @@
   import CrossfitEditor from '$lib/components/CrossfitEditor.svelte';
   import NewExerciseSheet from '$lib/components/NewExerciseSheet.svelte';
   import Sortable from 'sortablejs';
-  import { isDurationBased, isCardio, fmtSec } from '$lib/utils/exercise';
+  import { isDurationBased, isCardio, fmtSec, fmtPace, parsePace } from '$lib/utils/exercise';
   import type { Exercise } from '$lib/types';
 
   let newExOpen = $state(false);
@@ -113,18 +113,24 @@
   function addExercise(exerciseId: string) {
     const ex = catalogStore.byId(exerciseId);
     let set: ExerciseSet;
+    let seriesCount = 3;
+    let rest = 60;
     if (ex && isDurationBased(ex)) {
       set = { type: 'isométrica', durationSec: 30 };
+      rest = 30;
     } else if (ex && isCardio(ex)) {
-      set = { type: 'normal', durationSec: 1200 };
+      // Cardio: 1 "série" (volta) com distância + pace alvo
+      set = { type: 'normal', distanceM: 5000, paceSecPerKm: 360 };
+      seriesCount = 1;
+      rest = 0;
     } else {
       set = { type: 'normal', reps: 10, weight: 0 };
     }
     const we: WorkoutExercise = {
       exerciseId,
       order: workout.exercises.length,
-      sets: [{ ...set }, { ...set }, { ...set }],
-      restSeconds: ex && isDurationBased(ex) ? 30 : 60
+      sets: Array.from({ length: seriesCount }, () => ({ ...set })),
+      restSeconds: rest
     };
     workout = { ...workout, exercises: [...workout.exercises, we] };
   }
@@ -265,8 +271,16 @@
               <div class="spacer-sm"></div>
 
               {@const duration = isDurationBased(meta)}
+              {@const cardio = isCardio(meta)}
               <div class="sets">
-                {#if duration}
+                {#if cardio}
+                  <div class="set-head cardio">
+                    <span>Série</span>
+                    <span>Distância</span>
+                    <span>Pace</span>
+                    <span></span>
+                  </div>
+                {:else if duration}
                   <div class="set-head dur">
                     <span>Série</span>
                     <span>Duração</span>
@@ -282,7 +296,40 @@
                   </div>
                 {/if}
                 {#each we.sets as set, sIdx (sIdx)}
-                  {#if duration}
+                  {#if cardio}
+                    <div class="set-row cardio">
+                      <span class="set-num mono">{sIdx + 1}</span>
+                      <div class="dur-input">
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          inputmode="decimal"
+                          value={set.distanceM ? (set.distanceM / 1000).toString() : ''}
+                          placeholder="5"
+                          oninput={(e) => {
+                            const v = Number(e.currentTarget.value);
+                            updateSet(idx, sIdx, { distanceM: v > 0 ? Math.round(v * 1000) : undefined });
+                          }}
+                        />
+                        <span class="suf">km</span>
+                      </div>
+                      <div class="dur-input">
+                        <input
+                          type="text"
+                          inputmode="numeric"
+                          pattern="[0-9:]*"
+                          value={fmtPace(set.paceSecPerKm)}
+                          placeholder="5:30"
+                          oninput={(e) => updateSet(idx, sIdx, { paceSecPerKm: parsePace(e.currentTarget.value) })}
+                        />
+                        <span class="suf">/km</span>
+                      </div>
+                      <button class="set-del" onclick={() => removeSet(idx, sIdx)} aria-label="Remover série">
+                        <span class="mi">remove</span>
+                      </button>
+                    </div>
+                  {:else if duration}
                     <div class="set-row dur">
                       <span class="set-num mono">{sIdx + 1}</span>
                       <div class="dur-input">
@@ -614,6 +661,9 @@
   }
   .set-head.dur, .set-row.dur {
     grid-template-columns: 36px 1fr 28px;
+  }
+  .set-head.cardio, .set-row.cardio {
+    grid-template-columns: 36px 1fr 1fr 28px;
   }
   .dur-input {
     display: flex;
