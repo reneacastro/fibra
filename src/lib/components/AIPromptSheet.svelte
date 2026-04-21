@@ -23,6 +23,23 @@
   }: Props = $props();
 
   let prompt = $state('');
+  let slowHint = $state(false);
+  let elapsedSec = $state(0);
+
+  // Avisa que pode demorar depois de 5s. Depois de 20s, reforça.
+  $effect(() => {
+    if (!busy) {
+      slowHint = false;
+      elapsedSec = 0;
+      return;
+    }
+    const start = Date.now();
+    const timer = setInterval(() => {
+      elapsedSec = Math.floor((Date.now() - start) / 1000);
+      if (elapsedSec >= 5) slowHint = true;
+    }, 1000);
+    return () => clearInterval(timer);
+  });
 
   function submit() {
     if (!prompt.trim() || busy) return;
@@ -89,6 +106,11 @@
         </div>
       {/if}
 
+      <div class="tip">
+        <span class="mi">lightbulb</span>
+        <span>Prefira prompts curtos e diretos. Quanto mais simples, mais rápido.</span>
+      </div>
+
       {#if error}
         <div class="error-box">
           <span class="mi">error</span>
@@ -96,10 +118,24 @@
         </div>
       {/if}
 
+      {#if slowHint && busy}
+        <div class="slow-box">
+          <span class="mi spin">progress_activity</span>
+          <div>
+            <strong>A IA está pensando…</strong>
+            <span class="slow-sub">
+              {elapsedSec < 20
+                ? 'Pode levar até 30s. Aguarda aí que o resultado sai.'
+                : 'Demorou mais que o normal — os modelos grátis tão ocupados. Vou tentar outros automaticamente.'}
+            </span>
+          </div>
+        </div>
+      {/if}
+
       <div class="actions">
         <Button variant="ghost" onclick={onClose} disabled={busy}>Cancelar</Button>
         <Button icon="auto_awesome" full loading={busy} disabled={!prompt.trim()} onclick={submit}>
-          {busy ? 'Gerando…' : 'Gerar'}
+          {busy ? (elapsedSec > 0 ? `Gerando… ${elapsedSec}s` : 'Gerando…') : 'Gerar'}
         </Button>
       </div>
 
@@ -244,6 +280,39 @@
     color: var(--accent);
   }
   .sug-btn:disabled { opacity: 0.4; }
+
+  .tip {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    margin-top: var(--s-3);
+    padding: 8px 12px;
+    background: var(--bg-3);
+    border-radius: var(--r-md);
+    color: var(--text-mute);
+    font-size: var(--fs-xs);
+    line-height: 1.4;
+  }
+  .tip .mi { font-size: 16px; color: var(--accent); flex-shrink: 0; margin-top: 1px; }
+
+  .slow-box {
+    display: flex;
+    gap: var(--s-2);
+    align-items: flex-start;
+    padding: var(--s-3);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+    border-radius: var(--r-md);
+    color: var(--text);
+    font-size: var(--fs-xs);
+    margin-top: var(--s-3);
+    line-height: 1.4;
+  }
+  .slow-box .mi { font-size: 20px; color: var(--accent); flex-shrink: 0; }
+  .slow-box strong { display: block; font-weight: 700; margin-bottom: 2px; }
+  .slow-sub { color: var(--text-mute); }
+  .spin { animation: spin 1.2s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
   .error-box {
     display: flex;
