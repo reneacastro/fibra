@@ -27,8 +27,12 @@ service cloud.firestore {
         && sc in get(/databases/$(database)/documents/relationships/$(relId)).data.scope;
     }
     function isAdmin() {
-      return isSignedIn()
-        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return isSignedIn() && (
+        // Fundador (sempre admin)
+        request.auth.uid == '6Yqqavyj8odRlNvpiEoUehOspyI2'
+        // Ou doc em /admins/{uid} criado por outro admin
+        || exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
     }
 
     // ─── Catálogos públicos (read-only) ──────────────────
@@ -45,8 +49,9 @@ service cloud.firestore {
     match /admins/{uid} {
       // Qualquer user autenticado pode checar se ele próprio é admin
       allow read: if isSignedIn() && request.auth.uid == uid;
-      // Escrita só via Firebase Console (manual)
-      allow write: if false;
+      // Admin existente pode promover outros
+      allow create, delete: if isAdmin() && notTooLarge();
+      allow update: if false;
     }
 
     // ─── Pedidos de virar trainer/nutritionist ───────────
