@@ -2,6 +2,7 @@
   import { onDestroy } from 'svelte';
   import Button from './Button.svelte';
   import { fmtPace } from '$lib/utils/exercise';
+  import { getNoSleep } from '$lib/utils/noSleep';
 
   interface TrackPoint { lat: number; lng: number; t: number }
   interface Props {
@@ -9,11 +10,14 @@
       distanceM: number;
       paceSecPerKm: number;
       durationSec: number;
+      calories: number;
       track: TrackPoint[];
     }) => void;
     onClose: () => void;
+    userWeightKg?: number;
+    exerciseMets?: number;
   }
-  let { onComplete, onClose }: Props = $props();
+  let { onComplete, onClose, userWeightKg = 70, exerciseMets = 9 }: Props = $props();
 
   type State = 'idle' | 'running' | 'paused';
   let phase = $state<State>('idle');
@@ -24,7 +28,6 @@
 
   let watchId: number | null = null;
   let tickTimer: number | null = null;
-  let wakeLock: WakeLockSentinel | null = null;
   let startAt = 0;
   let pausedAccumSec = 0;
   let pausedAt = 0;
@@ -35,6 +38,33 @@
     distanceM > 50 ? Math.round(elapsedSec / (distanceM / 1000)) : 0
   );
   const currentKm = $derived(distanceM / 1000);
+  // Kcal em tempo real: MET × peso × horas. Ajusta MET conforme pace real:
+  // corrida lenta (pace 7+) ≈ 6 MET; corrida média (6) ≈ 9; rápida (5-) ≈ 11.
+  const dynamicMet = $derived.by(() => {
+    if (paceSecPerKm === 0) return exerciseMets;
+    const minPerKm = paceSecPerKm / 60;
+    if (minPerKm > 9) return 5;   // caminhada
+    if (minPerKm > 7) return 7;   // trote
+    if (minPerKm > 6) return 9;   // corrida moderada
+    if (minPerKm > 5) return 11;  // corrida forte
+    return 13;                     // sprint
+  });
+  const calories = $derived(
+    Math.round((dynamicMet * userWeightKg * (elapsedSec / 3600)))
+  );
+
+  // Celebration a cada km completo
+  let lastCelebratedKm = 0;
+  let celebrateKm = $state<number | null>(null);
+  $effect(() => {
+    const whole = Math.floor(currentKm);
+    if (whole > lastCelebratedKm && whole >= 1) {
+      lastCelebratedKm = whole;
+      celebrateKm = whole;
+      if (navigator.vibrate) navigator.vibrate([50, 30, 100]);
+      setTimeout(() => { celebrateKm = null; }, 2800);
+    }
+  });
 
   function haversine(a: GeolocationPosition, b: GeolocationPosition): number {
     const R = 6371000;
@@ -49,14 +79,6 @@
     return 2 * R * Math.asin(Math.sqrt(h));
   }
 
-  async function requestWakeLock() {
-    try {
-      const w = (navigator as Navigator & { wakeLock?: { request: (t: 'screen') => Promise<WakeLockSentinel> } }).wakeLock;
-      if (w) wakeLock = await w.request('screen');
-    } catch {
-      // sem problema, alguns browsers não têm
-    }
-  }
 
   function start() {
     if (!('geolocation' in navigator)) {
@@ -73,8 +95,9 @@
     watchId = navigator.geolocation.watchPosition(
       (pos) => {
         accuracy = pos.coords.accuracy;
-        // Descarta leituras muito imprecisas (> 30m)
-        if (pos.coords.accuracy > 30) return;
+        // Descarta leituras muito imprecisas (> 65m). Em cidade com canyon
+        // urbano iOS Safari costuma dar 50-60m de erro, ainda útil.
+        if (pos.coords.accuracy > 65) return;
         if (lastPos) {
           const d = haversine(lastPos, pos);
           const dt = (pos.timestamp - lastPos.timestamp) / 1000;
@@ -84,6 +107,7 @@
             track.push({ lat: pos.coords.latitude, lng: pos.coords.longitude, t: pos.timestamp });
           }
         } else {
+          // Primeira leitura aceita — sempre entra no track
           track.push({ lat: pos.coords.latitude, lng: pos.coords.longitude, t: pos.timestamp });
         }
         lastPos = pos;
@@ -101,7 +125,7 @@
       }
     }, 250);
 
-    requestWakeLock();
+    getNoSleep().enable();
   }
 
   function pause() {
@@ -125,8 +149,7 @@
       clearInterval(tickTimer);
       tickTimer = null;
     }
-    wakeLock?.release().catch(() => {});
-    wakeLock = null;
+    getNoSleep().disable();
   }
 
   function finish() {
@@ -140,6 +163,7 @@
       distanceM: Math.round(distanceM),
       paceSecPerKm,
       durationSec: elapsedSec,
+      calories,
       track: [...track]
     });
   }
@@ -187,7 +211,7 @@
           <div class="v mono">{currentKm.toFixed(2)}<span class="u">km</span></div>
         </div>
 
-        <div class="mini-row">
+        <div class="mini-row tri">
           <div class="mini">
             <div class="l">Tempo</div>
             <div class="v mono">{fmtElapsed(elapsedSec)}</div>
@@ -195,6 +219,10 @@
           <div class="mini">
             <div class="l">Pace</div>
             <div class="v mono">{paceSecPerKm > 0 ? fmtPace(paceSecPerKm) : '—'}<span class="u">/km</span></div>
+          </div>
+          <div class="mini">
+            <div class="l">Kcal</div>
+            <div class="v mono">{calories}</div>
           </div>
         </div>
 
@@ -218,6 +246,14 @@
       </div>
     {/if}
   </div>
+
+  {#if celebrateKm}
+    <div class="celebrate">
+      <div class="confetti">🎉</div>
+      <div class="km-big">{celebrateKm} km</div>
+      <div class="km-sub">batido!</div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -272,6 +308,7 @@
   .big-stat .u { font-size: 20px; margin-left: 6px; opacity: 0.8; }
 
   .mini-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
+  .mini-row.tri { grid-template-columns: 1fr 1fr 1fr; }
   .mini {
     background: var(--bg-3);
     border-radius: var(--r-md);
@@ -290,6 +327,40 @@
   .acc .mi { font-size: 16px; }
 
   .controls { display: flex; gap: var(--s-2); margin-top: var(--s-2); }
+
+  .celebrate {
+    position: fixed;
+    inset: 0;
+    z-index: 330;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--accent) 20%, rgba(0,0,0,0.7));
+    animation: fade-in 240ms ease, fade-out 300ms ease 2.5s forwards;
+    pointer-events: none;
+  }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes fade-out { to { opacity: 0; } }
+  .confetti { font-size: 120px; animation: pop 500ms var(--ease-spring); }
+  @keyframes pop { 0% { transform: scale(0); } 60% { transform: scale(1.3); } 100% { transform: scale(1); } }
+  .km-big {
+    font-size: 96px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: -0.02em;
+    text-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    animation: slide-up 400ms var(--ease-spring);
+  }
+  .km-sub {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    margin-top: 8px;
+  }
+  @keyframes slide-up { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
   .error {
     margin-top: var(--s-2);

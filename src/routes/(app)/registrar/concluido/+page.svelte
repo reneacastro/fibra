@@ -31,12 +31,13 @@
     setTimeout(() => (show = true), 80);
   });
 
-  // Detecta se tem set de cardio com GPS gravado
+  // Detecta qualquer set de cardio (com ou sem GPS). Se sem track,
+  // o card sai sem mapa mas ainda com stats.
   const gpsCardioSet = $derived.by(() => {
     if (!session) return null;
     for (const pe of session.performedExercises) {
       for (const s of pe.sets) {
-        if (s.gpsTrack && s.gpsTrack.length > 5 && s.distanceM && s.distanceM > 100) {
+        if (s.distanceM && s.distanceM > 100) {
           return { set: s, exerciseName: pe.exerciseName };
         }
       }
@@ -46,6 +47,8 @@
 
   function shareRun() {
     if (!session || !profile || !gpsCardioSet) return;
+    // Preferir foto do Google (photoURL) > avatar customizado > emoji default
+    const photoAvatar = authStore.user?.photoURL || profile.avatar;
     shareData = {
       template: 'run',
       distanceM: gpsCardioSet.set.distanceM ?? 0,
@@ -54,8 +57,10 @@
       calories: session.calories,
       date: session.date,
       userName: profile.name,
-      avatar: profile.avatar,
-      track: gpsCardioSet.set.gpsTrack!.map((p) => ({ lat: p.lat, lng: p.lng }))
+      avatar: photoAvatar,
+      track: gpsCardioSet.set.gpsTrack?.length
+        ? gpsCardioSet.set.gpsTrack.map((p) => ({ lat: p.lat, lng: p.lng }))
+        : []
     };
   }
 

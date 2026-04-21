@@ -77,9 +77,21 @@
   let loading = $state(true);
   let saving = $state(false);
 
-  const startedAt = Date.now();
+  // Treino começa só quando o usuário toca em "Iniciar". Evita contar tempo
+  // enquanto o usuário está conferindo o plano.
+  let started = $state(false);
+  let startedAt = $state(Date.now());
   let elapsed = $state(0);
   let elapsedInterval: ReturnType<typeof setInterval>;
+
+  function startSession() {
+    started = true;
+    startedAt = Date.now();
+    elapsed = 0;
+    elapsedInterval = setInterval(() => {
+      elapsed = Date.now() - startedAt;
+    }, 1000);
+  }
 
   // Estado do treino em andamento
   let performed = $state<PerformedExercise[]>([]);
@@ -100,9 +112,7 @@
   let templateCategory = $state<WCat>('superior');
 
   onMount(() => {
-    // Interval sempre roda — registra cleanup síncrono
-    elapsedInterval = setInterval(() => { elapsed = Date.now() - startedAt; }, 1000);
-
+    // NÃO inicia timer no mount — só quando usuário toca "Iniciar treino".
     // Carregamento async em paralelo
     (async () => {
       await catalogStore.ensure();
@@ -148,7 +158,7 @@
       loading = false;
     })();
 
-    return () => clearInterval(elapsedInterval);
+    return () => { if (elapsedInterval) clearInterval(elapsedInterval); };
   });
 
   function toggleSet(exIdx: number, setIdx: number) {
@@ -183,10 +193,18 @@
   }
 
   let gpsTarget = $state<{ exIdx: number; sIdx: number } | null>(null);
+  const gpsMet = $derived.by(() => {
+    if (!gpsTarget) return 9;
+    const pe = performed[gpsTarget.exIdx];
+    if (!pe) return 9;
+    return catalogStore.byId(pe.exerciseId)?.mets ?? 9;
+  });
+
   function applyGps(result: {
     distanceM: number;
     paceSecPerKm: number;
     durationSec: number;
+    calories: number;
     track: { lat: number; lng: number; t: number }[];
   }) {
     if (!gpsTarget) return;
@@ -201,6 +219,10 @@
       completed: true
     };
     performed = next;
+    // Soma kcal da corrida no total da sessão se o usuário ainda não digitou
+    if (result.calories > 0 && !finalCalories) {
+      finalCalories = String(result.calories);
+    }
     gpsTarget = null;
   }
 
@@ -334,6 +356,24 @@
 
 {#if loading}
   <div class="loading"><span class="mi spin">progress_activity</span></div>
+{:else if workout && !started}
+  <!-- Pré-início: usuário ainda não tocou "Iniciar" -->
+  <div class="pre-start">
+    <Badge category={workout.category}>{CATEGORY_ICON[workout.category]} {CATEGORY_LABEL[workout.category]}</Badge>
+    <h1>{workout.name}</h1>
+    <div class="pre-stats">
+      <div class="pre-stat">
+        <div class="ps-v mono">{workout.exercises.length}</div>
+        <div class="ps-l">exercícios</div>
+      </div>
+      <div class="pre-stat">
+        <div class="ps-v mono">{totalSets}</div>
+        <div class="ps-l">séries</div>
+      </div>
+    </div>
+    <p class="pre-tag">Revise o plano. Quando estiver pronto, bora.</p>
+    <Button icon="play_arrow" size="lg" full onclick={startSession}>Iniciar treino</Button>
+  </div>
 {:else if workout}
   <!-- Header da sessão -->
   <div class="sess-head">
@@ -645,12 +685,41 @@
 {/if}
 
 {#if gpsTarget}
-  <GpsTracker onComplete={applyGps} onClose={() => (gpsTarget = null)} />
+  <GpsTracker
+    onComplete={applyGps}
+    onClose={() => (gpsTarget = null)}
+    userWeightKg={userBodyWeight}
+    exerciseMets={gpsMet}
+  />
 {/if}
 
 <style>
   .loading { min-height: 40vh; display: grid; place-content: center; }
   .loading .mi { font-size: 32px; color: var(--accent); animation: spin 1s linear infinite; }
+
+  .pre-start {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--s-3);
+    padding: var(--s-6) var(--s-2);
+  }
+  .pre-start h1 {
+    font-size: var(--fs-3xl);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-top: var(--s-2);
+  }
+  .pre-stats {
+    display: flex;
+    gap: var(--s-5);
+    margin: var(--s-3) 0;
+  }
+  .pre-stat { text-align: center; }
+  .ps-v { font-size: var(--fs-3xl); font-weight: 800; color: var(--accent); line-height: 1; }
+  .ps-l { font-size: var(--fs-xs); color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
+  .pre-tag { color: var(--text-mute); font-style: italic; margin-bottom: var(--s-3); }
 
   .sess-head {
     text-align: center;

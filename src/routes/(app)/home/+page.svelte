@@ -15,6 +15,7 @@
   import Button from '$lib/components/Button.svelte';
   import WeeklySchedule from '$lib/components/WeeklySchedule.svelte';
   import { randomPhrase } from '$lib/data/motivation';
+  import { withTimeout } from '$lib/utils/withTimeout';
 
   let profile = $state<UserProfile | null>(null);
   let workouts = $state<Workout[]>([]);
@@ -24,22 +25,33 @@
   // Sorteada uma vez por carregamento da home
   const phrase = randomPhrase();
 
-  onMount(async () => {
+  let loadError = $state<string | null>(null);
+
+  async function load() {
     if (!authStore.uid) { loading = false; return; }
+    loading = true;
+    loadError = null;
     try {
       await catalogStore.ensure();
-      [profile, workouts, sessions, schedule] = await Promise.all([
-        getProfile(authStore.uid),
-        listWorkouts(authStore.uid),
-        listSessions(authStore.uid, 50),
-        getSchedule(authStore.uid)
-      ]);
+      [profile, workouts, sessions, schedule] = await withTimeout(
+        Promise.all([
+          getProfile(authStore.uid),
+          listWorkouts(authStore.uid),
+          listSessions(authStore.uid, 50),
+          getSchedule(authStore.uid)
+        ]),
+        10_000,
+        'carregar home'
+      );
     } catch (e) {
       console.error('Falha ao carregar home:', e);
+      loadError = 'Falha ao carregar. Toque pra tentar de novo.';
     } finally {
       loading = false;
     }
-  });
+  }
+
+  onMount(() => { load(); });
 
   const greeting = $derived.by(() => {
     const h = new Date().getHours();
@@ -90,6 +102,13 @@
 
   const didTrainToday = $derived(sessions.some((s) => s.date === todayISO()));
 </script>
+
+{#if loadError}
+  <button class="retry-box" onclick={load}>
+    <span class="mi">refresh</span>
+    <span>{loadError}</span>
+  </button>
+{/if}
 
 <!-- Hero -->
 <div class="hero">
@@ -244,6 +263,22 @@
   .greet { color: var(--text-mute); font-size: var(--fs-sm); }
   .name { font-size: var(--fs-2xl); font-weight: 800; letter-spacing: -0.02em; }
   .hero-tag { margin-top: var(--s-2); color: var(--text-mute); font-size: var(--fs-sm); font-style: italic; }
+  .retry-box {
+    width: 100%;
+    display: flex;
+    gap: var(--s-2);
+    align-items: center;
+    justify-content: center;
+    padding: var(--s-3) var(--s-4);
+    margin-bottom: var(--s-3);
+    background: color-mix(in srgb, var(--warning) 12%, transparent);
+    border: 1px solid var(--warning);
+    border-radius: var(--r-lg);
+    color: var(--warning);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+  }
+  .retry-box .mi { font-size: 20px; }
   .hero-phrase {
     margin-top: var(--s-3);
     padding: var(--s-2) var(--s-3);

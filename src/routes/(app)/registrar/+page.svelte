@@ -4,6 +4,7 @@
   import { authStore } from '$lib/stores/auth.svelte';
   import { listWorkouts } from '$lib/db/workouts';
   import { listSessions, deleteSession } from '$lib/db/sessions';
+  import { withTimeout } from '$lib/utils/withTimeout';
   import type { Workout, Session } from '$lib/types';
   import { CATEGORY_ICON, CATEGORY_LABEL, fmtDateRelative } from '$lib/utils/format';
   import Card from '$lib/components/Card.svelte';
@@ -14,19 +15,30 @@
   let recentSessions = $state<Session[]>([]);
   let loading = $state(true);
 
-  onMount(async () => {
+  let loadError = $state<string | null>(null);
+
+  async function load() {
     if (!authStore.uid) { loading = false; return; }
+    loading = true;
+    loadError = null;
     try {
-      [workouts, recentSessions] = await Promise.all([
-        listWorkouts(authStore.uid),
-        listSessions(authStore.uid, 10)
-      ]);
+      [workouts, recentSessions] = await withTimeout(
+        Promise.all([
+          listWorkouts(authStore.uid),
+          listSessions(authStore.uid, 10)
+        ]),
+        10_000,
+        'carregar treinos'
+      );
     } catch (e) {
       console.error('Falha ao carregar /registrar:', e);
+      loadError = 'Falha ao carregar. Toque pra tentar de novo.';
     } finally {
       loading = false;
     }
-  });
+  }
+
+  onMount(() => { load(); });
 
   function start(workoutId: string) {
     goto(`/registrar/${workoutId}`);
@@ -56,6 +68,11 @@
 
 {#if loading}
   <div class="empty"><span class="mi spin">progress_activity</span></div>
+{:else if loadError}
+  <button class="retry-box" onclick={load}>
+    <span class="mi">refresh</span>
+    <span>{loadError}</span>
+  </button>
 {:else if workouts.length === 0}
   <Card>
     <div class="empty-card">
@@ -243,6 +260,21 @@
     align-items: center;
     gap: var(--s-2);
   }
+  .retry-box {
+    width: 100%;
+    display: flex;
+    gap: var(--s-2);
+    align-items: center;
+    justify-content: center;
+    padding: var(--s-4);
+    background: color-mix(in srgb, var(--warning) 12%, transparent);
+    border: 1px solid var(--warning);
+    border-radius: var(--r-lg);
+    color: var(--warning);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+  }
+  .retry-box .mi { font-size: 20px; }
   .empty .mi { font-size: 28px; color: var(--text-dim); }
   .empty-card { text-align: center; padding: var(--s-5); }
   .empty-ic { font-size: 48px; margin-bottom: var(--s-3); }
