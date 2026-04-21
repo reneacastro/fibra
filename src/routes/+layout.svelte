@@ -25,8 +25,32 @@
   });
 
   onMount(async () => {
-    // Versão do app: se bumpou, força re-login pro usuário sair do cache velho.
-    // Usa localStorage direto (não reativo) pra rodar uma vez só por carregamento.
+    // 1) Check de versão REMOTA — fetcha /version.json com no-store.
+    //    Se a versão no servidor for diferente da bundled, o client está
+    //    rodando código velho (típico de PWA iOS sem F5). Força reload
+    //    e limpa cache do browser pra baixar o bundle novo.
+    try {
+      const res = await fetch('/version.json?t=' + Date.now(), { cache: 'no-store' });
+      if (res.ok) {
+        const remote = await res.json() as { version: string };
+        if (remote.version && remote.version !== APP_VERSION) {
+          console.info(`[FIBRA] servidor tem ${remote.version}, cliente em ${APP_VERSION}. Recarregando…`);
+          // Limpa Cache Storage (cobre SW se existir no futuro)
+          if ('caches' in window) {
+            const keys = await caches.keys();
+            await Promise.all(keys.map((k) => caches.delete(k)));
+          }
+          // Reload hard, evita voltar ao HTML em cache
+          location.reload();
+          return;
+        }
+      }
+    } catch {
+      // Sem rede — segue com o que tem em cache
+    }
+
+    // 2) Check de versão LOCAL — se o APP_VERSION bumpou desde a última
+    //    sessão, força re-login pra usuário sair do cache do Firestore.
     try {
       const stored = localStorage.getItem(VERSION_STORAGE_KEY);
       if (stored && stored !== APP_VERSION && authStore.user) {
