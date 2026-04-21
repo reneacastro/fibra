@@ -8,8 +8,14 @@ import { env } from '$env/dynamic/public';
  */
 
 const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const MODEL = 'qwen/qwen3-next-80b-a3b-instruct:free';
-const FALLBACK_MODEL = 'meta-llama/llama-3.3-70b-instruct:free';
+// Cadeia de modelos free pra contornar rate-limit global do OpenRouter.
+// Ordem: Qwen3 (rápida, chinesa), Llama 3.3, GPT-OSS 120B, GLM-4.5.
+const MODEL_CHAIN = [
+  'qwen/qwen3-next-80b-a3b-instruct:free',
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'openai/gpt-oss-120b:free',
+  'z-ai/glm-4.5-air:free'
+];
 
 export interface GeminiOptions {
   responseMimeType?: 'text/plain' | 'application/json';
@@ -48,6 +54,8 @@ async function callOpenRouter(model: string, prompt: string, opts: GeminiOptions
   });
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export async function askGemini(
   prompt: string,
   opts: GeminiOptions = {},
@@ -60,21 +68,29 @@ export async function askGemini(
   const key = env.PUBLIC_OPENROUTER_API_KEY;
   if (!key) throw new Error('PUBLIC_OPENROUTER_API_KEY não configurada');
 
-  let res = await callOpenRouter(MODEL, prompt, opts, key);
-  if (!res.ok && (res.status === 429 || res.status === 503)) {
-    // Free model com rate limit — tenta fallback
-    res = await callOpenRouter(FALLBACK_MODEL, prompt, opts, key);
+  let lastStatus = 0;
+  let lastBody = '';
+
+  for (let i = 0; i < MODEL_CHAIN.length; i++) {
+    const model = MODEL_CHAIN[i];
+    // 2 tentativas por modelo (retry com backoff em 429/503)
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (attempt > 0) await sleep(1500);
+      const res = await callOpenRouter(model, prompt, opts, key);
+      if (res.ok) {
+        const data = await res.json();
+        const text = data?.choices?.[0]?.message?.content;
+        if (!text) throw new Error('Resposta vazia da IA');
+        return text;
+      }
+      lastStatus = res.status;
+      lastBody = await res.text();
+      // 400/401/402/404: erro permanente, pula pro próximo modelo
+      if (res.status !== 429 && res.status !== 503) break;
+    }
   }
 
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(`IA ${res.status}: ${txt.slice(0, 200)}`);
-  }
-
-  const data = await res.json();
-  const text = data?.choices?.[0]?.message?.content;
-  if (!text) throw new Error('Resposta vazia da IA');
-  return text;
+  throw new Error(`IA ${lastStatus}: ${lastBody.slice(0, 200)}`);
 }
 
 const BODY_COMP_SCHEMA_PROMPT = `Campos possíveis (omita os que não encontrar, use números puros sem unidades):
