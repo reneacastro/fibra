@@ -10,11 +10,13 @@ const OUT = 'static';
 
 await mkdir(OUT, { recursive: true });
 
+// v3 sufixo pra furar cache de apple-touch-icon do iOS
+const VERSION = 'v3';
 const sizes = [
-  { file: 'icon-180.png', size: 180 }, // apple-touch-icon
-  { file: 'icon-192.png', size: 192 }, // PWA Android
-  { file: 'icon-512.png', size: 512 }, // PWA Android splash
-  { file: 'icon-1024.png', size: 1024 } // iOS hi-res
+  { file: `icon-180-${VERSION}.png`, size: 180 },
+  { file: `icon-192-${VERSION}.png`, size: 192 },
+  { file: `icon-512-${VERSION}.png`, size: 512 },
+  { file: `icon-1024-${VERSION}.png`, size: 1024 }
 ];
 
 for (const { file, size } of sizes) {
@@ -33,7 +35,7 @@ await sharp(SRC, { density: 400 })
     background: { r: 7, g: 9, b: 13, alpha: 1 }
   })
   .png({ quality: 95 })
-  .toFile(`${OUT}/icon-maskable-512.png`);
-console.log(`✓ ${OUT}/icon-maskable-512.png (512×512 maskable)`);
+  .toFile(`${OUT}/icon-maskable-512-${VERSION}.png`);
+console.log(`✓ ${OUT}/icon-maskable-512-${VERSION}.png (512×512 maskable)`);
 
 console.log('\nTodos os ícones gerados.');
