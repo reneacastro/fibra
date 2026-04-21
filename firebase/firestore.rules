@@ -36,12 +36,14 @@ service cloud.firestore {
 
       match /exercises/{id} {
         allow read: if isOwner(uid);
-        allow create, update, delete: if isOwner(uid) && notTooLarge();
+        allow create, update: if isOwner(uid) && notTooLarge();
+        allow delete: if isOwner(uid);
       }
 
       match /workouts/{id} {
         allow read: if isOwner(uid);
-        allow create, update, delete: if isOwner(uid) && notTooLarge();
+        allow create, update: if isOwner(uid) && notTooLarge();
+        allow delete: if isOwner(uid);
       }
 
       match /sessions/{id} {
@@ -55,47 +57,56 @@ service cloud.firestore {
 
       match /exerciseLogs/{exId}/entries/{entryId} {
         allow read: if isOwner(uid);
-        allow create, update, delete: if isOwner(uid) && notTooLarge();
+        allow create, update: if isOwner(uid) && notTooLarge();
+        allow delete: if isOwner(uid);
       }
 
       match /bodyComp/{date} {
         allow read: if isOwner(uid);
-        allow create, update, delete: if isOwner(uid) && notTooLarge();
+        allow create, update: if isOwner(uid) && notTooLarge();
+        allow delete: if isOwner(uid);
       }
 
       match /schedule/{docId} {
         allow read: if isOwner(uid);
-        allow create, update, delete: if isOwner(uid) && notTooLarge();
+        allow create, update: if isOwner(uid) && notTooLarge();
+        allow delete: if isOwner(uid);
       }
 
       match /dietPlans/{planId} {
         allow read: if isOwner(uid);
-        allow create, update, delete: if isOwner(uid) && notTooLarge();
+        allow create, update: if isOwner(uid) && notTooLarge();
+        allow delete: if isOwner(uid);
       }
 
       match /meals/{date} {
         allow read: if isOwner(uid);
-        allow create, update, delete: if isOwner(uid) && notTooLarge();
+        allow create, update: if isOwner(uid) && notTooLarge();
+        allow delete: if isOwner(uid);
 
         match /items/{itemId} {
           allow read: if isOwner(uid);
-          allow create, update, delete: if isOwner(uid) && notTooLarge();
+          allow create, update: if isOwner(uid) && notTooLarge();
+          allow delete: if isOwner(uid);
         }
       }
 
       match /foods/{foodId} {
         allow read: if isOwner(uid);
-        allow create, update, delete: if isOwner(uid) && notTooLarge();
+        allow create, update: if isOwner(uid) && notTooLarge();
+        allow delete: if isOwner(uid);
       }
 
       match /watchData/{date} {
         allow read: if isOwner(uid);
-        allow create, update, delete: if isOwner(uid) && notTooLarge();
+        allow create, update: if isOwner(uid) && notTooLarge();
+        allow delete: if isOwner(uid);
       }
 
       match /achievements/{achId} {
         allow read: if isOwner(uid);
-        allow create, update, delete: if isOwner(uid) && notTooLarge();
+        allow create, update: if isOwner(uid) && notTooLarge();
+        allow delete: if isOwner(uid);
       }
     }
 
