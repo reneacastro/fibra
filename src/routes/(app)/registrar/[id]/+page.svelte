@@ -7,7 +7,8 @@
   import { getWorkout } from '$lib/db/workouts';
   import { saveSession, newSessionId } from '$lib/db/sessions';
   import type {
-    Workout, Session, PerformedExercise, PerformedSet
+    Workout, Session, PerformedExercise, PerformedSet,
+    WorkoutCategory as WCat, WorkoutExercise
   } from '$lib/types';
   import {
     CATEGORY_ICON, CATEGORY_LABEL, todayISO, fmtDuration, estimateCalories
@@ -25,7 +26,6 @@
   import { historyForExercise } from '$lib/db/sessions';
   import { getProfile } from '$lib/db/profile';
   import { saveWorkout, newWorkoutId } from '$lib/db/workouts';
-  import type { Workout, WorkoutCategory as WCat, WorkoutExercise } from '$lib/types';
 
   // AI suggest load state
   let suggestingFor = $state<string | null>(null);
@@ -97,49 +97,54 @@
   let templateName = $state('');
   let templateCategory = $state<WCat>('superior');
 
-  onMount(async () => {
-    await catalogStore.ensure();
-    if (!authStore.uid) return;
-
-    // Detecta goal preferido baseado nos objetivos do perfil
-    const p = await getProfile(authStore.uid);
-    if (p?.goals.includes('massa')) userGoal = 'hypertrophy';
-    else if (p?.goals.includes('performance')) userGoal = 'strength';
-    else if (p?.goals.includes('emagrecer') || p?.goals.includes('qualidade')) userGoal = 'endurance';
-
-    const id = page.params.id;
-    if (id !== 'livre') {
-      const w = await getWorkout(authStore.uid, id);
-      if (!w) { goto('/registrar'); return; }
-      workout = w;
-      performed = w.exercises.map((we, idx) => ({
-        exerciseId: we.exerciseId,
-        exerciseName: catalogStore.byId(we.exerciseId)?.name ?? '',
-        order: idx,
-        sets: we.sets.map((s) => ({
-          reps: s.reps,
-          weight: s.weight,
-          durationSec: s.durationSec,
-          completed: false
-        })),
-        skipped: false
-      }));
-    } else {
-      // Treino livre — começa vazio
-      workout = {
-        id: 'livre',
-        name: 'Treino Livre',
-        category: 'livre',
-        exercises: [],
-        order: 0,
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-      };
-      performed = [];
-    }
-    loading = false;
-
+  onMount(() => {
+    // Interval sempre roda — registra cleanup síncrono
     elapsedInterval = setInterval(() => { elapsed = Date.now() - startedAt; }, 1000);
+
+    // Carregamento async em paralelo
+    (async () => {
+      await catalogStore.ensure();
+      if (!authStore.uid) return;
+
+      const p = await getProfile(authStore.uid);
+      if (p?.goals.includes('massa')) userGoal = 'hypertrophy';
+      else if (p?.goals.includes('performance')) userGoal = 'strength';
+      else if (p?.goals.includes('emagrecer') || p?.goals.includes('qualidade')) userGoal = 'endurance';
+
+      const id = page.params.id;
+      if (!id) { goto('/registrar'); return; }
+
+      if (id !== 'livre') {
+        const w = await getWorkout(authStore.uid, id);
+        if (!w) { goto('/registrar'); return; }
+        workout = w;
+        performed = w.exercises.map((we, idx) => ({
+          exerciseId: we.exerciseId,
+          exerciseName: catalogStore.byId(we.exerciseId)?.name ?? '',
+          order: idx,
+          sets: we.sets.map((s) => ({
+            reps: s.reps,
+            weight: s.weight,
+            durationSec: s.durationSec,
+            completed: false
+          })),
+          skipped: false
+        }));
+      } else {
+        workout = {
+          id: 'livre',
+          name: 'Treino Livre',
+          category: 'livre',
+          exercises: [],
+          order: 0,
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        };
+        performed = [];
+      }
+      loading = false;
+    })();
+
     return () => clearInterval(elapsedInterval);
   });
 

@@ -11,7 +11,7 @@
   let { config, onFinish }: Props = $props();
 
   type State = 'idle' | 'countdown' | 'running' | 'paused' | 'done';
-  let state = $state<State>('idle');
+  let phase = $state<State>('idle');
   let elapsed = $state(0);
   let countdown = $state(10);
   let rounds = $state(0);
@@ -31,7 +31,7 @@
   const remaining = $derived(Math.max(0, totalSec - elapsed));
 
   const display = $derived.by(() => {
-    const t = state === 'countdown' ? countdown : remaining;
+    const t = phase === 'countdown' ? countdown : remaining;
     const m = Math.floor(t / 60);
     const s = t % 60;
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
@@ -39,7 +39,7 @@
 
   // EMOM: soa beep a cada minuto novo
   $effect(() => {
-    if (config.format === 'emom' && state === 'running') {
+    if (config.format === 'emom' && phase === 'running') {
       const m = Math.floor(elapsed / 60);
       if (m !== lastBeep && elapsed > 0) {
         lastBeep = m;
@@ -50,14 +50,14 @@
   });
 
   function start() {
-    state = 'countdown';
+    phase = 'countdown';
     countdown = 10;
     const cdInterval = setInterval(() => {
       countdown -= 1;
       if (navigator.vibrate) navigator.vibrate(40);
       if (countdown <= 0) {
         clearInterval(cdInterval);
-        state = 'running';
+        phase = 'running';
         if (navigator.vibrate) navigator.vibrate([200, 80, 200, 80, 200]);
         tick();
       }
@@ -66,7 +66,7 @@
 
   function tick() {
     interval = setInterval(() => {
-      if (state !== 'running') return;
+      if (phase !== 'running') return;
       elapsed += 1;
       if (remaining === 0 && config.format !== 'fortime' && config.format !== 'chipper') {
         done();
@@ -74,12 +74,12 @@
     }, 1000);
   }
 
-  function pause() { state = 'paused'; }
-  function resume() { state = 'running'; }
+  function pause() { phase = 'paused'; }
+  function resume() { phase = 'running'; }
   function tap() { rounds += 1; if (navigator.vibrate) navigator.vibrate(50); }
 
   function done() {
-    state = 'done';
+    phase = 'done';
     if (interval) clearInterval(interval);
     if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
     onFinish({ elapsedSec: elapsed, rounds: rounds || undefined });
@@ -88,7 +88,7 @@
   onDestroy(() => { if (interval) clearInterval(interval); });
 
   const showTapper = $derived(
-    state === 'running' && (config.format === 'amrap' || config.format === 'rft')
+    phase === 'running' && (config.format === 'amrap' || config.format === 'rft')
   );
 </script>
 
@@ -108,8 +108,8 @@
     <div class="script">{config.notes}</div>
   {/if}
 
-  <div class="clock" class:countdown={state === 'countdown'} class:running={state === 'running'}>
-    {#if state === 'countdown'}
+  <div class="clock" class:countdown={phase === 'countdown'} class:running={phase === 'running'}>
+    {#if phase === 'countdown'}
       <div class="cd-label">Começando em</div>
       <div class="cd-num mono">{countdown}</div>
     {:else}
@@ -128,12 +128,12 @@
   {/if}
 
   <div class="ctrl">
-    {#if state === 'idle'}
+    {#if phase === 'idle'}
       <Button icon="play_arrow" size="lg" full onclick={start}>Começar WOD</Button>
-    {:else if state === 'running'}
+    {:else if phase === 'running'}
       <Button variant="secondary" icon="pause" full onclick={pause}>Pausar</Button>
       <Button variant="success" icon="stop" full onclick={done}>Encerrar</Button>
-    {:else if state === 'paused'}
+    {:else if phase === 'paused'}
       <Button variant="secondary" icon="play_arrow" full onclick={resume}>Continuar</Button>
       <Button variant="success" icon="stop" full onclick={done}>Encerrar</Button>
     {/if}

@@ -76,7 +76,7 @@
 
   onMount(async () => {
     await catalogStore.ensure();
-    if (!isNew && authStore.uid) {
+    if (!isNew && authStore.uid && page.params.id) {
       const w = await getWorkout(authStore.uid, page.params.id);
       if (w) workout = w;
       else goto('/treinos');

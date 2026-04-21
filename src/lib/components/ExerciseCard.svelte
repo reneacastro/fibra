@@ -20,7 +20,15 @@
   );
 </script>
 
-<button class="ex-card" class:selected class:compact onclick={onclick}>
+<div
+  class="ex-card"
+  class:selected
+  class:compact
+  role={onclick ? 'button' : undefined}
+  tabindex={onclick ? 0 : undefined}
+  onclick={onclick}
+  onkeydown={(e) => { if (onclick && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onclick(); } }}
+>
   {#if exercise.gifUrl}
     <div class="ex-thumb">
       <img src={exercise.gifUrl} alt={exercise.name} loading="lazy" />
@@ -54,7 +62,7 @@
       <span class="mi">check</span>
     </div>
   {/if}
-</button>
+</div>
 
 <style>
   .ex-card {

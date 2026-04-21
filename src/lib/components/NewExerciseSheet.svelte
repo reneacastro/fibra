@@ -25,7 +25,7 @@
   let uploadedDataUrl = $state<string | null>(null);
   let instructions = $state('');
   let saving = $state(false);
-  let uploadInput: HTMLInputElement;
+  let uploadInput: HTMLInputElement | undefined = $state();
 
   const CATS: WorkoutCategory[] = [
     'superior','inferior','fullbody','forca','pump','core',
@@ -191,7 +191,7 @@
         <div class="hint">Busca no Google Imagens: "[nome do exercício] gif" e cola a URL direta</div>
       {:else if imageMode === 'upload'}
         <div class="spacer-sm"></div>
-        <Button variant="secondary" icon="upload_file" full onclick={() => uploadInput.click()}>
+        <Button variant="secondary" icon="upload_file" full onclick={() => uploadInput?.click()}>
           {uploadedDataUrl ? 'Trocar imagem' : 'Selecionar imagem'}
         </Button>
         <input

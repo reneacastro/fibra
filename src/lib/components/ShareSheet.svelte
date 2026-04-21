@@ -19,10 +19,10 @@
   let blob = $state<Blob | null>(null);
   let url = $state<string | null>(null);
   let rendering = $state(false);
-  let photoInput: HTMLInputElement;
+  let photoInput: HTMLInputElement | undefined = $state();
 
   // Drag state
-  let previewEl: HTMLDivElement;
+  let previewEl: HTMLDivElement | undefined = $state();
   let activeId = $state<string | null>(null);
   let dragging = $state(false);
   let dragStart = { x: 0, y: 0, origX: 0, origY: 0 };
@@ -34,6 +34,7 @@
   });
 
   function startDrag(e: PointerEvent, kind: 'sticker' | 'caption', id?: string) {
+    if (!previewEl) return;
     e.preventDefault();
     e.stopPropagation();
     const targetId = kind === 'caption' ? 'caption' : id!;
@@ -62,7 +63,7 @@
   }
 
   function onDrag(e: PointerEvent) {
-    if (!dragging || !activeId) return;
+    if (!dragging || !activeId || !previewEl) return;
     const rect = previewEl.getBoundingClientRect();
     const relX = (e.clientX - rect.left) / rect.width;
     const relY = (e.clientY - rect.top) / rect.height;
@@ -307,11 +308,11 @@
                 <span class="mi">close</span>
               </button>
             </div>
-            <button class="photo-change" onclick={() => photoInput.click()}>
+            <button class="photo-change" onclick={() => photoInput?.click()}>
               <span class="mi">swap_horiz</span> Trocar
             </button>
           {:else}
-            <button class="photo-add" onclick={() => photoInput.click()}>
+            <button class="photo-add" onclick={() => photoInput?.click()}>
               <span class="mi">add_a_photo</span>
               <span>Adicionar selfie / foto</span>
             </button>

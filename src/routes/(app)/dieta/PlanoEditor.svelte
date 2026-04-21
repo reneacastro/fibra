@@ -193,7 +193,7 @@
   let importing = $state(false);
   let importPreview = $state<ParsedDietPlan | null>(null);
   let importWarn = $state<string | null>(null);
-  let fileInput: HTMLInputElement;
+  let fileInput: HTMLInputElement | undefined = $state();
 
   function fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -270,12 +270,12 @@
         id: plan?.id ?? newId(),
         name: importPreview.name,
         dailyTargets: finalTargets,
-        meals: importPreview.meals.map((m, i) => ({
-          id: 'mp_' + Math.random().toString(36).slice(2, 8) + i,
+        meals: importPreview.meals.map((m, mi) => ({
+          id: `mp_${Date.now().toString(36)}_${mi}`,
           name: m.name,
           time: m.time,
-          items: m.items.map((it) => ({
-            foodId: 'nutri_' + Math.random().toString(36).slice(2, 10),
+          items: m.items.map((it, ii) => ({
+            foodId: `nutri_${Date.now().toString(36)}_${mi}_${ii}`,
             foodName: it.foodName,
             grams: it.grams,
             kcalPer100g: it.kcalPer100g,
@@ -304,7 +304,7 @@
     <Button icon="auto_awesome" variant="secondary" full onclick={() => (aiOpen = true)}>
       Gerar com IA
     </Button>
-    <Button icon="upload_file" variant="secondary" full loading={importing} onclick={() => fileInput.click()}>
+    <Button icon="upload_file" variant="secondary" full loading={importing} onclick={() => fileInput?.click()}>
       Importar do nutri
     </Button>
   </div>
@@ -604,10 +604,6 @@
   }
 
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
-  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-2); }
-  @media (max-width: 480px) {
-    .grid-3 { grid-template-columns: 1fr 1fr; }
-  }
 
   .ai-buttons {
     display: flex;

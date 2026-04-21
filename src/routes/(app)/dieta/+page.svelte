@@ -297,12 +297,14 @@
 
 {:else if tab === 'plano'}
   {#await import('./PlanoEditor.svelte') then M}
-    <svelte:component this={M.default} {plan} onSaved={async () => { await reload(); tab = 'hoje'; }} />
+    {@const Cmp = M.default}
+    <Cmp {plan} onSaved={async () => { await reload(); tab = 'hoje'; }} />
   {/await}
 
 {:else if tab === 'agenda'}
   {#await import('./AgendaEditor.svelte') then M}
-    <svelte:component this={M.default} {plan} onSaved={async () => { await reload(); }} />
+    {@const Cmp = M.default}
+    <Cmp {plan} onSaved={async () => { await reload(); }} />
   {/await}
 {/if}
 

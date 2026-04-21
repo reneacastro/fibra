@@ -37,7 +37,7 @@
   let importing = $state(false);
   let importPreview = $state<BodyComp | null>(null);
   let importWarn = $state<string | null>(null);
-  let fileInput: HTMLInputElement;
+  let fileInput: HTMLInputElement | undefined = $state();
 
   // UI
   let activeTab = $state<'novo' | 'historico' | 'evolucao'>('novo');
@@ -216,7 +216,7 @@
       </div>
     </div>
     <div class="spacer-sm"></div>
-    <Button icon="upload_file" variant="secondary" full loading={importing} onclick={() => fileInput.click()}>
+    <Button icon="upload_file" variant="secondary" full loading={importing} onclick={() => fileInput?.click()}>
       {importing ? 'Analisando…' : 'Selecionar PDF ou imagem'}
     </Button>
     <input
@@ -612,11 +612,9 @@
 
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); align-items: end; }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
-  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-3); }
 
   @media (max-width: 380px) {
     .grid-2 { grid-template-columns: 1fr; }
-    .grid-3 { grid-template-columns: 1fr 1fr; }
   }
 
   .imc-box {
