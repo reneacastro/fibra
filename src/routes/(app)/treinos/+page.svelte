@@ -32,22 +32,25 @@
   });
 
   async function reloadWorkouts() {
-    if (!authStore.uid) return;
+    if (!authStore.uid) { loading = false; return; }
     loading = true;
     try {
       workouts = await listWorkouts(authStore.uid);
+    } catch (e) {
+      console.error('Falha ao carregar treinos:', e);
     } finally {
       loading = false;
     }
   }
 
-  const filtered = $derived.by(() => {
+  const filteredAll = $derived.by(() => {
     const q = search.trim().toLowerCase();
     if (active === 'meus') return [];
     const list = catalogStore.byCategory(active);
     if (!q) return list;
     return list.filter((e) => e.name.toLowerCase().includes(q));
   });
+  const filtered = $derived(filteredAll.slice(0, 100));
 
   const CATS: { id: WorkoutCategory; label: string; icon: string }[] = [
     { id: 'superior',    label: 'Superior',    icon: '💪' },
@@ -247,6 +250,11 @@
   {:else if filtered.length === 0}
     <div class="empty"><span class="mi">search_off</span>Nada encontrado</div>
   {:else}
+    {#if filteredAll.length > 100}
+      <div class="picker-hint">
+        Mostrando 100 de {filteredAll.length}. Refine a busca pra ver mais.
+      </div>
+    {/if}
     <div class="ex-list">
       {#each filtered as ex (ex.id)}
         <ExerciseCard exercise={ex} />
@@ -368,6 +376,13 @@
     gap: var(--s-2);
   }
   .empty .mi { font-size: 32px; color: var(--text-dim); }
+
+  .picker-hint {
+    font-size: 11px;
+    color: var(--text-mute);
+    text-align: center;
+    margin-bottom: 6px;
+  }
 
   .empty-card {
     text-align: center;

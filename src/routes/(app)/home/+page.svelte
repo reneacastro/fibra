@@ -22,15 +22,20 @@
   let loading = $state(true);
 
   onMount(async () => {
-    if (!authStore.uid) return;
-    await catalogStore.ensure();
-    [profile, workouts, sessions, schedule] = await Promise.all([
-      getProfile(authStore.uid),
-      listWorkouts(authStore.uid),
-      listSessions(authStore.uid, 50),
-      getSchedule(authStore.uid)
-    ]);
-    loading = false;
+    if (!authStore.uid) { loading = false; return; }
+    try {
+      await catalogStore.ensure();
+      [profile, workouts, sessions, schedule] = await Promise.all([
+        getProfile(authStore.uid),
+        listWorkouts(authStore.uid),
+        listSessions(authStore.uid, 50),
+        getSchedule(authStore.uid)
+      ]);
+    } catch (e) {
+      console.error('Falha ao carregar home:', e);
+    } finally {
+      loading = false;
+    }
   });
 
   const greeting = $derived.by(() => {

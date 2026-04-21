@@ -15,12 +15,17 @@
   let loading = $state(true);
 
   onMount(async () => {
-    if (!authStore.uid) return;
-    [workouts, recentSessions] = await Promise.all([
-      listWorkouts(authStore.uid),
-      listSessions(authStore.uid, 10)
-    ]);
-    loading = false;
+    if (!authStore.uid) { loading = false; return; }
+    try {
+      [workouts, recentSessions] = await Promise.all([
+        listWorkouts(authStore.uid),
+        listSessions(authStore.uid, 10)
+      ]);
+    } catch (e) {
+      console.error('Falha ao carregar /registrar:', e);
+    } finally {
+      loading = false;
+    }
   });
 
   function start(workoutId: string) {
@@ -35,33 +40,17 @@
   }
 </script>
 
-<!-- 3 ações top -->
-<div class="sec-title">Como você quer começar?</div>
-<div class="actions-top">
-  <!-- Treino Livre: sem plano, pode salvar como template no fim -->
-  <Card padding="md" onclick={() => goto('/registrar/livre')} accent="gradient">
-    <div class="quick">
-      <div class="quick-ic">⚡</div>
-      <div class="quick-body">
-        <div class="quick-title">Treino Livre</div>
-        <div class="quick-sub">Escolha exercícios na hora. Salva como template no fim</div>
-      </div>
-      <span class="mi chev">chevron_right</span>
+<!-- Ação principal: montar treino novo -->
+<Card padding="md" onclick={() => goto('/treinos/novo?then=register')} accent="gradient">
+  <div class="quick">
+    <div class="quick-ic">📝</div>
+    <div class="quick-body">
+      <div class="quick-title">Montar treino novo</div>
+      <div class="quick-sub">Monte agora, salve no banco e já começa</div>
     </div>
-  </Card>
-
-  <!-- Montar novo treino: vai pro builder, depois começa -->
-  <Card padding="md" onclick={() => goto('/treinos/novo?then=register')}>
-    <div class="quick">
-      <div class="quick-ic alt">📝</div>
-      <div class="quick-body">
-        <div class="quick-title">Montar treino novo</div>
-        <div class="quick-sub">Monte agora, salve no banco, já começa</div>
-      </div>
-      <span class="mi chev">chevron_right</span>
-    </div>
-  </Card>
-</div>
+    <span class="mi chev">chevron_right</span>
+  </div>
+</Card>
 
 <div class="sec-title">Ou escolha um treino salvo</div>
 

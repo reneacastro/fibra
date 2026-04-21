@@ -45,13 +45,18 @@
   let dietPlan = $state<DietPlan | null>(null);
 
   onMount(async () => {
-    if (!authStore.uid) return;
-    [profile, history, dietPlan] = await Promise.all([
-      getProfile(authStore.uid),
-      listBodyComp(authStore.uid),
-      getActiveDietPlan(authStore.uid)
-    ]);
-    loading = false;
+    if (!authStore.uid) { loading = false; return; }
+    try {
+      [profile, history, dietPlan] = await Promise.all([
+        getProfile(authStore.uid),
+        listBodyComp(authStore.uid),
+        getActiveDietPlan(authStore.uid)
+      ]);
+    } catch (e) {
+      console.error('Falha ao carregar corpo:', e);
+    } finally {
+      loading = false;
+    }
   });
 
   // IMC reativo

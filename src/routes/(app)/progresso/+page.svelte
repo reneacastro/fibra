@@ -33,18 +33,23 @@
   let period = $state<7 | 30 | 90 | 365>(30);
 
   onMount(async () => {
-    if (!authStore.uid) return;
+    if (!authStore.uid) { loading = false; return; }
     const uid = authStore.uid;
-    [sessions, bodyComp, profile, dietPlan, todayLog, recentMealLogs] = await Promise.all([
-      listSessions(uid, 365),
-      listBodyComp(uid, 200),
-      getProfile(uid),
-      getActiveDietPlan(uid),
-      getMealLog(uid, todayISO()),
-      listRecentMealLogs(uid, 14)
-    ]);
-    loading = false;
-    coachStore.load(uid);
+    try {
+      [sessions, bodyComp, profile, dietPlan, todayLog, recentMealLogs] = await Promise.all([
+        listSessions(uid, 365),
+        listBodyComp(uid, 200),
+        getProfile(uid),
+        getActiveDietPlan(uid),
+        getMealLog(uid, todayISO()),
+        listRecentMealLogs(uid, 14)
+      ]);
+      coachStore.load(uid);
+    } catch (e) {
+      console.error('Falha ao carregar progresso:', e);
+    } finally {
+      loading = false;
+    }
   });
 
   // ─── Filtro por período ────────────────────────────

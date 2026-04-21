@@ -75,13 +75,18 @@
   });
 
   onMount(async () => {
-    await catalogStore.ensure();
-    if (!isNew && authStore.uid && page.params.id) {
-      const w = await getWorkout(authStore.uid, page.params.id);
-      if (w) workout = w;
-      else goto('/treinos');
+    try {
+      await catalogStore.ensure();
+      if (!isNew && authStore.uid && page.params.id) {
+        const w = await getWorkout(authStore.uid, page.params.id);
+        if (w) workout = w;
+        else goto('/treinos');
+      }
+    } catch (e) {
+      console.error('Falha ao carregar treino:', e);
+    } finally {
+      loading = false;
     }
-    loading = false;
   });
 
   const CATS: WorkoutCategory[] = [
@@ -94,7 +99,15 @@
     const q = pickerSearch.trim().toLowerCase();
     const list = catalogStore.byCategory(pickerCat);
     const already = new Set(workout.exercises.map((e) => e.exerciseId));
-    return list.filter((e) => !already.has(e.id) && (!q || e.name.toLowerCase().includes(q)));
+    const filtered = list.filter((e) => !already.has(e.id) && (!q || e.name.toLowerCase().includes(q)));
+    // Limita a 100 pra performance (catálogo tem 873)
+    return filtered.slice(0, 100);
+  });
+  const pickerTotal = $derived.by(() => {
+    const q = pickerSearch.trim().toLowerCase();
+    const list = catalogStore.byCategory(pickerCat);
+    const already = new Set(workout.exercises.map((e) => e.exerciseId));
+    return list.filter((e) => !already.has(e.id) && (!q || e.name.toLowerCase().includes(q))).length;
   });
 
   function addExercise(exerciseId: string) {
@@ -402,11 +415,18 @@
       <Input icon="search" placeholder="Buscar…" bind:value={pickerSearch} />
       <div class="spacer"></div>
 
+      {#if pickerTotal > pickerResults.length}
+        <div class="picker-hint">
+          Mostrando {pickerResults.length} de {pickerTotal}. Refine a busca pra ver mais.
+        </div>
+      {/if}
+
       <div class="picker-list">
         {#each pickerResults as ex (ex.id)}
           <ExerciseCard
             exercise={ex}
             compact
+            disableZoom
             onclick={() => { addExercise(ex.id); pickerOpen = false; }}
           />
         {:else}
@@ -745,6 +765,12 @@
     font-weight: 800;
   }
   .sheet-actions { display: flex; gap: 4px; }
+  .picker-hint {
+    font-size: 11px;
+    color: var(--text-mute);
+    text-align: center;
+    margin-bottom: 6px;
+  }
   .picker-list {
     display: flex;
     flex-direction: column;
