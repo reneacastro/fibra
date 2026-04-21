@@ -412,6 +412,10 @@
         Baixar PNG
       </Button>
     </div>
+    <div class="insta-hint">
+      <span class="mi">photo_camera</span>
+      <span>Pra postar no Stories do Instagram: toque em <strong>Compartilhar</strong> e escolha <strong>Instagram</strong>.</span>
+    </div>
   </div>
 </div>
 
@@ -761,6 +765,21 @@
     border-color: var(--accent);
     transform: scale(1.08);
   }
+
+  .insta-hint {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    margin-top: var(--s-2);
+    padding: 10px 12px;
+    background: var(--bg-3);
+    border-radius: var(--r-md);
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--text-mute);
+  }
+  .insta-hint .mi { font-size: 16px; color: var(--accent); flex-shrink: 0; margin-top: 1px; }
+  .insta-hint strong { color: var(--text); }
 
   .btns {
     display: flex;

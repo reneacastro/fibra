@@ -245,18 +245,21 @@ function drawBrand(ctx: Ctx, themeKey: ShareTheme) {
   ctx.fillText('FIBRA', 170, 136);
 }
 
-/** Só o mark F (sem o wordmark), pra uso em cards tipo corrida. */
+/** Só o mark F (sem o wordmark), pra uso em cards tipo corrida.
+ *  Posicionado abaixo da zona de avatar/username do Instagram. */
 function drawLogoMark(ctx: Ctx, themeKey: ShareTheme) {
   const theme = SHARE_THEMES[themeKey];
-  // Fundo escuro atrás pro contraste quando mapa for claro
+  const cx = W - 100; // top-right, fora do zone do avatar Insta (top-left)
+  const cy = 260;      // abaixo da barra de username (~90px)
+  const r = 40;
   ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
   ctx.beginPath();
-  ctx.arc(96, 96, 54, 0, Math.PI * 2);
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.save();
-  ctx.translate(72, 66);
-  const s = 60;
+  ctx.translate(cx - 18, cy - 21);
+  const s = 44;
   ctx.fillStyle = theme.primary;
   ctx.transform(1, 0, -0.1, 1, 6, 0);
   ctx.fillRect(0, 0, s * 0.21, s * 0.75);
@@ -265,8 +268,15 @@ function drawLogoMark(ctx: Ctx, themeKey: ShareTheme) {
   ctx.restore();
 }
 
+// Safe zones do Instagram Stories (1080x1920):
+// - Topo 250px: avatar do usuário + botões
+// - Baixo 260px: barra de comentários + botão de share
+// Conteúdo importante deve caber em y=250 até y=1660.
+const SAFE_TOP = 250;
+const SAFE_BOTTOM = 1660;
+
 async function drawMapBackground(ctx: Ctx, data: RunCardData) {
-  const MAP_H = 1180; // topo cobre ~60% da imagem
+  const MAP_H = 1020; // topo cobre ~53% da imagem, deixa espaço pras stats
   const style =
     data.mapStyle === 'satellite' ? 'mapbox/satellite-streets-v12' :
     data.mapStyle === 'dark'      ? 'mapbox/dark-v11' :
@@ -279,20 +289,17 @@ async function drawMapBackground(ctx: Ctx, data: RunCardData) {
     strokeColor: '22d3ee',
     strokeWidth: 6
   });
-  // Fundo escuro de base (caso mapa falhe)
   ctx.fillStyle = '#0b1220';
   ctx.fillRect(0, 0, W, H);
   if (!url) return;
   try {
     const img = await loadImage(url);
     ctx.drawImage(img, 0, 0, W, MAP_H);
-    // Fade pro preto antes da área de stats
-    const fade = ctx.createLinearGradient(0, MAP_H - 220, 0, MAP_H + 40);
+    const fade = ctx.createLinearGradient(0, MAP_H - 200, 0, MAP_H + 40);
     fade.addColorStop(0, 'rgba(11, 18, 32, 0)');
     fade.addColorStop(1, 'rgba(11, 18, 32, 1)');
     ctx.fillStyle = fade;
-    ctx.fillRect(0, MAP_H - 220, W, 260);
-    // Gradient do fundo pra baixo
+    ctx.fillRect(0, MAP_H - 200, W, 240);
     const bot = ctx.createLinearGradient(0, MAP_H, 0, H);
     bot.addColorStop(0, '#0b1220');
     bot.addColorStop(1, '#050810');
@@ -305,45 +312,48 @@ async function drawMapBackground(ctx: Ctx, data: RunCardData) {
 
 async function drawRunCard(ctx: Ctx, d: RunCardData, c: ShareCustomization) {
   const theme = SHARE_THEMES[c.theme];
-  const mapBottom = c.photoDataUrl ? 0 : 1180; // se usuário botou foto, usa layout de foto
+  const isMinimal = c.layout === 'minimal';
+  const isPhoto = c.layout === 'photo' || !!c.photoDataUrl;
 
-  // Data top-right
-  ctx.font = '600 32px -apple-system, system-ui, sans-serif';
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-  ctx.textAlign = 'right';
-  ctx.fillText(formatRunDate(d.date), W - 60, 94);
-  ctx.textAlign = 'left';
+  // ─── Bloco central (KM) ─────
+  // Começa em 1100 quando tem mapa (termina em 1020), ou no centro se photo.
+  const centerY = isPhoto ? H / 2 - 100 : 1220;
 
-  // Bloco de stats
-  const statsTop = c.photoDataUrl ? 1100 : mapBottom + 80;
-
-  // KM gigante com unidade inline
   const km = (d.distanceM / 1000).toFixed(2);
   ctx.textAlign = 'center';
   ctx.font = '900 240px -apple-system, system-ui, sans-serif';
   ctx.fillStyle = TEXT;
   const kmWidth = ctx.measureText(km).width;
-  ctx.fillText(km, W / 2, statsTop + 200);
+  ctx.fillText(km, W / 2, centerY);
 
-  // "km" como sufixo pequeno à direita
-  ctx.font = '700 56px -apple-system, system-ui, sans-serif';
+  // "km" inline em thin/light
+  ctx.font = '300 72px -apple-system, system-ui, sans-serif';
   ctx.fillStyle = theme.primary;
   ctx.textAlign = 'left';
-  ctx.fillText('km', W / 2 + kmWidth / 2 + 16, statsTop + 200);
+  ctx.fillText('km', W / 2 + kmWidth / 2 + 20, centerY);
 
-  // Linha de stats: PACE | TEMPO | KCAL
-  const rowY = statsTop + 340;
-  const cellW = W / 3;
-  drawRunStat(ctx, cellW / 2, rowY, 'PACE', d.paceSecPerKm > 0 ? fmtPace(d.paceSecPerKm) : '—', '/km', theme.primary);
-  drawRunStat(ctx, cellW * 1.5, rowY, 'TEMPO', fmtRunDuration(d.durationSec), '', theme.primary);
-  if (d.calories !== undefined) {
-    drawRunStat(ctx, cellW * 2.5, rowY, 'KCAL', String(d.calories), '', theme.primary);
+  // ─── Linha de stats (stats + minimal com poucas) ─────
+  if (!isMinimal) {
+    const rowY = centerY + 150;
+    const cellW = W / 3;
+    drawRunStat(ctx, cellW / 2, rowY, 'PACE', d.paceSecPerKm > 0 ? fmtPace(d.paceSecPerKm) : '—', '/km', theme.primary);
+    drawRunStat(ctx, cellW * 1.5, rowY, 'TEMPO', fmtRunDuration(d.durationSec), '', theme.primary);
+    if (d.calories !== undefined) {
+      drawRunStat(ctx, cellW * 2.5, rowY, 'KCAL', String(d.calories), '', theme.primary);
+    }
   } else {
-    drawRunStat(ctx, cellW * 2.5, rowY, 'PONTOS', String(d.track.length), '', theme.primary);
+    // Minimal: só pace centralizado
+    const rowY = centerY + 140;
+    ctx.textAlign = 'center';
+    ctx.font = '300 44px -apple-system, system-ui, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    const paceStr = d.paceSecPerKm > 0 ? `${fmtPace(d.paceSecPerKm)} /km` : '';
+    ctx.fillText(paceStr, W / 2, rowY);
   }
 
-  // Avatar + nome no rodapé
-  await drawUserFooter(ctx, d.userName, d.avatar);
+  // ─── Footer unificado: avatar + nome + data ─────
+  // Posicionado em 1600 pra ficar dentro da safe zone do Instagram.
+  await drawUserFooter(ctx, d.userName, d.avatar, formatRunDateFull(d.date));
 
   ctx.textAlign = 'left';
 }
@@ -368,28 +378,27 @@ function drawRunStat(ctx: Ctx, x: number, y: number, label: string, value: strin
   }
 }
 
-async function drawUserFooter(ctx: Ctx, name: string, avatar?: string) {
-  const cy = H - 130;
-  const size = 96;
+async function drawUserFooter(ctx: Ctx, name: string, avatar: string | undefined, dateStr: string) {
+  // Posicionado em y=1600 pra ficar dentro da safe zone do Insta Stories
+  const cy = 1600;
+  const size = 88;
 
-  // Desenha avatar (emoji ou URL) à esquerda do nome — layout centralizado
-  const nameText = name.toUpperCase();
-  ctx.font = '800 44px -apple-system, system-ui, sans-serif';
-  const nameWidth = ctx.measureText(nameText).width;
-
+  // Calcula largura pra centralizar tudo
+  ctx.font = '600 38px -apple-system, system-ui, sans-serif';
+  const nameWidth = ctx.measureText(name).width;
   const totalWidth = size + 24 + nameWidth;
   const startX = (W - totalWidth) / 2;
   const avatarCx = startX + size / 2;
-  const nameX = startX + size + 24;
+  const textX = startX + size + 24;
 
-  // Círculo do avatar
+  // ─── Avatar ─────
   ctx.save();
   ctx.beginPath();
   ctx.arc(avatarCx, cy, size / 2, 0, Math.PI * 2);
   ctx.closePath();
   ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
   ctx.fill();
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
   ctx.lineWidth = 2;
   ctx.stroke();
   ctx.clip();
@@ -410,17 +419,17 @@ async function drawUserFooter(ctx: Ctx, name: string, avatar?: string) {
   }
   ctx.restore();
 
-  // Nome ao lado
-  ctx.font = '800 44px -apple-system, system-ui, sans-serif';
+  // ─── Nome (light, não mais em caps) ─────
+  ctx.font = '600 38px -apple-system, system-ui, sans-serif';
   ctx.fillStyle = TEXT;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.fillText(nameText, nameX, cy - 10);
+  ctx.fillText(name, textX, cy - 14);
 
-  // "CORRIDA" embaixo do nome
-  ctx.font = '700 26px -apple-system, system-ui, sans-serif';
+  // ─── Data (light, menor, mesma linha vertical) ─────
+  ctx.font = '300 26px -apple-system, system-ui, sans-serif';
   ctx.fillStyle = TEXT_MUTE;
-  ctx.fillText('CORRIDA', nameX, cy + 28);
+  ctx.fillText(dateStr, textX, cy + 22);
 
   ctx.textBaseline = 'alphabetic';
 }
@@ -434,9 +443,9 @@ function drawEmojiAvatar(ctx: Ctx, emoji: string, cx: number, cy: number, size: 
   ctx.textBaseline = 'alphabetic';
 }
 
-function formatRunDate(iso: string): string {
+function formatRunDateFull(iso: string): string {
   const d = new Date(iso + 'T12:00:00');
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' });
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
 function fmtRunDuration(sec: number): string {
