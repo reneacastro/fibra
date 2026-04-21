@@ -29,6 +29,7 @@ jobs:
           PUBLIC_FIREBASE_APP_ID:               ${{ secrets.PUBLIC_FIREBASE_APP_ID }}
           PUBLIC_FIREBASE_MEASUREMENT_ID:       ${{ secrets.PUBLIC_FIREBASE_MEASUREMENT_ID }}
           PUBLIC_OPENROUTER_API_KEY:            ${{ secrets.PUBLIC_OPENROUTER_API_KEY }}
+          PUBLIC_MAPBOX_TOKEN:                  ${{ secrets.PUBLIC_MAPBOX_TOKEN }}
         run: npm run build
 
       - name: Deploy preview channel

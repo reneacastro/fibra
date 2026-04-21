@@ -3,8 +3,14 @@
   import Button from './Button.svelte';
   import { fmtPace } from '$lib/utils/exercise';
 
+  interface TrackPoint { lat: number; lng: number; t: number }
   interface Props {
-    onComplete: (result: { distanceM: number; paceSecPerKm: number; durationSec: number }) => void;
+    onComplete: (result: {
+      distanceM: number;
+      paceSecPerKm: number;
+      durationSec: number;
+      track: TrackPoint[];
+    }) => void;
     onClose: () => void;
   }
   let { onComplete, onClose }: Props = $props();
@@ -23,6 +29,7 @@
   let pausedAccumSec = 0;
   let pausedAt = 0;
   let lastPos: GeolocationPosition | null = null;
+  let track: TrackPoint[] = [];
 
   const paceSecPerKm = $derived(
     distanceM > 50 ? Math.round(elapsedSec / (distanceM / 1000)) : 0
@@ -61,6 +68,7 @@
     startAt = Date.now();
     pausedAccumSec = 0;
     lastPos = null;
+    track = [];
 
     watchId = navigator.geolocation.watchPosition(
       (pos) => {
@@ -69,11 +77,14 @@
         if (pos.coords.accuracy > 30) return;
         if (lastPos) {
           const d = haversine(lastPos, pos);
-          // Descarta saltos irreais (> 50m em < 2s ≈ 90km/h)
           const dt = (pos.timestamp - lastPos.timestamp) / 1000;
+          // Descarta saltos irreais (>15m/s = ~54km/h)
           if (dt > 0 && d / dt < 15) {
             distanceM += d;
+            track.push({ lat: pos.coords.latitude, lng: pos.coords.longitude, t: pos.timestamp });
           }
+        } else {
+          track.push({ lat: pos.coords.latitude, lng: pos.coords.longitude, t: pos.timestamp });
         }
         lastPos = pos;
       },
@@ -128,7 +139,8 @@
     onComplete({
       distanceM: Math.round(distanceM),
       paceSecPerKm,
-      durationSec: elapsedSec
+      durationSec: elapsedSec,
+      track: [...track]
     });
   }
 

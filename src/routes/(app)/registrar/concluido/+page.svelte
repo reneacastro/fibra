@@ -10,6 +10,7 @@
   import Button from '$lib/components/Button.svelte';
   import ShareSheet from '$lib/components/ShareSheet.svelte';
   import type { ShareCardData } from '$lib/utils/shareCard';
+  import { renderRunCard } from '$lib/utils/shareRunCard';
 
   const sessionId = page.url.searchParams.get('id') ?? '';
   const prs = Number(page.url.searchParams.get('prs') ?? 0);
@@ -30,6 +31,62 @@
     }
     setTimeout(() => (show = true), 80);
   });
+
+  // Detecta se tem set de cardio com GPS gravado
+  const gpsCardioSet = $derived.by(() => {
+    if (!session) return null;
+    for (const pe of session.performedExercises) {
+      for (const s of pe.sets) {
+        if (s.gpsTrack && s.gpsTrack.length > 5 && s.distanceM && s.distanceM > 100) {
+          return { set: s, exerciseName: pe.exerciseName };
+        }
+      }
+    }
+    return null;
+  });
+
+  let sharingRun = $state(false);
+  let runShareError = $state<string | null>(null);
+
+  async function shareRun() {
+    if (!session || !profile || !gpsCardioSet) return;
+    sharingRun = true;
+    runShareError = null;
+    try {
+      const blob = await renderRunCard({
+        distanceM: gpsCardioSet.set.distanceM ?? 0,
+        paceSecPerKm: gpsCardioSet.set.paceSecPerKm ?? 0,
+        durationSec: gpsCardioSet.set.durationSec ?? 0,
+        calories: session.calories,
+        date: session.date,
+        userName: profile.name,
+        track: gpsCardioSet.set.gpsTrack!.map((p) => ({ lat: p.lat, lng: p.lng }))
+      });
+
+      const file = new File([blob], 'fibra-corrida.png', { type: 'image/png' });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'Minha corrida no FIBRA',
+          text: `${((gpsCardioSet.set.distanceM ?? 0) / 1000).toFixed(2)}km de fibra.`
+        });
+      } else {
+        // Fallback: baixa a imagem
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `fibra-corrida-${session.date}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (e) {
+      if ((e as Error).name !== 'AbortError') {
+        runShareError = 'Falha ao gerar a imagem: ' + (e as Error).message;
+      }
+    } finally {
+      sharingRun = false;
+    }
+  }
 
   function shareSession() {
     if (!session || !profile) return;
@@ -83,6 +140,20 @@
 
   {#if session && profile}
     <div class="share-stack">
+      {#if gpsCardioSet}
+        <button class="share-row run" onclick={shareRun} disabled={sharingRun}>
+          <div class="sr-ic">🗺️</div>
+          <div class="sr-body">
+            <div class="sr-t">Compartilhar a corrida</div>
+            <div class="sr-s">Mapa do percurso + km + pace + tempo</div>
+          </div>
+          {#if sharingRun}
+            <span class="mi spin">progress_activity</span>
+          {:else}
+            <span class="mi">ios_share</span>
+          {/if}
+        </button>
+      {/if}
       {#if prs > 0}
         <button class="share-row pr" onclick={sharePR}>
           <div class="sr-ic">🏆</div>
@@ -101,6 +172,9 @@
         </div>
         <span class="mi">ios_share</span>
       </button>
+      {#if runShareError}
+        <div class="err">{runShareError}</div>
+      {/if}
     </div>
   {/if}
 
@@ -191,6 +265,19 @@
   .share-row.pr {
     border-color: var(--warn);
     background: color-mix(in srgb, var(--warn) 8%, var(--bg-2));
+  }
+  .share-row.run {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 8%, var(--bg-2));
+  }
+  .share-row:disabled { opacity: 0.6; }
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .err {
+    color: var(--danger);
+    font-size: var(--fs-xs);
+    padding: 8px;
+    text-align: center;
   }
   .sr-ic { font-size: 28px; }
   .sr-body { flex: 1; }

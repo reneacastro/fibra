@@ -183,7 +183,12 @@
   }
 
   let gpsTarget = $state<{ exIdx: number; sIdx: number } | null>(null);
-  function applyGps(result: { distanceM: number; paceSecPerKm: number; durationSec: number }) {
+  function applyGps(result: {
+    distanceM: number;
+    paceSecPerKm: number;
+    durationSec: number;
+    track: { lat: number; lng: number; t: number }[];
+  }) {
     if (!gpsTarget) return;
     const { exIdx, sIdx } = gpsTarget;
     const next = [...performed];
@@ -192,6 +197,7 @@
       distanceM: result.distanceM,
       paceSecPerKm: result.paceSecPerKm,
       durationSec: result.durationSec,
+      gpsTrack: result.track.length > 1 ? result.track : undefined,
       completed: true
     };
     performed = next;

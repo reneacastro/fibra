@@ -172,6 +172,8 @@ export interface PerformedSet {
   paceSecPerKm?: number;
   rpe?: number;
   completed: boolean;
+  // Rota GPS capturada (só cardio com GPS ativo)
+  gpsTrack?: { lat: number; lng: number; t: number }[];
 }
 
 // ─── Log por exercício ───────────────────────────────────
