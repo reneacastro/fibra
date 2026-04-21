@@ -14,12 +14,15 @@
   import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
   import WeeklySchedule from '$lib/components/WeeklySchedule.svelte';
+  import { randomPhrase } from '$lib/data/motivation';
 
   let profile = $state<UserProfile | null>(null);
   let workouts = $state<Workout[]>([]);
   let sessions = $state<Session[]>([]);
   let schedule = $state<Schedule | null>(null);
   let loading = $state(true);
+  // Sorteada uma vez por carregamento da home
+  const phrase = randomPhrase();
 
   onMount(async () => {
     if (!authStore.uid) { loading = false; return; }
@@ -107,6 +110,10 @@
     {:else}
       Cada fibra conta hoje.
     {/if}
+  </div>
+  <div class="hero-phrase">
+    <span class="mi">auto_awesome</span>
+    <span>{phrase}</span>
   </div>
 </div>
 
@@ -237,6 +244,21 @@
   .greet { color: var(--text-mute); font-size: var(--fs-sm); }
   .name { font-size: var(--fs-2xl); font-weight: 800; letter-spacing: -0.02em; }
   .hero-tag { margin-top: var(--s-2); color: var(--text-mute); font-size: var(--fs-sm); font-style: italic; }
+  .hero-phrase {
+    margin-top: var(--s-3);
+    padding: var(--s-2) var(--s-3);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 var(--r-md) var(--r-md) 0;
+    display: flex;
+    gap: var(--s-2);
+    align-items: center;
+    color: var(--text);
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  .hero-phrase .mi { font-size: 16px; color: var(--accent); flex-shrink: 0; }
 
   .stats {
     display: grid;
