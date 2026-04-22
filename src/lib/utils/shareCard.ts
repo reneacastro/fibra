@@ -288,7 +288,7 @@ const SAFE_TOP = 250;
 const SAFE_BOTTOM = 1660;
 
 async function drawMapBackground(ctx: Ctx, data: RunCardData) {
-  const MAP_H = 1020; // topo cobre ~53% da imagem, deixa espaço pras stats
+  const MAP_H = 1020;
   const style =
     data.mapStyle === 'satellite' ? 'mapbox/satellite-streets-v12' :
     data.mapStyle === 'dark'      ? 'mapbox/dark-v11' :
@@ -303,7 +303,11 @@ async function drawMapBackground(ctx: Ctx, data: RunCardData) {
   });
   ctx.fillStyle = '#0b1220';
   ctx.fillRect(0, 0, W, H);
-  if (!url) return;
+  if (!url) {
+    // Sem track GPS: placeholder visual em vez de deixar preto puro
+    drawNoMapPlaceholder(ctx);
+    return;
+  }
   try {
     const img = await loadImage(url);
     ctx.drawImage(img, 0, 0, W, MAP_H);
@@ -318,8 +322,30 @@ async function drawMapBackground(ctx: Ctx, data: RunCardData) {
     ctx.fillStyle = bot;
     ctx.fillRect(0, MAP_H, W, H - MAP_H);
   } catch {
-    // já temos o fundo escuro
+    drawNoMapPlaceholder(ctx);
   }
+}
+
+function drawNoMapPlaceholder(ctx: Ctx) {
+  // Gradiente cyan estilizado com mensagem quando o track está ausente
+  const MAP_H = 1020;
+  const grad = ctx.createLinearGradient(0, 0, 0, MAP_H);
+  grad.addColorStop(0, '#0e1a2b');
+  grad.addColorStop(1, '#0b1220');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, MAP_H);
+  // Ícone de mapa riscado
+  ctx.font = '220px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(34, 211, 238, 0.35)';
+  ctx.fillText('🗺️', W / 2, MAP_H / 2 - 20);
+  ctx.font = '700 44px -apple-system, system-ui, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.fillText('Sem rota GPS', W / 2, MAP_H / 2 + 80);
+  ctx.font = '300 28px -apple-system, system-ui, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.fillText('Ative o GPS na próxima corrida', W / 2, MAP_H / 2 + 130);
+  ctx.textAlign = 'left';
 }
 
 async function drawRunCard(ctx: Ctx, d: RunCardData, c: ShareCustomization) {

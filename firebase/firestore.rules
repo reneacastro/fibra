@@ -153,6 +153,50 @@ service cloud.firestore {
       allow delete: if isOwner(uid);
     }
 
+    // ─── Grupos (comunidade dentro da comunidade) ────────
+    match /groups/{groupId} {
+      allow read: if resource.data.isPublic == true
+        || (isSignedIn() && request.auth.uid in resource.data.memberUids);
+      // Criação: owner precisa ser o próprio user e estar no array de membros
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.auth.uid in request.resource.data.memberUids
+        && notTooLarge();
+      // Update: owner pode mudar tudo, membros podem ler e sair (retirar
+      // a si mesmo do array — permitimos update se memberUids muda e user
+      // removeu apenas a si próprio)
+      allow update: if isSignedIn()
+        && resource.data.ownerUid == request.resource.data.ownerUid  // owner imutável
+        && notTooLarge()
+        && (
+          resource.data.ownerUid == request.auth.uid  // owner pode tudo
+          || (
+            // Membro só pode sair (memberUids shrinks, remove só a si mesmo)
+            resource.data.memberUids.hasAll(request.resource.data.memberUids)
+            && !(request.auth.uid in request.resource.data.memberUids)
+            && request.auth.uid in resource.data.memberUids
+          )
+        );
+      allow delete: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+
+      // Posts do mural
+      match /posts/{postId} {
+        function groupData() {
+          return get(/databases/$(database)/documents/groups/$(groupId)).data;
+        }
+        function isMember() {
+          return isSignedIn() && request.auth.uid in groupData().memberUids;
+        }
+        allow read: if isMember() || groupData().isPublic == true;
+        allow create: if isMember()
+          && request.resource.data.authorUid == request.auth.uid
+          && notTooLarge();
+        allow update, delete: if isSignedIn()
+          && (resource.data.authorUid == request.auth.uid
+              || groupData().ownerUid == request.auth.uid);
+      }
+    }
+
     // ─── Mensagens de chat (subcoleção de relationship) ──
     match /relationships/{relId}/messages/{msgId} {
       function relData() {

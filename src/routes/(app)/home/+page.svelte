@@ -241,11 +241,15 @@
 </Card>
 
 <!-- Trainer/Nutri dashboard (se aprovado) -->
-{#if profile?.settings?.role === 'trainer' || profile?.settings?.role === 'nutritionist'}
+{#if profile?.settings?.role && profile.settings.role !== 'athlete'}
   <div class="sec-title">Assessoria</div>
   <Card onclick={() => goto('/trainer')} accent="glow" padding="md">
     <div class="rank-promo">
-      <div class="rp-ic">{profile.settings.role === 'nutritionist' ? '🥗' : '💪'}</div>
+      <div class="rp-ic">
+        {#if profile.settings.role === 'both'}🏆
+        {:else if profile.settings.role === 'nutritionist'}🥗
+        {:else}💪{/if}
+      </div>
       <div class="rp-body">
         <div class="rp-t">Meus clientes</div>
         <div class="rp-s">Gerencie atletas que você assiste.</div>
@@ -289,6 +293,17 @@
     <div class="rp-body">
       <div class="rp-t">Ranking da comunidade</div>
       <div class="rp-s">Veja quem tá treinando mais. Troque treinos com outros atletas.</div>
+    </div>
+    <span class="mi chev">chevron_right</span>
+  </div>
+</Card>
+
+<Card onclick={() => goto('/grupos')} padding="md">
+  <div class="integ">
+    <div class="integ-ic"><span class="mi">groups</span></div>
+    <div class="integ-body">
+      <div class="integ-name">Grupos</div>
+      <div class="integ-sub">Crie sua tribo — competição, mural de incentivo</div>
     </div>
     <span class="mi chev">chevron_right</span>
   </div>

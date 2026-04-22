@@ -5,7 +5,7 @@
   const tabs = [
     { href: '/home',      icon: 'home',            label: 'Início' },
     { href: '/treinos',   icon: 'fitness_center',  label: 'Treinos' },
-    { href: '/registrar', icon: 'add',             label: 'Registrar', center: true },
+    { href: '/registrar', icon: 'add',             label: 'Treinar', center: true },
     { href: '/dieta',     icon: 'restaurant',      label: 'Dieta' },
     { href: '/progresso', icon: 'insights',        label: 'Progresso' }
   ];

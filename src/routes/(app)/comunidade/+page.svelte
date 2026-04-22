@@ -132,6 +132,30 @@
     }
   }
 
+  /** Sub-texto abaixo do nome, contextual ao filtro atual. */
+  function fmtSubtext(e: RankingEntry): string {
+    // Filtro por categoria cardio: mostra distância + pace médio
+    if (filterCategory === 'cardio') {
+      const km = (e.totalDistanceM / 1000).toFixed(1);
+      const avgPace = e.totalDistanceM > 100 && e.totalDurationSec > 0
+        ? Math.round(e.totalDurationSec / (e.totalDistanceM / 1000))
+        : 0;
+      if (avgPace > 0) {
+        const m = Math.floor(avgPace / 60);
+        const s = avgPace % 60;
+        return `${km} km · pace ${m}:${String(s).padStart(2, '0')}/km`;
+      }
+      return `${km} km totais`;
+    }
+    // Outras categorias: contagem por categoria + streak
+    if (filterCategory) {
+      const count = e.byCategory?.[filterCategory] ?? 0;
+      return `${count} treinos de ${filterCategory}`;
+    }
+    // Sem filtro: só total de treinos
+    return `${e.totalSessions} treinos`;
+  }
+
   function rankMedal(i: number): string {
     return ['🥇', '🥈', '🥉'][i] ?? '';
   }
@@ -254,9 +278,7 @@
             </div>
             <div class="rank-body">
               <div class="rank-name">{r.displayName}</div>
-              <div class="rank-sub">
-                {r.totalSessions} treinos · {r.currentStreak}d streak · {r.totalPRs} PRs
-              </div>
+              <div class="rank-sub">{fmtSubtext(r)}</div>
             </div>
             <div class="rank-metric">
               <div class="m-v mono">{fmtMetric(r, orderBy)}</div>
@@ -471,12 +493,11 @@
     display: flex;
     gap: var(--s-3);
     align-items: center;
+    position: relative;
   }
-  .rank-row.me {
-    outline: 2px solid var(--accent);
-    outline-offset: -12px;
-    border-radius: var(--r-lg);
-    padding: 4px 0;
+  /* Destaque "eu" usando box-shadow inset — não corta como outline */
+  :global(.card:has(> .rank-row.me)) {
+    box-shadow: 0 0 0 2px var(--accent) inset;
   }
   .rank-pos { width: 38px; text-align: center; flex-shrink: 0; }
   .medal { font-size: 24px; }

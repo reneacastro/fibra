@@ -18,8 +18,13 @@
 
   // Role só vale se foi aprovado pelo admin (settings.role setado)
   const role = $derived(profile?.settings?.role ?? 'athlete');
-  const roleLabel = $derived(role === 'nutritionist' ? 'Nutricionista' : role === 'trainer' ? 'Personal trainer' : 'Atleta');
-  const isTrainerRole = $derived(role === 'trainer' || role === 'nutritionist');
+  const roleLabel = $derived(
+    role === 'both' ? 'Trainer + Nutri'
+    : role === 'nutritionist' ? 'Nutricionista'
+    : role === 'trainer' ? 'Personal trainer'
+    : 'Atleta'
+  );
+  const isTrainerRole = $derived(role === 'trainer' || role === 'nutritionist' || role === 'both');
   const isPending = $derived(!!profile?.settings?.rolePending);
 
   async function load() {
@@ -99,6 +104,7 @@
         trainerUid: authStore.uid,
         trainerName: profile.name || authStore.user?.displayName || 'Profissional',
         trainerAvatar: authStore.user?.photoURL || profile.avatar,
+        // Pra vínculos: se é both, usa 'trainer' como default (escopo controla o que pode editar)
         trainerRole: (role === 'nutritionist' ? 'nutritionist' : 'trainer') as 'trainer' | 'nutritionist',
         clientUid: selectedUid,
         clientName: selectedName,

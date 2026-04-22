@@ -30,7 +30,9 @@
 
   async function approve(req: RoleRequest) {
     if (!authStore.uid) return;
-    if (!confirm(`Aprovar ${req.name} como ${req.requestedRole === 'trainer' ? 'Personal trainer' : 'Nutricionista'}?`)) return;
+    const label = req.requestedRole === 'both' ? 'Personal trainer + Nutricionista'
+      : req.requestedRole === 'trainer' ? 'Personal trainer' : 'Nutricionista';
+    if (!confirm(`Aprovar ${req.name} como ${label}?`)) return;
     processing = req.uid;
     try {
       const userProfile = await getProfile(req.uid);
@@ -98,7 +100,12 @@
             <div class="req-body">
               <div class="req-name">{r.name}</div>
               <div class="req-role">
-                Quer virar: <strong>{r.requestedRole === 'trainer' ? 'Personal trainer' : 'Nutricionista'}</strong>
+                Quer virar:
+                <strong>
+                  {r.requestedRole === 'both' ? 'Personal trainer + Nutricionista'
+                   : r.requestedRole === 'trainer' ? 'Personal trainer'
+                   : 'Nutricionista'}
+                </strong>
               </div>
               <div class="req-date">{new Date(r.createdAt).toLocaleString('pt-BR')}</div>
             </div>

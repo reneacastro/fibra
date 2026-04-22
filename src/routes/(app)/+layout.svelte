@@ -8,12 +8,13 @@
   const TITLES: Record<string, { t: string; s?: string; back?: boolean }> = {
     '/home':        { t: 'FIBRA', s: 'O que te constrói.' },
     '/treinos':     { t: 'Treinos', s: 'Seus planos e o banco de exercícios' },
-    '/registrar':   { t: 'Registrar', s: 'Começar ou salvar um treino' },
+    '/registrar':   { t: 'Treinar', s: 'Começar um treino' },
     '/progresso':   { t: 'Progresso', s: 'Suas fibras em números' },
     '/corpo':       { t: 'Composição', s: 'Bioimpedância e medidas', back: true },
     '/dieta':       { t: 'Dieta', s: 'Macros e rotina alimentar' },
     '/instalar':    { t: 'Instalar app', s: 'Salvar na tela inicial', back: true },
     '/comunidade':  { t: 'Comunidade', s: 'Ranking e treinos compartilhados' },
+    '/grupos':      { t: 'Grupos', s: 'Comunidades menores pra treinar junto' },
     '/trainer':     { t: 'Meus clientes', s: 'Dashboard do trainer/nutri', back: true },
     '/admin':       { t: 'Admin', s: 'Aprovações pendentes', back: true },
     '/perfil':      { t: 'Perfil', s: 'Seus dados e ajustes', back: true }
@@ -25,6 +26,7 @@
     if (p.startsWith('/treinos/')) return { t: 'Editar treino', s: 'Ajustes e exercícios', back: true };
     if (p.startsWith('/sessao/')) return { t: 'Detalhes do treino', s: 'Revisar e compartilhar', back: true };
     if (p.startsWith('/chat/')) return { t: 'Chat', s: 'Conversa direta', back: true };
+    if (p.startsWith('/grupos/')) return { t: 'Grupo', s: 'Mural e membros', back: true };
     if (p.match(/^\/trainer\/cliente\/[^/]+\/dieta/)) return { t: 'Dieta do cliente', s: 'Plano alimentar', back: true };
     if (p.startsWith('/trainer/cliente/')) return { t: 'Cliente', s: 'Assessorar este atleta', back: true };
     if (p.startsWith('/registrar/')) return { t: 'Treino em andamento', s: 'Foco total', back: true };

@@ -33,7 +33,23 @@
 
   const approvedRole = $derived(profile?.settings?.role ?? 'athlete');
 
-  async function requestRole(role: 'trainer' | 'nutritionist') {
+  let wantTrainer = $state(false);
+  let wantNutri = $state(false);
+
+  async function submitRoles() {
+    if (!authStore.uid || !profile) return;
+    if (!wantTrainer && !wantNutri) {
+      alert('Escolha pelo menos um: Personal trainer ou Nutricionista.');
+      return;
+    }
+    const role: 'trainer' | 'nutritionist' | 'both' =
+      wantTrainer && wantNutri ? 'both' : wantTrainer ? 'trainer' : 'nutritionist';
+    await requestRole(role);
+    wantTrainer = false;
+    wantNutri = false;
+  }
+
+  async function requestRole(role: 'trainer' | 'nutritionist' | 'both') {
     if (!authStore.uid || !profile) return;
     await submitRoleRequest({
       uid: authStore.uid,
@@ -204,7 +220,9 @@
       <div class="role-status approved">
         <span class="mi">verified</span>
         <div>
-          <div class="rs-t">Você é {approvedRole === 'trainer' ? 'personal trainer' : 'nutricionista'} aprovado</div>
+          <div class="rs-t">
+            Você é {approvedRole === 'both' ? 'personal trainer + nutricionista' : approvedRole === 'trainer' ? 'personal trainer' : 'nutricionista'} aprovado
+          </div>
           <div class="rs-s">Dashboard disponível em "Meus clientes"</div>
         </div>
       </div>
@@ -213,13 +231,31 @@
         <span class="mi spin">hourglass_top</span>
         <div>
           <div class="rs-t">Aguardando aprovação</div>
-          <div class="rs-s">Pediu: {roleRequest.requestedRole === 'trainer' ? 'Personal trainer' : 'Nutricionista'}</div>
+          <div class="rs-s">
+            Pediu: {roleRequest.requestedRole === 'both' ? 'Personal trainer + Nutricionista' : roleRequest.requestedRole === 'trainer' ? 'Personal trainer' : 'Nutricionista'}
+          </div>
         </div>
         <Button size="sm" variant="ghost" onclick={cancelRequest}>Cancelar</Button>
       </div>
     {:else}
       <div class="role-options">
-        <div class="r-title">Quer pedir promoção?</div>
+        <div class="r-title">Pedir promoção — escolha um ou os dois</div>
+        <label class="role-check">
+          <input type="checkbox" bind:checked={wantTrainer} />
+          <span class="r-ic">💪</span>
+          <div class="r-body">
+            <div class="r-t">Personal trainer</div>
+            <div class="r-s">Monto treinos pra clientes</div>
+          </div>
+        </label>
+        <label class="role-check">
+          <input type="checkbox" bind:checked={wantNutri} />
+          <span class="r-ic">🥗</span>
+          <div class="r-body">
+            <div class="r-t">Nutricionista</div>
+            <div class="r-s">Monto dietas pra clientes</div>
+          </div>
+        </label>
         <textarea
           bind:value={roleNote}
           placeholder="Opcional: conta pro admin quem você é (ex: 'sou CREF 123, atendo há 5 anos')"
@@ -227,22 +263,9 @@
           maxlength="300"
         ></textarea>
         <div class="spacer-xs"></div>
-        <div class="role-btn-row">
-          <button class="role-btn" onclick={() => requestRole('trainer')}>
-            <span class="r-ic">💪</span>
-            <div class="r-body">
-              <div class="r-t">Personal trainer</div>
-              <div class="r-s">Monto treinos pra clientes</div>
-            </div>
-          </button>
-          <button class="role-btn" onclick={() => requestRole('nutritionist')}>
-            <span class="r-ic">🥗</span>
-            <div class="r-body">
-              <div class="r-t">Nutricionista</div>
-              <div class="r-s">Monto dietas pra clientes</div>
-            </div>
-          </button>
-        </div>
+        <Button icon="send" full disabled={!wantTrainer && !wantNutri} onclick={submitRoles}>
+          Enviar pedido
+        </Button>
       </div>
     {/if}
   </Card>
@@ -430,12 +453,7 @@
   }
   .spacer-xs { height: var(--s-2); }
   .r-title { font-size: var(--fs-xs); font-weight: 700; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: var(--s-2); }
-  .role-btn-row {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-2);
-  }
-  .role-btn {
+  .role-check {
     display: flex;
     gap: var(--s-3);
     align-items: center;
@@ -443,7 +461,17 @@
     background: var(--bg-3);
     border: 1px solid var(--border);
     border-radius: var(--r-md);
-    text-align: left;
+    margin-bottom: var(--s-2);
+    cursor: pointer;
+  }
+  .role-check input[type=checkbox] {
+    width: 20px; height: 20px;
+    flex-shrink: 0;
+    accent-color: var(--accent);
+  }
+  .role-check:has(input:checked) {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 8%, var(--bg-3));
   }
   .r-ic { font-size: 28px; flex-shrink: 0; }
   .r-t { font-weight: 700; font-size: var(--fs-sm); }

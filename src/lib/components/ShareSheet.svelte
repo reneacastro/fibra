@@ -229,6 +229,23 @@
     { id: 'minimal', label: 'Minimal', icon: '✨' },
     { id: 'photo', label: 'Foto', icon: '📸' }
   ];
+
+  const MAP_STYLES: { id: 'outdoors' | 'satellite' | 'dark'; label: string }[] = [
+    { id: 'outdoors',  label: 'Ruas'       },
+    { id: 'satellite', label: 'Satélite'   },
+    { id: 'dark',      label: 'Escuro'     }
+  ];
+  // Map style é específico do template 'run' — armazena no próprio data
+  const isRunCard = $derived(data.template === 'run');
+  let mapStyle = $state<'outdoors' | 'satellite' | 'dark'>('outdoors');
+  $effect(() => {
+    if (isRunCard) {
+      // Muta o data passado (mesma referência que o Sheet recebe)
+      (data as { mapStyle?: string }).mapStyle = mapStyle;
+      // Força re-render
+      custom = { ...custom };
+    }
+  });
 </script>
 
 <svelte:window onkeydown={handleKey} />
@@ -361,6 +378,24 @@
           {/each}
         </div>
       </div>
+
+      <!-- Map style (só em cards de corrida) -->
+      {#if isRunCard}
+        <div class="ctrl-section">
+          <div class="ctrl-label">🗺️ Mapa</div>
+          <div class="layout-row">
+            {#each MAP_STYLES as m (m.id)}
+              <button
+                class="layout-btn"
+                class:on={mapStyle === m.id}
+                onclick={() => (mapStyle = m.id)}
+              >
+                <span class="l-lbl">{m.label}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/if}
 
       <!-- Caption -->
       <div class="ctrl-section">

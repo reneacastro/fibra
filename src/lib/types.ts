@@ -68,12 +68,11 @@ export interface UserSettings {
   };
   publicProfile: boolean;
   dietPlanId?: string;
-  // Papel real do usuário. Default = 'athlete'. Só admin pode promover
-  // pra trainer/nutritionist.
-  role?: 'athlete' | 'trainer' | 'nutritionist';
-  // Intenção do usuário (auto-declarada). Fica aqui até admin aprovar
-  // ou rejeitar. Quando aprovado: role recebe o valor e rolePending = undefined.
-  rolePending?: 'trainer' | 'nutritionist';
+  // Papel real do usuário. Default = 'athlete'. Só admin pode promover.
+  // 'both' = trainer + nutritionist (profissional dual).
+  role?: 'athlete' | 'trainer' | 'nutritionist' | 'both';
+  // Intenção do usuário (auto-declarada). Fica aqui até admin aprovar.
+  rolePending?: 'trainer' | 'nutritionist' | 'both';
   roleApprovedAt?: number;
   roleApprovedBy?: string;
 }
@@ -382,8 +381,8 @@ export interface RoleRequest {
   uid: string;
   name: string;
   avatar?: string;
-  requestedRole: 'trainer' | 'nutritionist';
-  note?: string; // explicação opcional ("sou CREF XYZ, atendo há 5 anos…")
+  requestedRole: 'trainer' | 'nutritionist' | 'both';
+  note?: string;
   createdAt: number;
 }
 
@@ -408,6 +407,32 @@ export interface Relationship {
   createdAt: number;
   acceptedAt?: number;
   endedAt?: number;
+}
+
+// ─── Grupos (comunidade dentro da comunidade) ───────────
+
+export interface Group {
+  id: string;
+  name: string;
+  description?: string;
+  ownerUid: string;
+  ownerName: string;
+  memberUids: string[]; // inclui o owner
+  isPublic: boolean;
+  emoji?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface GroupPost {
+  id: string;
+  authorUid: string;
+  authorName: string;
+  authorAvatar?: string;
+  text: string;
+  // menções futuras: uids do time (não implementado ainda)
+  mentions?: string[];
+  createdAt: number;
 }
 
 // ─── Chat trainer ⇄ cliente ─────────────────────────────
