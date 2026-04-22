@@ -33,6 +33,7 @@
   let pausedAt = 0;
   let lastPos: GeolocationPosition | null = null;
   let track: TrackPoint[] = [];
+  let pointsCount = $state(0); // visível na UI pra debugging
 
   // Pace médio da sessão inteira — usado pro cálculo final (coerente com
   // o que Strava/Watch gravam no resumo).
@@ -106,13 +107,15 @@
     watchId = navigator.geolocation.watchPosition(
       (pos) => {
         accuracy = pos.coords.accuracy;
-        if (pos.coords.accuracy > 65) return;
+        // Filtro anti-ruído: 100m é o máximo aceitável em canyon urbano iOS
+        if (pos.coords.accuracy > 100) return;
         if (lastPos) {
           const d = haversine(lastPos, pos);
           const dt = (pos.timestamp - lastPos.timestamp) / 1000;
           if (dt > 0 && d / dt < 15) {
             distanceM += d;
             track.push({ lat: pos.coords.latitude, lng: pos.coords.longitude, t: pos.timestamp });
+            pointsCount = track.length;
 
             // Atualiza rolling pace: soma distância dos últimos 45s
             segments.push({ dist: d, at: pos.timestamp });
@@ -128,6 +131,7 @@
           }
         } else {
           track.push({ lat: pos.coords.latitude, lng: pos.coords.longitude, t: pos.timestamp });
+          pointsCount = track.length;
         }
         lastPos = pos;
       },
@@ -263,9 +267,10 @@
         </div>
 
         {#if accuracy !== null}
-          <div class="acc" class:weak={accuracy > 30}>
+          <div class="acc" class:weak={accuracy > 40}>
             <span class="mi">gps_fixed</span>
-            <span>Precisão: {accuracy.toFixed(0)}m {accuracy > 65 ? '— pontos ignorados' : ''}</span>
+            <span>Precisão: {accuracy.toFixed(0)}m · {pointsCount} {pointsCount === 1 ? 'ponto gravado' : 'pontos gravados'}
+              {#if accuracy > 100}— fraco demais{/if}</span>
           </div>
         {/if}
 

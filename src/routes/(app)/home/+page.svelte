@@ -17,6 +17,8 @@
   import { randomPhrase } from '$lib/data/motivation';
   import { withTimeout } from '$lib/utils/withTimeout';
   import { checkIsAdmin } from '$lib/admin';
+  import { listMyTrainers } from '$lib/db/relationships';
+  import type { Relationship } from '$lib/types';
 
   let profile = $state<UserProfile | null>(null);
   let workouts = $state<Workout[]>([]);
@@ -24,6 +26,7 @@
   let schedule = $state<Schedule | null>(null);
   let loading = $state(true);
   let isAdminUser = $state(false);
+  let myTrainers = $state<Relationship[]>([]);
   // Sorteada uma vez por carregamento da home
   const phrase = randomPhrase();
 
@@ -35,13 +38,14 @@
     loadError = null;
     try {
       await catalogStore.ensure();
-      [profile, workouts, sessions, schedule, isAdminUser] = await withTimeout(
+      [profile, workouts, sessions, schedule, isAdminUser, myTrainers] = await withTimeout(
         Promise.all([
           getProfile(authStore.uid),
           listWorkouts(authStore.uid),
           listSessions(authStore.uid, 50),
           getSchedule(authStore.uid),
-          checkIsAdmin(authStore.uid)
+          checkIsAdmin(authStore.uid),
+          listMyTrainers(authStore.uid).catch(() => [] as Relationship[])
         ]),
         10_000,
         'carregar home'
@@ -251,6 +255,32 @@
   </Card>
 {/if}
 
+<!-- Meus treinadores/nutris (como cliente) -->
+{#if myTrainers.length > 0}
+  <div class="sec-title">Meu time</div>
+  {#each myTrainers as t (t.id)}
+    <Card onclick={() => goto(`/chat/${t.id}`)} padding="md">
+      <div class="integ">
+        <div class="trainer-ava">
+          {#if t.trainerAvatar?.startsWith('http')}
+            <img src={t.trainerAvatar} alt={t.trainerName} />
+          {:else}
+            <span>{t.trainerAvatar || (t.trainerRole === 'nutritionist' ? '🥗' : '💪')}</span>
+          {/if}
+        </div>
+        <div class="integ-body">
+          <div class="integ-name">{t.trainerName}</div>
+          <div class="integ-sub">
+            {t.trainerRole === 'nutritionist' ? 'Seu nutricionista' : 'Seu personal trainer'}
+            · 💬 Chat
+          </div>
+        </div>
+        <span class="mi chev">chevron_right</span>
+      </div>
+    </Card>
+  {/each}
+{/if}
+
 <!-- Ranking da comunidade (destaque) -->
 <div class="sec-title">Ranking</div>
 <Card onclick={() => goto('/comunidade')} accent="glow" padding="md">
@@ -430,6 +460,18 @@
   .mc-sub { color: var(--text-mute); font-size: var(--fs-xs); }
 
   .integ { display: flex; align-items: center; gap: var(--s-3); }
+
+  .trainer-ava {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .trainer-ava img { width: 100%; height: 100%; object-fit: cover; }
+  .trainer-ava span { font-size: 24px; }
 
   .rank-promo {
     display: flex;

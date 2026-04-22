@@ -410,6 +410,17 @@ export interface Relationship {
   endedAt?: number;
 }
 
+// ─── Chat trainer ⇄ cliente ─────────────────────────────
+
+export interface ChatMessage {
+  id: string;
+  senderUid: string;
+  senderName: string;
+  senderAvatar?: string;
+  text: string;
+  createdAt: number;
+}
+
 // ─── Comunidade ─────────────────────────────────────────
 
 /** Entry do ranking público. Um doc por usuário, agregado a cada sessão salva. */

@@ -23,6 +23,7 @@
   import ExerciseDetailSheet from '$lib/components/ExerciseDetailSheet.svelte';
   import CrossfitTimer from '$lib/components/CrossfitTimer.svelte';
   import GpsTracker from '$lib/components/GpsTracker.svelte';
+  import { getNoSleep } from '$lib/utils/noSleep';
   import { isDurationBased, isCardio, fmtSec, fmtPace, parsePace } from '$lib/utils/exercise';
   import { suggestNextLoad } from '$lib/db/gemini';
   import { historyForExercise } from '$lib/db/sessions';
@@ -92,6 +93,10 @@
     elapsedInterval = setInterval(() => {
       elapsed = Date.now() - startedAt;
     }, 1000);
+    // Mantém a tela acesa durante a sessão inteira (não só durante GPS).
+    // Crucial pra corrida: depois de "Concluir" no GPS, o usuário ainda
+    // preenche notes/mood/finaliza e o celular não pode dormir nesse intervalo.
+    getNoSleep().enable();
   }
 
   // Estado do treino em andamento
@@ -159,7 +164,11 @@
       loading = false;
     })();
 
-    return () => { if (elapsedInterval) clearInterval(elapsedInterval); };
+    return () => {
+      if (elapsedInterval) clearInterval(elapsedInterval);
+      // Libera a tela se o user saiu sem finalizar
+      getNoSleep().disable();
+    };
   });
 
   function toggleSet(exIdx: number, setIdx: number) {
@@ -347,6 +356,9 @@
       if (prsEarned.length > 0 && navigator.vibrate) {
         navigator.vibrate([100, 50, 100, 50, 200]);
       }
+
+      // Libera a tela depois que tudo foi salvo
+      getNoSleep().disable();
 
       // Redireciona pra tela de conclusão com os PRs
       const query = new URLSearchParams({

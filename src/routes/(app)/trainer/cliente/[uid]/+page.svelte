@@ -206,6 +206,20 @@
     </Card>
   {/if}
 
+  {@const relId = rel.id}
+  {@const relClientName = rel.clientName}
+  <div class="sec-title">Chat</div>
+  <Card onclick={() => goto(`/chat/${relId}`)} padding="md">
+    <div class="diet-row">
+      <div class="diet-ic">💬</div>
+      <div class="diet-body">
+        <div class="diet-t">Conversar com {relClientName}</div>
+        <div class="diet-s">Mensagens diretas com o cliente</div>
+      </div>
+      <span class="mi chev">chevron_right</span>
+    </div>
+  </Card>
+
   <!-- Histórico de sessões -->
   {#if clientSessions.length > 0}
     <div class="sec-title">Últimos treinos feitos</div>

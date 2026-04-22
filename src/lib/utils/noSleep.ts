@@ -30,11 +30,14 @@ const VIDEO_DATA_URL =
 class NoSleep {
   private video: HTMLVideoElement | null = null;
   private wakeLock: WakeLockSentinel | null = null;
-  enabled = false;
+  /** Ref count — múltiplos contextos (session + GPS) chamam enable/disable
+   *  independentemente. Só libera a tela quando chega a 0. */
+  private refs = 0;
+  get enabled() { return this.refs > 0; }
 
   async enable() {
-    if (this.enabled) return;
-    this.enabled = true;
+    this.refs++;
+    if (this.refs > 1) return; // já estava ligado
 
     // Tenta WakeLock API primeiro (Android Chrome, desktop)
     const w = (navigator as Navigator & {
@@ -71,8 +74,9 @@ class NoSleep {
   }
 
   async disable() {
-    if (!this.enabled) return;
-    this.enabled = false;
+    if (this.refs === 0) return;
+    this.refs--;
+    if (this.refs > 0) return; // outros contextos ainda precisam
     if (this.wakeLock) {
       try { await this.wakeLock.release(); } catch { /* noop */ }
       this.wakeLock = null;
@@ -84,6 +88,12 @@ class NoSleep {
       this.video.remove();
       this.video = null;
     }
+  }
+
+  /** Force release — usado em unmount de página. */
+  async forceRelease() {
+    this.refs = 1;
+    await this.disable();
   }
 }
 

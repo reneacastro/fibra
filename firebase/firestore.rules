@@ -153,6 +153,25 @@ service cloud.firestore {
       allow delete: if isOwner(uid);
     }
 
+    // ─── Mensagens de chat (subcoleção de relationship) ──
+    match /relationships/{relId}/messages/{msgId} {
+      function relData() {
+        return get(/databases/$(database)/documents/relationships/$(relId)).data;
+      }
+      function isInRel() {
+        return isSignedIn() && (
+          relData().trainerUid == request.auth.uid ||
+          relData().clientUid == request.auth.uid
+        );
+      }
+      allow read: if isInRel();
+      allow create: if isInRel()
+        && request.resource.data.senderUid == request.auth.uid
+        && notTooLarge();
+      allow update, delete: if isSignedIn()
+        && resource.data.senderUid == request.auth.uid;
+    }
+
     // ─── Relacionamentos trainer/nutri ⇄ cliente ─────────
     // Doc ID = `${trainerUid}_${clientUid}`
     match /relationships/{relId} {

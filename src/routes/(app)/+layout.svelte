@@ -24,6 +24,7 @@
     if (p === '/treinos/novo') return { t: 'Novo treino', s: 'Monte seu plano', back: true };
     if (p.startsWith('/treinos/')) return { t: 'Editar treino', s: 'Ajustes e exercícios', back: true };
     if (p.startsWith('/sessao/')) return { t: 'Detalhes do treino', s: 'Revisar e compartilhar', back: true };
+    if (p.startsWith('/chat/')) return { t: 'Chat', s: 'Conversa direta', back: true };
     if (p.match(/^\/trainer\/cliente\/[^/]+\/dieta/)) return { t: 'Dieta do cliente', s: 'Plano alimentar', back: true };
     if (p.startsWith('/trainer/cliente/')) return { t: 'Cliente', s: 'Assessorar este atleta', back: true };
     if (p.startsWith('/registrar/')) return { t: 'Treino em andamento', s: 'Foco total', back: true };
