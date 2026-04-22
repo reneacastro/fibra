@@ -310,7 +310,9 @@
 {:else if active === 'grupos'}
   <div class="grp-head">
     <div class="grp-head-t">Comunidades dentro da comunidade</div>
-    <Button size="sm" icon="add" onclick={() => goto('/grupos')}>Criar / ver todos</Button>
+    <Button size="sm" icon="add" full onclick={() => goto('/grupos')}>
+      Criar ou ver todos
+    </Button>
   </div>
 
   {#if myGroups.length > 0}
@@ -635,12 +637,17 @@
 
   .grp-head {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: var(--s-2);
     margin-top: var(--s-3);
-    margin-bottom: var(--s-2);
+    margin-bottom: var(--s-3);
   }
-  .grp-head-t { font-size: var(--fs-sm); color: var(--text-mute); font-style: italic; }
+  .grp-head-t {
+    font-size: var(--fs-sm);
+    color: var(--text-mute);
+    font-style: italic;
+    text-align: center;
+  }
   .grp-list { display: flex; flex-direction: column; gap: var(--s-2); }
   .gr-row { display: flex; gap: var(--s-3); align-items: center; }
   .gr-ic {
