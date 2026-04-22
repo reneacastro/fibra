@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { authStore } from '$lib/stores/auth.svelte';
-  import { saveSession, newSessionId } from '$lib/db/sessions';
+  import { saveSession, newSessionId, getSession } from '$lib/db/sessions';
   import type { Session } from '$lib/types';
   import Card from '$lib/components/Card.svelte';
   import Button from '$lib/components/Button.svelte';
@@ -10,6 +9,8 @@
   let status = $state<'idle' | 'seeding' | 'done' | 'error'>('idle');
   let newSessionId_ = $state<string | null>(null);
   let errorMsg = $state<string | null>(null);
+  let verifyResult = $state<string | null>(null);
+  let savedTrackLength = $state<number | null>(null);
 
   async function seed() {
     if (!authStore.uid) return;
@@ -58,6 +59,19 @@
 
       await saveSession(authStore.uid, session);
       newSessionId_ = id;
+
+      // VERIFICA: re-fetch e conta os pontos salvos
+      const savedBack = await getSession(authStore.uid, id);
+      const firstSet = savedBack?.performedExercises?.[0]?.sets?.[0];
+      savedTrackLength = firstSet?.gpsTrack?.length ?? 0;
+      if (savedTrackLength === 100) {
+        verifyResult = `✅ Persistência OK — ${savedTrackLength} pontos salvos no Firestore.`;
+      } else if (savedTrackLength === 0) {
+        verifyResult = `❌ Track NÃO persistiu. Firestore aceitou doc mas sem gpsTrack. Bug no cleanUndefined ou rule.`;
+      } else {
+        verifyResult = `⚠ Parcial: salvou ${savedTrackLength} de 100 pontos.`;
+      }
+
       status = 'done';
     } catch (e) {
       errorMsg = (e as Error).message;
@@ -81,11 +95,20 @@
       <span>Criando...</span>
     </div>
   {:else if status === 'done' && newSessionId_}
-    <div style="padding:var(--s-3); background:color-mix(in srgb, var(--success) 12%, transparent); border:1px solid var(--success); border-radius:var(--r-md); color:var(--success); margin-bottom:var(--s-3);">
+    <div style="padding:var(--s-3); background:color-mix(in srgb, var(--success) 12%, transparent); border:1px solid var(--success); border-radius:var(--r-md); color:var(--success); margin-bottom:var(--s-2);">
       ✔ Sessão criada. ID: <code>{newSessionId_}</code>
     </div>
+    {#if verifyResult}
+      <div style="padding:var(--s-3); background:var(--bg-3); border:1px solid var(--border); border-radius:var(--r-md); margin-bottom:var(--s-3); font-size:var(--fs-sm); line-height:1.5;">
+        {verifyResult}
+      </div>
+    {/if}
     <Button icon="visibility" full onclick={() => goto(`/sessao/${newSessionId_}`)}>
       Abrir sessão e testar compartilhamento
+    </Button>
+    <div class="spacer-sm" style="height:8px"></div>
+    <Button variant="ghost" full onclick={() => { status = 'idle'; newSessionId_ = null; verifyResult = null; savedTrackLength = null; }}>
+      Criar outra
     </Button>
   {:else if status === 'error'}
     <div style="padding:var(--s-3); background:color-mix(in srgb, var(--danger) 12%, transparent); border:1px solid var(--danger); border-radius:var(--r-md); color:var(--danger); margin-bottom:var(--s-3);">

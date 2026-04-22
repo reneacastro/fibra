@@ -136,7 +136,15 @@
     renderError = null;
     try {
       const old = url;
-      blob = await renderShareCard(data, $state.snapshot(custom) as ShareCustomization);
+      // Timeout global de 12s: se por qualquer motivo render não terminar,
+      // libera o UI e mostra erro em vez de ficar em spinner infinito.
+      const rendered = await Promise.race([
+        renderShareCard(data, $state.snapshot(custom) as ShareCustomization),
+        new Promise<Blob>((_, rej) =>
+          setTimeout(() => rej(new Error('Render demorou mais de 12s. Tenta trocar de tema ou clicar "Tentar de novo".')), 12_000)
+        )
+      ]);
+      blob = rendered;
       url = URL.createObjectURL(blob);
       if (old) URL.revokeObjectURL(old);
     } catch (e) {

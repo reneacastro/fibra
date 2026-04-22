@@ -289,6 +289,16 @@ const SAFE_BOTTOM = 1660;
 
 async function drawMapBackground(ctx: Ctx, data: RunCardData) {
   const MAP_H = 1020;
+  ctx.fillStyle = '#0b1220';
+  ctx.fillRect(0, 0, W, H);
+
+  // Bail cedo: sem pontos, não faz fetch (evita hang em Mapbox)
+  if (!data.track || data.track.length < 2) {
+    console.info('[shareCard] Sem track GPS, usando placeholder');
+    drawNoMapPlaceholder(ctx);
+    return;
+  }
+
   const style =
     data.mapStyle === 'satellite' ? 'mapbox/satellite-streets-v12' :
     data.mapStyle === 'dark'      ? 'mapbox/dark-v11' :
@@ -301,10 +311,8 @@ async function drawMapBackground(ctx: Ctx, data: RunCardData) {
     strokeColor: '22d3ee',
     strokeWidth: 6
   });
-  ctx.fillStyle = '#0b1220';
-  ctx.fillRect(0, 0, W, H);
   if (!url) {
-    // Sem track GPS: placeholder visual em vez de deixar preto puro
+    console.warn('[shareCard] Mapbox URL nulo (token faltando?)');
     drawNoMapPlaceholder(ctx);
     return;
   }
@@ -321,7 +329,8 @@ async function drawMapBackground(ctx: Ctx, data: RunCardData) {
     bot.addColorStop(1, '#050810');
     ctx.fillStyle = bot;
     ctx.fillRect(0, MAP_H, W, H - MAP_H);
-  } catch {
+  } catch (e) {
+    console.warn('[shareCard] Falha ao carregar mapa:', (e as Error).message);
     drawNoMapPlaceholder(ctx);
   }
 }
@@ -818,7 +827,7 @@ function drawFooter(ctx: Ctx, d: ShareCardData) {
   ctx.fillText('fibra — o que te constrói.', 170, y + 5);
 }
 
-function loadImage(src: string, timeoutMs = 8000): Promise<HTMLImageElement> {
+function loadImage(src: string, timeoutMs = 5000): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
