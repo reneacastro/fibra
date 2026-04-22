@@ -129,13 +129,19 @@
     renderTimer = setTimeout(doRender, 200);
   });
 
+  let renderError = $state<string | null>(null);
+
   async function doRender() {
     rendering = true;
+    renderError = null;
     try {
       const old = url;
       blob = await renderShareCard(data, $state.snapshot(custom) as ShareCustomization);
       url = URL.createObjectURL(blob);
       if (old) URL.revokeObjectURL(old);
+    } catch (e) {
+      console.error('Falha ao renderizar share card:', e);
+      renderError = (e as Error).message || 'Erro ao montar a imagem';
     } finally {
       rendering = false;
     }
@@ -262,6 +268,15 @@
     <div class="preview" class:rendering bind:this={previewEl}>
       {#if url}
         <img src={url} alt="Preview" />
+      {:else if renderError}
+        <div class="preview-error">
+          <span class="mi">error</span>
+          <div>
+            <div class="pe-t">Falha ao montar preview</div>
+            <div class="pe-s">{renderError}</div>
+            <button class="pe-retry" onclick={doRender}>Tentar de novo</button>
+          </div>
+        </div>
       {/if}
 
       <!-- Overlay de stickers (drag + pinch) -->
@@ -520,11 +535,33 @@
     margin: 0 auto var(--s-3);
     aspect-ratio: 9 / 16;
     max-height: 44dvh;
+    min-height: 200px;
     width: auto;
     max-width: 100%;
     position: relative;
     transition: opacity var(--dur-fast);
     touch-action: none;
+  }
+  .preview-error {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: var(--s-3);
+    color: var(--danger);
+    text-align: left;
+    max-width: 90%;
+  }
+  .preview-error .mi { font-size: 28px; flex-shrink: 0; }
+  .pe-t { font-weight: 700; font-size: var(--fs-sm); }
+  .pe-s { font-size: var(--fs-xs); margin-top: 4px; color: var(--text-mute); line-height: 1.4; }
+  .pe-retry {
+    margin-top: 8px;
+    padding: 6px 12px;
+    border-radius: var(--r-full);
+    background: var(--accent);
+    color: var(--bg-0);
+    font-size: var(--fs-xs);
+    font-weight: 700;
   }
   .preview img {
     width: 100%;

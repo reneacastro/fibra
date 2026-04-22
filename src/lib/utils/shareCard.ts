@@ -818,12 +818,19 @@ function drawFooter(ctx: Ctx, d: ShareCardData) {
   ctx.fillText('fibra — o que te constrói.', 170, y + 5);
 }
 
-function loadImage(src: string): Promise<HTMLImageElement> {
+function loadImage(src: string, timeoutMs = 8000): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.onload = () => resolve(img);
-    img.onerror = reject;
+    let done = false;
+    const timer = setTimeout(() => {
+      if (done) return;
+      done = true;
+      img.src = ''; // interrompe load
+      reject(new Error('Timeout carregando imagem'));
+    }, timeoutMs);
+    img.onload = () => { if (done) return; done = true; clearTimeout(timer); resolve(img); };
+    img.onerror = () => { if (done) return; done = true; clearTimeout(timer); reject(new Error('Falha ao carregar imagem')); };
     img.src = src;
   });
 }

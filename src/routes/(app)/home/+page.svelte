@@ -305,42 +305,44 @@
   {/each}
 {/if}
 
-<!-- Ranking da comunidade (destaque) -->
-<div class="sec-title">Ranking</div>
-<Card onclick={() => goto('/comunidade')} accent="glow" padding="md">
-  <div class="rank-promo">
-    <div class="rp-ic">🏆</div>
-    <div class="rp-body">
-      <div class="rp-t">Ranking da comunidade</div>
-      <div class="rp-s">Veja quem tá treinando mais. Troque treinos com outros atletas.</div>
-    </div>
-    <span class="mi chev">chevron_right</span>
-  </div>
-</Card>
-
-<Card onclick={() => goto('/grupos')} padding="md">
-  <div class="integ">
-    <div class="integ-ic"><span class="mi">groups</span></div>
-    <div class="integ-body">
-      <div class="integ-name">Grupos</div>
-      <div class="integ-sub">Crie sua tribo — competição, mural de incentivo</div>
-    </div>
-    <span class="mi chev">chevron_right</span>
-  </div>
-</Card>
-
-{#if isAdminUser}
-  <Card onclick={() => goto('/admin')} padding="md">
+<!-- Ranking + Grupos + Admin em pilha consistente -->
+<div class="sec-title">Comunidade</div>
+<div class="stack">
+  <Card onclick={() => goto('/comunidade')} accent="glow" padding="md">
     <div class="integ">
-      <div class="integ-ic"><span class="mi">admin_panel_settings</span></div>
+      <div class="integ-ic"><span class="mi">emoji_events</span></div>
       <div class="integ-body">
-        <div class="integ-name">Admin</div>
-        <div class="integ-sub">Aprovar pedidos de trainer/nutricionista</div>
+        <div class="integ-name">Ranking da comunidade</div>
+        <div class="integ-sub">Quem tá treinando mais · trocar treinos</div>
       </div>
       <span class="mi chev">chevron_right</span>
     </div>
   </Card>
-{/if}
+
+  <Card onclick={() => goto('/grupos')} padding="md">
+    <div class="integ">
+      <div class="integ-ic"><span class="mi">groups</span></div>
+      <div class="integ-body">
+        <div class="integ-name">Grupos</div>
+        <div class="integ-sub">Crie sua tribo · mural de incentivo</div>
+      </div>
+      <span class="mi chev">chevron_right</span>
+    </div>
+  </Card>
+
+  {#if isAdminUser}
+    <Card onclick={() => goto('/admin')} padding="md">
+      <div class="integ">
+        <div class="integ-ic"><span class="mi">admin_panel_settings</span></div>
+        <div class="integ-body">
+          <div class="integ-name">Admin</div>
+          <div class="integ-sub">Aprovar pedidos de trainer/nutricionista</div>
+        </div>
+        <span class="mi chev">chevron_right</span>
+      </div>
+    </Card>
+  {/if}
+</div>
 
 <div class="sec-title">Extras</div>
 <Card onclick={() => goto('/instalar')} padding="md">
@@ -503,6 +505,9 @@
     font-weight: 700;
     margin: var(--s-5) 0 var(--s-2);
   }
+
+  /* Stack de cards com espacamento consistente (home / comunidade) */
+  .stack { display: flex; flex-direction: column; gap: var(--s-2); }
 
   .menu-grid {
     display: grid;

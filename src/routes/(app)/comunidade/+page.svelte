@@ -7,7 +7,8 @@
   import { listRanking, type RankingOrder } from '$lib/db/rankings';
   import { listPublicShared, listReceived, cloneToWorkout } from '$lib/db/sharedWorkouts';
   import { listPendingForMe, acceptInvite, deleteInvite } from '$lib/db/relationships';
-  import type { Relationship } from '$lib/types';
+  import { listMyGroups, listPublicGroups } from '$lib/db/groups';
+  import type { Relationship, Group } from '$lib/types';
   import { listWorkouts, saveWorkout, newWorkoutId } from '$lib/db/workouts';
   import type { RankingEntry, SharedWorkout, WorkoutCategory, UserProfile } from '$lib/types';
   import { CATEGORY_LABEL, CATEGORY_ICON } from '$lib/utils/format';
@@ -19,7 +20,7 @@
   import ShareSheet from '$lib/components/ShareSheet.svelte';
   import type { ShareCardData } from '$lib/utils/shareCard';
 
-  type TabId = 'ranking' | 'publicos' | 'recebidos' | 'convites';
+  type TabId = 'ranking' | 'grupos' | 'publicos' | 'recebidos' | 'convites';
   let active = $state<TabId>('ranking');
 
   let profile = $state<UserProfile | null>(null);
@@ -27,6 +28,8 @@
   let publicShared = $state<SharedWorkout[]>([]);
   let received = $state<SharedWorkout[]>([]);
   let pendingInvites = $state<Relationship[]>([]);
+  let myGroups = $state<Group[]>([]);
+  let featuredGroups = $state<Group[]>([]);
   let loading = $state(true);
   let loadError = $state<string | null>(null);
 
@@ -51,13 +54,15 @@
     loading = true;
     loadError = null;
     try {
-      const [p, r, pub, rec, inv] = await withTimeout(
+      const [p, r, pub, rec, inv, mg, fg] = await withTimeout(
         Promise.all([
           authStore.uid ? getProfile(authStore.uid) : Promise.resolve(null),
           listRanking({ orderBy, category: filterCategory || undefined, max: 50 }),
           listPublicShared({ max: 50 }),
           authStore.uid ? listReceived(authStore.uid, 50) : Promise.resolve([]),
-          authStore.uid ? listPendingForMe(authStore.uid) : Promise.resolve([])
+          authStore.uid ? listPendingForMe(authStore.uid) : Promise.resolve([]),
+          authStore.uid ? listMyGroups(authStore.uid) : Promise.resolve([]),
+          listPublicGroups(20)
         ]),
         12_000,
         'comunidade'
@@ -67,6 +72,9 @@
       publicShared = pub;
       received = rec;
       pendingInvites = inv;
+      myGroups = mg;
+      const myIds = new Set(mg.map((g) => g.id));
+      featuredGroups = fg.filter((g) => !myIds.has(g.id));
       await catalogStore.ensure();
     } catch (e) {
       loadError = (e as Error).message;
@@ -177,6 +185,7 @@
 
   const tabs = $derived([
     { id: 'ranking',   label: 'Ranking' },
+    { id: 'grupos',    label: 'Grupos' },
     { id: 'publicos',  label: 'Públicos' },
     { id: 'recebidos', label: received.length > 0 ? `Recebidos (${received.length})` : 'Recebidos' },
     ...(pendingInvites.length > 0 ? [{ id: 'convites', label: `Convites (${pendingInvites.length})` }] : [])
@@ -298,6 +307,57 @@
     </div>
   {/if}
 
+{:else if active === 'grupos'}
+  <div class="grp-head">
+    <div class="grp-head-t">Comunidades dentro da comunidade</div>
+    <Button size="sm" icon="add" onclick={() => goto('/grupos')}>Criar / ver todos</Button>
+  </div>
+
+  {#if myGroups.length > 0}
+    <div class="sec-title">Meus grupos</div>
+    <div class="grp-list">
+      {#each myGroups as g (g.id)}
+        <Card onclick={() => goto(`/grupos/${g.id}`)} padding="md">
+          <div class="gr-row">
+            <div class="gr-ic">{g.emoji || '🔥'}</div>
+            <div class="gr-body">
+              <div class="gr-name">{g.name}</div>
+              <div class="gr-sub">{g.memberUids.length} {g.memberUids.length === 1 ? 'membro' : 'membros'}</div>
+            </div>
+            <span class="mi">chevron_right</span>
+          </div>
+        </Card>
+      {/each}
+    </div>
+  {/if}
+
+  {#if featuredGroups.length > 0}
+    <div class="sec-title">Descobrir</div>
+    <div class="grp-list">
+      {#each featuredGroups as g (g.id)}
+        <Card onclick={() => goto(`/grupos/${g.id}`)} padding="md">
+          <div class="gr-row">
+            <div class="gr-ic">{g.emoji || '🔥'}</div>
+            <div class="gr-body">
+              <div class="gr-name">{g.name}</div>
+              <div class="gr-sub">{g.memberUids.length} membros · por {g.ownerName}</div>
+            </div>
+            <span class="mi">chevron_right</span>
+          </div>
+        </Card>
+      {/each}
+    </div>
+  {/if}
+
+  {#if myGroups.length === 0 && featuredGroups.length === 0}
+    <div class="empty">
+      <span class="mi">groups</span>
+      <div>
+        <div class="empty-t">Nenhum grupo ainda</div>
+        <div class="empty-s">Toque em "Criar / ver todos" pra começar.</div>
+      </div>
+    </div>
+  {/if}
 {:else if active === 'convites'}
   {#if pendingInvites.length === 0}
     <div class="empty">
@@ -572,4 +632,26 @@
     white-space: pre-wrap;
   }
   .inv-actions { display: flex; gap: var(--s-2); }
+
+  .grp-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--s-3);
+    margin-bottom: var(--s-2);
+  }
+  .grp-head-t { font-size: var(--fs-sm); color: var(--text-mute); font-style: italic; }
+  .grp-list { display: flex; flex-direction: column; gap: var(--s-2); }
+  .gr-row { display: flex; gap: var(--s-3); align-items: center; }
+  .gr-ic {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: var(--bg-3);
+    display: grid; place-items: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+  .gr-body { flex: 1; min-width: 0; }
+  .gr-name { font-weight: 700; }
+  .gr-sub { font-size: var(--fs-xs); color: var(--text-mute); margin-top: 2px; }
 </style>
