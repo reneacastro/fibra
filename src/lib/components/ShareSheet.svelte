@@ -123,10 +123,15 @@
   // ─── Re-render on changes ───────────────────────
   let renderTimer: ReturnType<typeof setTimeout> | null = null;
   $effect(() => {
-    // Dispara quando custom muda
+    // Dispara quando custom OU mapStyle mudam
     custom;
+    mapStyle;
     if (renderTimer) clearTimeout(renderTimer);
-    renderTimer = setTimeout(doRender, 200);
+    renderTimer = setTimeout(() => {
+      // Injeta mapStyle em data (é uma prop passada por referência)
+      if (isRunCard) (data as { mapStyle?: string }).mapStyle = mapStyle;
+      doRender();
+    }, 200);
   });
 
   let renderError = $state<string | null>(null);
@@ -252,14 +257,6 @@
   // Map style é específico do template 'run' — armazena no próprio data
   const isRunCard = $derived(data.template === 'run');
   let mapStyle = $state<'outdoors' | 'satellite' | 'dark'>('outdoors');
-  $effect(() => {
-    if (isRunCard) {
-      // Muta o data passado (mesma referência que o Sheet recebe)
-      (data as { mapStyle?: string }).mapStyle = mapStyle;
-      // Força re-render
-      custom = { ...custom };
-    }
-  });
 </script>
 
 <svelte:window onkeydown={handleKey} />
