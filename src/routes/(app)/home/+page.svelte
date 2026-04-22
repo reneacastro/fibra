@@ -108,6 +108,26 @@
   });
 
   const didTrainToday = $derived(sessions.some((s) => s.date === todayISO()));
+
+  // Convite pro app
+  const APP_URL = 'https://fibra-f1d34.web.app';
+  const inviteText =
+    `Testa o FIBRA comigo — app de treino + corrida + dieta + comunidade. ` +
+    `Dá pra trocar treino com amigos, subir no ranking, e tem chat com personal trainer. ${APP_URL}`;
+
+  async function shareApp() {
+    const shareData = {
+      title: 'FIBRA',
+      text: 'App de treino + corrida + dieta + comunidade.',
+      url: APP_URL
+    };
+    if (navigator.share) {
+      try { await navigator.share(shareData); } catch { /* user cancelou */ }
+    } else {
+      await navigator.clipboard.writeText(inviteText);
+      alert('Link copiado! Cola onde quiser.');
+    }
+  }
 </script>
 
 {#if loadError}
@@ -334,6 +354,35 @@
   </div>
 </Card>
 
+<!-- Convidar alguém -->
+<div class="invite-wrap">
+  <div class="invite-tagline">
+    Chama a galera pra treinar junto.
+  </div>
+  <div class="invite-btns">
+    <button class="inv-btn share" onclick={shareApp}>
+      <span class="mi">ios_share</span>
+      Compartilhar
+    </button>
+    <a
+      class="inv-btn wa"
+      href="https://wa.me/?text={encodeURIComponent(inviteText)}"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <span class="inv-emo">💬</span>
+      WhatsApp
+    </a>
+    <a
+      class="inv-btn mail"
+      href="mailto:?subject={encodeURIComponent('Conhece o FIBRA?')}&body={encodeURIComponent(inviteText)}"
+    >
+      <span class="mi">mail</span>
+      E-mail
+    </a>
+  </div>
+</div>
+
 <style>
   .hero {
     background: var(--grad-hero);
@@ -512,6 +561,46 @@
     color: var(--text-mute);
     margin-top: 2px;
   }
+
+  .invite-wrap {
+    margin-top: var(--s-6);
+    padding: var(--s-4) var(--s-3);
+    text-align: center;
+  }
+  .invite-tagline {
+    font-size: var(--fs-sm);
+    color: var(--text-mute);
+    font-style: italic;
+    margin-bottom: var(--s-3);
+  }
+  .invite-btns {
+    display: flex;
+    gap: var(--s-2);
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .inv-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    border-radius: var(--r-full);
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    text-decoration: none;
+    transition: border-color var(--dur-fast);
+  }
+  @media (hover: hover) {
+    .inv-btn:hover { border-color: var(--accent); }
+  }
+  .inv-btn:active { transform: scale(0.96); }
+  .inv-btn .mi { font-size: 18px; }
+  .inv-btn.share { background: var(--grad-primary); color: var(--bg-0); border-color: transparent; }
+  .inv-btn.wa { background: color-mix(in srgb, #25d366 15%, var(--bg-3)); border-color: color-mix(in srgb, #25d366 30%, var(--border)); }
+  .inv-emo { font-size: 18px; }
   .integ-ic {
     width: 40px;
     height: 40px;
