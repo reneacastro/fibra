@@ -146,6 +146,7 @@
     <Button onclick={() => goto('/registrar')}>Voltar</Button>
   </div>
 {:else}
+  <div class="stack">
   <!-- Hero -->
   <div class="hero">
     <Badge category={session.workoutCategory}>
@@ -304,9 +305,10 @@
   </div>
 
   <!-- Ações -->
-  <div class="footer">
+  <div class="footer-actions">
     <Button variant="ghost" icon="arrow_back" onclick={() => goto('/registrar')}>Voltar</Button>
     <Button variant="ghost" icon="delete_outline" onclick={remove}>Apagar</Button>
+  </div>
   </div>
 {/if}
 
@@ -339,10 +341,15 @@
   .empty h2 { font-size: var(--fs-xl); font-weight: 700; margin-bottom: 6px; }
   .empty p { color: var(--text-mute); margin-bottom: var(--s-4); }
 
+  .stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+  }
+
   .hero {
     text-align: center;
-    margin: var(--s-4) 0 var(--s-4);
-    padding: 0 var(--s-2);
+    padding: var(--s-3) var(--s-2) 0;
   }
   .hero h1 {
     font-size: var(--fs-xl);
@@ -354,27 +361,32 @@
   }
   .hero-sub { color: var(--text-mute); font-size: var(--fs-sm); margin-top: var(--s-2); }
 
-  .map-wrap { overflow: hidden; border-radius: var(--r-lg); }
+  .map-wrap { overflow: hidden; border-radius: var(--r-md); }
   .map-img { width: 100%; display: block; }
 
   .no-map {
     display: flex;
     gap: var(--s-3);
     align-items: flex-start;
-    padding: var(--s-2);
   }
-  .no-map .mi { font-size: 32px; color: var(--text-dim); flex-shrink: 0; margin-top: 4px; }
-  .nm-t { font-weight: 700; font-size: var(--fs-sm); }
-  .nm-s { font-size: var(--fs-xs); color: var(--text-mute); margin-top: 4px; line-height: 1.5; }
+  .no-map .mi { font-size: 32px; color: var(--text-dim); flex-shrink: 0; margin-top: 2px; }
+  .nm-t { font-weight: 700; font-size: var(--fs-sm); line-height: 1.3; }
+  .nm-s {
+    font-size: var(--fs-xs);
+    color: var(--text-mute);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
 
+  /* Grid auto-fit: distribui certinho pra 2, 3 ou 4 stats sem esticar */
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: var(--s-2);
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: var(--s-3) var(--s-2);
   }
   .stat {
     text-align: center;
-    padding: var(--s-2) 4px;
+    padding: 4px 0;
   }
   .sv {
     font-size: var(--fs-xl);
@@ -428,7 +440,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--s-2);
-    margin-top: var(--s-4);
+    margin-top: var(--s-2);
   }
   .share-row {
     display: flex;
@@ -442,7 +454,9 @@
     text-align: left;
     transition: all var(--dur-fast);
   }
-  .share-row:hover { border-color: var(--accent); background: var(--bg-3); }
+  @media (hover: hover) {
+    .share-row:hover { border-color: var(--accent); background: var(--bg-3); }
+  }
   .share-row.run {
     border-color: var(--accent);
     background: color-mix(in srgb, var(--accent) 8%, var(--bg-2));
@@ -453,10 +467,11 @@
   .sr-s { font-size: var(--fs-xs); color: var(--text-mute); margin-top: 2px; }
   .share-row .mi { color: var(--text-mute); }
 
-  .footer {
+  .footer-actions {
     display: flex;
     justify-content: space-between;
     gap: var(--s-2);
-    margin-top: var(--s-4);
+    margin-top: var(--s-2);
+    padding-bottom: var(--s-4);
   }
 </style>
