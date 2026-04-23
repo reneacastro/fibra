@@ -270,7 +270,13 @@
     <div class="rank-list">
       {#each ranking as r, i (r.uid)}
         <Card>
-          <div class="rank-row" class:me={r.uid === authStore.uid}>
+          <button
+            class="rank-row"
+            class:me={r.uid === authStore.uid}
+            type="button"
+            onclick={() => goto(`/comunidade/${r.uid}`)}
+            aria-label="Ver detalhes de {r.displayName}"
+          >
             <div class="rank-pos">
               {#if rankMedal(i)}
                 <span class="medal">{rankMedal(i)}</span>
@@ -294,6 +300,7 @@
               {#if i < 3 && r.uid === authStore.uid}
                 <button
                   class="rank-share"
+                  type="button"
                   onclick={(e) => { e.stopPropagation(); shareRank(r, i + 1); }}
                   aria-label="Compartilhar posição"
                 >
@@ -301,7 +308,8 @@
                 </button>
               {/if}
             </div>
-          </div>
+            <span class="rank-chev mi" aria-hidden="true">chevron_right</span>
+          </button>
         </Card>
       {/each}
     </div>
@@ -556,6 +564,22 @@
     gap: var(--s-3);
     align-items: center;
     position: relative;
+    width: 100%;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    text-align: left;
+    color: inherit;
+    cursor: pointer;
+    transition: background var(--dur-fast);
+  }
+  .rank-row:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+  .rank-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: var(--r-md); }
+  .rank-chev {
+    flex-shrink: 0;
+    font-size: 20px;
+    color: var(--text-dim);
+    margin-left: 4px;
   }
   /* Destaque "eu" usando box-shadow inset — não corta como outline */
   :global(.card:has(> .rank-row.me)) {

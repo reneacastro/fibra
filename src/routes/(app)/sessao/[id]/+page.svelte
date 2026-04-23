@@ -6,6 +6,7 @@
   import { catalogStore } from '$lib/stores/catalog.svelte';
   import { getSession, deleteSession } from '$lib/db/sessions';
   import { getProfile } from '$lib/db/profile';
+  import { syncRanking } from '$lib/db/rankings';
   import type { Session, UserProfile } from '$lib/types';
   import { CATEGORY_ICON, CATEGORY_LABEL, fmtDateShort, fmtDuration } from '$lib/utils/format';
   import { fmtPace, isCardio } from '$lib/utils/exercise';
@@ -110,7 +111,22 @@
   async function remove() {
     if (!session) return;
     if (!confirm(`Apagar esse registro?`)) return;
-    await deleteSession(authStore.uid!, session.id);
+    const uid = authStore.uid!;
+    await deleteSession(uid, session.id);
+
+    // Recalcula ranking (force pra ignorar throttle de 10min — delete
+    // precisa refletir imediato no ranking da comunidade).
+    // Se profile.settings.publicProfile = true, syncRanking atualiza
+    // o doc publico. Se nao, o user nao aparece no ranking mesmo.
+    try {
+      if (profile && profile.settings?.publicProfile) {
+        await syncRanking(uid, profile, { force: true });
+      }
+    } catch (e) {
+      // Nao bloqueia delete se sync falhar
+      console.warn('Falha ao ressincronizar ranking pos-delete:', e);
+    }
+
     goto('/registrar');
   }
 
