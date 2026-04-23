@@ -116,10 +116,18 @@
     background: rgba(0, 0, 0, 0.92);
     backdrop-filter: blur(8px);
     z-index: 500;
+    /* Centraliza e permite scroll do conteúdo quando maior que viewport.
+       Fallback pra height: 100% em iOS antigo (sem dvh) — não usamos dvh
+       direto em criticals. */
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    justify-content: flex-start;
     align-items: center;
-    padding: var(--s-3);
+    padding: 12px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    /* touch-action none evita scroll-bleed vertical no iOS */
+    overscroll-behavior: contain;
     animation: fade 200ms;
   }
   @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
@@ -130,11 +138,10 @@
     background: var(--bg-2);
     border: 1px solid var(--border);
     border-radius: var(--r-2xl);
-    padding: var(--s-4);
+    padding: 16px;
     position: relative;
     animation: pop 240ms var(--ease-spring);
-    max-height: 95dvh;
-    overflow-y: auto;
+    /* Modal NAO tem max-height — backdrop scrolla tudo */
   }
   @keyframes pop {
     from { transform: scale(0.92); opacity: 0; }
@@ -160,20 +167,17 @@
   .img-wrap {
     position: relative;
     width: 100%;
-    max-height: 55dvh;
     background: #000;
     border-radius: var(--r-lg);
     overflow: hidden;
     margin-bottom: var(--s-3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
+  /* Imagem ocupa width total, altura segue proporcao nativa.
+     Nao usamos max-height nem aspect-ratio: deixamos o img nativo
+     dizer seu tamanho. Scroll do backdrop cuida se ficar alto. */
   .img-wrap img {
     width: 100%;
     height: auto;
-    max-height: 55dvh;
-    object-fit: contain;
     display: block;
     transition: opacity 200ms;
   }
