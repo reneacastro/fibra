@@ -21,7 +21,6 @@
   import CrossfitEditor from '$lib/components/CrossfitEditor.svelte';
   import Sortable from 'sortablejs';
   import { isDurationBased, isCardio, fmtSec, fmtPace, parsePace } from '$lib/utils/exercise';
-  import type { Exercise } from '$lib/types';
 
   const isNew = $derived(page.params.id === 'novo');
 

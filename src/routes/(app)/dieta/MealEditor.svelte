@@ -13,7 +13,9 @@
 
   let { meal, onSave, onClose }: Props = $props();
 
-  let local = $state<LoggedMeal>(structuredClone(meal));
+  // $state.snapshot desserializa proxies do Svelte 5 antes de clonar
+  // (structuredClone direto em $state da DataCloneError).
+  let local = $state<LoggedMeal>(structuredClone($state.snapshot(meal)) as LoggedMeal);
   // Modo: 'editor' | 'picker' — in-place swap, sem popup-em-popup
   let mode = $state<'editor' | 'picker'>('editor');
 
