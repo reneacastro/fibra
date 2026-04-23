@@ -169,11 +169,12 @@
             </div>
           </div>
         {/if}
-        {#if ranking.totalDurationSec > 0}
+        {#if ranking.totalDurationSec >= 60}
           <div class="t-item">
             <span class="mi">schedule</span>
             <div class="t-body">
-              <div class="t-v mono">{fmtDuration(ranking.totalDurationSec)}</div>
+              <!-- fmtDuration recebe MS (nao segundos); por isso *1000 -->
+              <div class="t-v mono">{fmtDuration(ranking.totalDurationSec * 1000)}</div>
               <div class="t-l">tempo total</div>
             </div>
           </div>
