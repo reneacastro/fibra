@@ -44,7 +44,12 @@
 
   function handleThumbClick(e: MouseEvent) {
     e.stopPropagation();
-    if (!disableZoom && exercise.gifUrl) zoomOpen = true;
+    if (disableZoom) {
+      // Quando zoom desabilitado, thumb tap dispara a acao principal do card
+      onclick?.();
+      return;
+    }
+    if (exercise.gifUrl) zoomOpen = true;
   }
 </script>
 
@@ -62,8 +67,7 @@
       class="ex-thumb"
       type="button"
       onclick={handleThumbClick}
-      aria-label="Ver imagem ampliada"
-      disabled={disableZoom}
+      aria-label={disableZoom ? 'Selecionar exercício' : 'Ver imagem ampliada'}
     >
       <img
         src={currentSrc}

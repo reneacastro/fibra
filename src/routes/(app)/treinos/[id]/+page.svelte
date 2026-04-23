@@ -46,6 +46,47 @@
   let pickerOpen = $state(false);
   let pickerCat = $state<WorkoutCategory>('superior');
   let pickerSearch = $state('');
+  // Modo detalhe DENTRO do picker (sem popup-em-popup).
+  // null = lista; id = mostra exercicio grande com Adicionar/Voltar
+  let pickerDetailId = $state<string | null>(null);
+  const pickerDetail = $derived(
+    pickerDetailId ? catalogStore.byId(pickerDetailId) : null
+  );
+  // Animacao de 2 frames no detalhe (start/end gif)
+  let detailFrame = $state(0);
+  let detailPaused = $state(false);
+  let detailInterval: ReturnType<typeof setInterval> | undefined;
+  $effect(() => {
+    if (!pickerDetail?.gifEndUrl || detailPaused) {
+      if (detailInterval) clearInterval(detailInterval);
+      return;
+    }
+    detailInterval = setInterval(() => {
+      detailFrame = detailFrame === 0 ? 1 : 0;
+    }, 1100);
+    return () => { if (detailInterval) clearInterval(detailInterval); };
+  });
+  const detailSrc = $derived(
+    detailFrame === 1 && pickerDetail?.gifEndUrl
+      ? pickerDetail.gifEndUrl
+      : pickerDetail?.gifUrl
+  );
+  function closePicker() {
+    pickerOpen = false;
+    pickerDetailId = null;
+    detailFrame = 0;
+    detailPaused = false;
+  }
+  function openDetail(id: string) {
+    pickerDetailId = id;
+    detailFrame = 0;
+    detailPaused = false;
+  }
+  function backToList() {
+    pickerDetailId = null;
+    detailFrame = 0;
+    detailPaused = false;
+  }
 
   // Modal de histórico
   let detailExId = $state<string | null>(null);
@@ -666,67 +707,144 @@
     onCreated={(ex: Exercise) => {
       addExercise(ex.id);
       newExOpen = false;
-      pickerOpen = false;
+      closePicker();
     }}
     onClose={() => (newExOpen = false)}
   />
 {/if}
 
-<!-- Picker modal -->
+<!-- Picker modal (bottom sheet) -->
 {#if pickerOpen}
   <div
     class="sheet-backdrop"
-    onclick={() => (pickerOpen = false)}
-    onkeydown={(e) => e.key === 'Escape' && (pickerOpen = false)}
+    onclick={closePicker}
+    onkeydown={(e) => e.key === 'Escape' && (pickerDetailId ? backToList() : closePicker())}
     role="button"
     tabindex="-1"
   >
     <div class="sheet" onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
       <div class="sheet-handle"></div>
-      <div class="sheet-head">
-        <h3>Adicionar exercício</h3>
-        <div class="sheet-actions">
-          <button class="icon-btn" onclick={() => (newExOpen = true)} aria-label="Criar novo">
-            <span class="mi">add_circle</span>
+
+      {#if pickerDetail}
+        <!-- Modo DETALHE (in-place, sem popup-em-popup) -->
+        <div class="sheet-head">
+          <button class="icon-btn" onclick={backToList} aria-label="Voltar">
+            <span class="mi">arrow_back</span>
           </button>
-          <button class="icon-btn" onclick={() => (pickerOpen = false)}><span class="mi">close</span></button>
+          <h3 class="detail-title">{pickerDetail.name}</h3>
+          <button class="icon-btn" onclick={closePicker} aria-label="Fechar">
+            <span class="mi">close</span>
+          </button>
         </div>
-      </div>
 
-      <div class="picker-tabs">
-        <Tabs
-          tabs={CATS.map((c) => ({
-            id: c,
-            label: CATEGORY_LABEL[c],
-            icon: CATEGORY_ICON[c],
-            count: catalogStore.byCategory(c).length
-          }))}
-          value={pickerCat}
-          onChange={(id) => (pickerCat = id as WorkoutCategory)}
-        />
-      </div>
+        <div class="detail-scroll">
+          {#if pickerDetail.gifUrl}
+            <div class="detail-img-wrap">
+              <img src={detailSrc} alt={pickerDetail.name} />
+              {#if pickerDetail.gifEndUrl}
+                <div class="frame-dots">
+                  <button
+                    class="frame-dot"
+                    class:on={detailFrame === 0}
+                    onclick={() => { detailPaused = true; detailFrame = 0; }}
+                    aria-label="Posição inicial"
+                  ></button>
+                  <button
+                    class="frame-dot"
+                    class:on={detailFrame === 1}
+                    onclick={() => { detailPaused = true; detailFrame = 1; }}
+                    aria-label="Posição final"
+                  ></button>
+                </div>
+                <button
+                  class="play-pause-btn"
+                  onclick={() => (detailPaused = !detailPaused)}
+                  aria-label={detailPaused ? 'Reproduzir' : 'Pausar'}
+                >
+                  <span class="mi">{detailPaused ? 'play_arrow' : 'pause'}</span>
+                </button>
+              {/if}
+            </div>
+          {/if}
 
-      <div class="picker-search">
-        <Input icon="search" placeholder="Buscar…" bind:value={pickerSearch} />
-      </div>
+          <div class="detail-chips">
+            {#each (Array.isArray(pickerDetail.category) ? pickerDetail.category : [pickerDetail.category]) as c (c)}
+              <span class="chip">{CATEGORY_ICON[c] ?? '🔹'} {c}</span>
+            {/each}
+            {#each (Array.isArray(pickerDetail.muscleGroup) ? pickerDetail.muscleGroup : [pickerDetail.muscleGroup]) as m (m)}
+              <span class="chip muscle">{m}</span>
+            {/each}
+            <span class="chip eq">{pickerDetail.equipment}</span>
+          </div>
 
-      {#if pickerTotal > pickerResults.length}
-        <div class="picker-hint">
-          Mostrando {pickerResults.length} de {pickerTotal}. Refine a busca pra ver mais.
+          {#if pickerDetail.instructions}
+            <p class="detail-instructions">{pickerDetail.instructions}</p>
+          {/if}
+        </div>
+
+        <div class="detail-cta">
+          <Button
+            icon="add"
+            full
+            size="lg"
+            onclick={() => {
+              if (pickerDetailId) addExercise(pickerDetailId);
+              backToList();
+            }}
+          >
+            Adicionar ao treino
+          </Button>
+        </div>
+      {:else}
+        <!-- Modo LISTA -->
+        <div class="sheet-head">
+          <h3>Adicionar exercício</h3>
+          <div class="sheet-actions">
+            <button class="icon-btn" onclick={() => (newExOpen = true)} aria-label="Criar novo">
+              <span class="mi">add_circle</span>
+            </button>
+            <button class="icon-btn" onclick={closePicker} aria-label="Fechar">
+              <span class="mi">close</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="picker-tabs">
+          <Tabs
+            tabs={CATS.map((c) => ({
+              id: c,
+              label: CATEGORY_LABEL[c],
+              icon: CATEGORY_ICON[c],
+              count: catalogStore.byCategory(c).length
+            }))}
+            value={pickerCat}
+            onChange={(id) => (pickerCat = id as WorkoutCategory)}
+          />
+        </div>
+
+        <div class="picker-search">
+          <Input icon="search" placeholder="Buscar…" bind:value={pickerSearch} />
+        </div>
+
+        {#if pickerTotal > pickerResults.length}
+          <div class="picker-hint">
+            Mostrando {pickerResults.length} de {pickerTotal}. Refine a busca pra ver mais.
+          </div>
+        {/if}
+
+        <div class="picker-list">
+          {#each pickerResults as ex (ex.id)}
+            <ExerciseCard
+              exercise={ex}
+              compact
+              disableZoom
+              onclick={() => openDetail(ex.id)}
+            />
+          {:else}
+            <div class="empty"><span class="mi">search_off</span>Nenhum exercício disponível</div>
+          {/each}
         </div>
       {/if}
-
-      <div class="picker-list">
-        {#each pickerResults as ex (ex.id)}
-          <ExerciseCard
-            exercise={ex}
-            compact
-            onclick={() => { addExercise(ex.id); pickerOpen = false; }}
-          />
-        {:else}
-          <div class="empty"><span class="mi">search_off</span>Nenhum exercício disponível</div>
-        {/each}
-      </div>
     </div>
   </div>
 {/if}
@@ -1242,6 +1360,106 @@
     padding: var(--s-6);
   }
   .empty .mi { font-size: 32px; color: var(--text-dim); display: block; margin-bottom: 8px; }
+
+  /* Detalhe in-place (mesmo sheet, sem popup-em-popup) */
+  .detail-title {
+    font-size: var(--fs-md);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    text-align: center;
+    flex: 1;
+    padding: 0 var(--s-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .detail-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    padding-bottom: var(--s-3);
+  }
+  .detail-img-wrap {
+    position: relative;
+    width: 100%;
+    background: #000;
+    border-radius: var(--r-lg);
+    overflow: hidden;
+  }
+  .detail-img-wrap img {
+    width: 100%;
+    height: auto;
+    display: block;
+    transition: opacity 200ms;
+  }
+  .frame-dots {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 5px 10px;
+    border-radius: var(--r-full);
+  }
+  .frame-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    transition: all var(--dur-fast);
+  }
+  .frame-dot.on {
+    background: var(--accent);
+    transform: scale(1.2);
+  }
+  .play-pause-btn {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    display: grid;
+    place-items: center;
+  }
+  .play-pause-btn .mi { font-size: 18px; }
+  .detail-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .detail-chips .chip {
+    padding: 4px 10px;
+    background: var(--bg-3);
+    border-radius: var(--r-full);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--text);
+    text-transform: capitalize;
+  }
+  .detail-chips .chip.muscle { color: var(--accent); background: var(--accent-glow); }
+  .detail-chips .chip.eq { color: var(--text-mute); }
+  .detail-instructions {
+    font-size: var(--fs-sm);
+    color: var(--text);
+    line-height: 1.5;
+    padding: var(--s-3);
+    background: var(--bg-3);
+    border-radius: var(--r-md);
+  }
+  .detail-cta {
+    padding-top: var(--s-3);
+    flex-shrink: 0;
+  }
 
   @keyframes fade {
     from { opacity: 0; }
