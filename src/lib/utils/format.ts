@@ -43,8 +43,17 @@ export const CATEGORY_ICON: Record<string, string> = {
 export const DAYS_PT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 export const DAYS_PT_FULL = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
+/** Timezone padrão — Brasília. Usamos explicitamente pra garantir que
+ *  o "hoje" e horários do app batem com o relógio do usuário no Brasil,
+ *  mesmo se o dispositivo estiver em outro fuso (ex: viagem). */
+export const APP_TZ = 'America/Sao_Paulo';
+
+/** ISO "YYYY-MM-DD" no timezone de Brasília (não em UTC como toISOString). */
 export function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+  const fmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone: APP_TZ, year: 'numeric', month: '2-digit', day: '2-digit'
+  });
+  return fmt.format(new Date()); // en-CA produz YYYY-MM-DD
 }
 
 export function fmtDateShort(iso: string) {
@@ -53,8 +62,9 @@ export function fmtDateShort(iso: string) {
 }
 
 export function fmtDateRelative(iso: string) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const todayStr = todayISO();
+  const [ty, tm, td] = todayStr.split('-').map(Number);
+  const today = new Date(ty, tm - 1, td);
   const [y, m, d] = iso.split('-').map(Number);
   const then = new Date(y, m - 1, d);
   const diff = Math.round((today.getTime() - then.getTime()) / 86400000);

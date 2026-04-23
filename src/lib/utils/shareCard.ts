@@ -532,14 +532,20 @@ async function drawRankCard(ctx: Ctx, d: RankCardData, c: ShareCustomization) {
   ctx.fillText('na comunidade FIBRA', W / 2, 1260);
 
   // Footer unificado
-  await drawUserFooter(ctx, d.userName, d.avatar, new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }));
+  await drawUserFooter(ctx, d.userName, d.avatar, new Date().toLocaleDateString('pt-BR', {
+    day: '2-digit', month: 'long', year: 'numeric',
+    timeZone: 'America/Sao_Paulo'
+  }));
 
   ctx.textAlign = 'left';
 }
 
 function formatRunDateFull(iso: string): string {
-  const d = new Date(iso + 'T12:00:00');
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+  const d = new Date(iso + 'T12:00:00-03:00');
+  return d.toLocaleDateString('pt-BR', {
+    day: '2-digit', month: 'long', year: 'numeric',
+    timeZone: 'America/Sao_Paulo'
+  });
 }
 
 function fmtRunDuration(sec: number): string {
@@ -584,12 +590,10 @@ function drawSessionCard(ctx: Ctx, d: SessionCardData, c: ShareCustomization) {
   (ctx as any).letterSpacing = '0';
   ctx.fillText(`${fmtDateShort(s.date)} · ${fmtDuration(duration)}`, W / 2, 680 + yOffset);
 
-  // Stats (só em 'stats' e 'minimal')
+  // Stats mínimos: apenas tempo e kcal (quando houver)
   if (c.layout !== 'photo') {
     const stats: [string, string][] = [
-      [`${s.performedExercises.length}`, 'Exercícios'],
-      [`${totalSets}`, 'Séries'],
-      [`${Math.round(s.totalVolume ?? 0)}`, 'kg volume']
+      [fmtDuration(duration), 'Tempo']
     ];
     if (s.calories) stats.push([`${s.calories}`, 'kcal']);
     drawStatGrid(ctx, stats, H / 2 - 100 + yOffset, theme);

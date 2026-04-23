@@ -446,7 +446,7 @@
               <div class="sh-by-n">
                 {#if isReceived}✉ {s.ownerName} enviou pra você{:else}{s.ownerName}{/if}
               </div>
-              <div class="sh-by-d">{new Date(s.publishedAt).toLocaleDateString('pt-BR')}</div>
+              <div class="sh-by-d">{new Date(s.publishedAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</div>
             </div>
           </div>
           <Badge category={s.category}>{CATEGORY_ICON[s.category]} {CATEGORY_LABEL[s.category]}</Badge>

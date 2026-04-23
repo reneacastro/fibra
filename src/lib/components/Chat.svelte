@@ -66,16 +66,17 @@
   }
 
   function fmtTime(ts: number): string {
+    const TZ = 'America/Sao_Paulo';
     const d = new Date(ts);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const md = new Date(d);
-    md.setHours(0, 0, 0, 0);
-    if (md.getTime() === today.getTime()) {
-      return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    // Dia em Brasília pra decidir se é hoje
+    const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' });
+    const msgDay = fmt.format(d);
+    const todayDay = fmt.format(new Date());
+    if (msgDay === todayDay) {
+      return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
     }
-    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
-      + ' · ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: TZ })
+      + ' · ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
   }
 </script>
 

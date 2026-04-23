@@ -107,7 +107,7 @@
                    : 'Nutricionista'}
                 </strong>
               </div>
-              <div class="req-date">{new Date(r.createdAt).toLocaleString('pt-BR')}</div>
+              <div class="req-date">{new Date(r.createdAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</div>
             </div>
           </div>
           {#if r.note}
