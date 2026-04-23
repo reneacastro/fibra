@@ -20,10 +20,10 @@
   import Input from '$lib/components/Input.svelte';
   import RestTimer from '$lib/components/RestTimer.svelte';
   import ExerciseHistoryCompact from '$lib/components/ExerciseHistoryCompact.svelte';
+  import ExerciseImageZoom from '$lib/components/ExerciseImageZoom.svelte';
   import ExerciseDetailSheet from '$lib/components/ExerciseDetailSheet.svelte';
   import CrossfitTimer from '$lib/components/CrossfitTimer.svelte';
   import GpsTracker from '$lib/components/GpsTracker.svelte';
-  import { getNoSleep } from '$lib/utils/noSleep';
   import { isDurationBased, isCardio, fmtSec, fmtPace, parsePace } from '$lib/utils/exercise';
   import { suggestNextLoad } from '$lib/db/gemini';
   import { historyForExercise } from '$lib/db/sessions';
@@ -74,6 +74,8 @@
   let wodResult = $state<{ elapsedSec: number; rounds?: number } | null>(null);
 
   let detailExId = $state<string | null>(null);
+  let zoomExId = $state<string | null>(null);
+  const zoomExercise = $derived(zoomExId ? catalogStore.byId(zoomExId) : null);
 
   let workout = $state<Workout | null>(null);
   let loading = $state(true);
@@ -86,6 +88,68 @@
   let elapsed = $state(0);
   let elapsedInterval: ReturnType<typeof setInterval>;
 
+  // ─── Persistência da sessão em localStorage ──────
+  // Se o usuário bloquear a tela, iOS pode matar o tab; ao voltar,
+  // restauramos o progresso (series marcadas, tempo decorrido, etc.)
+  const persistKey = $derived(`fibra_active_session_${page.params.id || 'livre'}`);
+
+  function persistSession() {
+    if (!started) return;
+    try {
+      localStorage.setItem(persistKey, JSON.stringify({
+        started: true,
+        startedAt,
+        performed,
+        activeExIdx,
+        finalCalories,
+        finalWeight,
+        finalMood,
+        finalNotes,
+        saveAsTemplate,
+        templateName,
+        templateCategory,
+        savedAt: Date.now()
+      }));
+    } catch {
+      // quota/privacy, tudo bem — só perde o restore
+    }
+  }
+
+  function clearPersistedSession() {
+    try { localStorage.removeItem(persistKey); } catch {}
+  }
+
+  function tryRestoreSession(): boolean {
+    try {
+      const raw = localStorage.getItem(persistKey);
+      if (!raw) return false;
+      const data = JSON.parse(raw);
+      // Descarta sessao parada ha mais de 12h
+      if (Date.now() - data.savedAt > 12 * 3600_000) {
+        clearPersistedSession();
+        return false;
+      }
+      started = data.started;
+      startedAt = data.startedAt;
+      performed = data.performed;
+      activeExIdx = data.activeExIdx ?? 0;
+      finalCalories = data.finalCalories ?? '';
+      finalWeight = data.finalWeight ?? '';
+      finalMood = data.finalMood ?? 4;
+      finalNotes = data.finalNotes ?? '';
+      saveAsTemplate = data.saveAsTemplate ?? false;
+      templateName = data.templateName ?? '';
+      templateCategory = data.templateCategory ?? 'superior';
+      elapsed = Date.now() - startedAt;
+      elapsedInterval = setInterval(() => {
+        elapsed = Date.now() - startedAt;
+      }, 1000);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   function startSession() {
     started = true;
     startedAt = Date.now();
@@ -93,11 +157,24 @@
     elapsedInterval = setInterval(() => {
       elapsed = Date.now() - startedAt;
     }, 1000);
-    // Mantém a tela acesa durante a sessão inteira (não só durante GPS).
-    // Crucial pra corrida: depois de "Concluir" no GPS, o usuário ainda
-    // preenche notes/mood/finaliza e o celular não pode dormir nesse intervalo.
-    getNoSleep().enable();
+    // NoSleep só é ativado dentro do GpsTracker durante a corrida.
+    // Pra treino de academia, o usuário pode (e deve) bloquear a tela
+    // entre séries sem perder o treino — por isso não forçamos aqui.
+    persistSession();
   }
+
+  // Auto-save: dispara quando qualquer estado relevante muda e a sessão
+  // já começou. Debounced leve (200ms).
+  let persistTimer: ReturnType<typeof setTimeout> | null = null;
+  $effect(() => {
+    // Dependências que queremos persistir
+    performed; activeExIdx;
+    finalCalories; finalWeight; finalMood; finalNotes;
+    saveAsTemplate; templateName; templateCategory;
+    if (!started) return;
+    if (persistTimer) clearTimeout(persistTimer);
+    persistTimer = setTimeout(persistSession, 200);
+  });
 
   // Estado do treino em andamento
   let performed = $state<PerformedExercise[]>([]);
@@ -137,18 +214,22 @@
         const w = await getWorkout(authStore.uid, id);
         if (!w) { goto('/registrar'); return; }
         workout = w;
-        performed = w.exercises.map((we, idx) => ({
-          exerciseId: we.exerciseId,
-          exerciseName: catalogStore.byId(we.exerciseId)?.name ?? '',
-          order: idx,
-          sets: we.sets.map((s) => ({
-            reps: s.reps,
-            weight: s.weight,
-            durationSec: s.durationSec,
-            completed: false
-          })),
-          skipped: false
-        }));
+        // Tenta restaurar sessão interrompida (lock/unlock killed tab)
+        const restored = tryRestoreSession();
+        if (!restored) {
+          performed = w.exercises.map((we, idx) => ({
+            exerciseId: we.exerciseId,
+            exerciseName: catalogStore.byId(we.exerciseId)?.name ?? '',
+            order: idx,
+            sets: we.sets.map((s) => ({
+              reps: s.reps,
+              weight: s.weight,
+              durationSec: s.durationSec,
+              completed: false
+            })),
+            skipped: false
+          }));
+        }
       } else {
         workout = {
           id: 'livre',
@@ -159,15 +240,14 @@
           createdAt: Date.now(),
           updatedAt: Date.now()
         };
-        performed = [];
+        const restored = tryRestoreSession();
+        if (!restored) performed = [];
       }
       loading = false;
     })();
 
     return () => {
       if (elapsedInterval) clearInterval(elapsedInterval);
-      // Libera a tela se o user saiu sem finalizar
-      getNoSleep().disable();
     };
   });
 
@@ -357,8 +437,8 @@
         navigator.vibrate([100, 50, 100, 50, 200]);
       }
 
-      // Libera a tela depois que tudo foi salvo
-      getNoSleep().disable();
+      // Limpa a sessao persistida
+      clearPersistedSession();
 
       // Redireciona pra tela de conclusão com os PRs
       const query = new URLSearchParams({
@@ -454,7 +534,14 @@
         <Card accent={pe.skipped ? 'default' : (pe.sets.every((s) => s.completed) ? 'glow' : 'default')}>
           <div class="ex-head" class:dim={pe.skipped}>
             {#if meta.gifUrl}
-              <img class="ex-gif" src={meta.gifUrl} alt={meta.name} loading="lazy" />
+              <button
+                class="ex-gif-btn"
+                onclick={() => (zoomExId = pe.exerciseId)}
+                aria-label="Ver como fazer"
+              >
+                <img class="ex-gif" src={meta.gifUrl} alt={meta.name} loading="lazy" />
+                <span class="ex-gif-overlay"><span class="mi">zoom_in</span></span>
+              </button>
             {/if}
             <div class="ex-info">
               <div class="ex-name">{idx + 1}. {meta.name}</div>
@@ -710,6 +797,10 @@
   <ExerciseDetailSheet exerciseId={detailExId} onClose={() => (detailExId = null)} />
 {/if}
 
+{#if zoomExercise}
+  <ExerciseImageZoom exercise={zoomExercise} onClose={() => (zoomExId = null)} />
+{/if}
+
 {#if gpsTarget}
   <GpsTracker
     onComplete={applyGps}
@@ -828,12 +919,39 @@
     transition: opacity var(--dur-fast);
   }
   .ex-head.dim { opacity: 0.4; }
+  .ex-gif-btn {
+    position: relative;
+    padding: 0;
+    border: 0;
+    background: none;
+    border-radius: var(--r-md);
+    overflow: hidden;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .ex-gif-btn:active { transform: scale(0.95); }
+  .ex-gif-btn .ex-gif-overlay {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    transition: opacity var(--dur-fast);
+    color: #fff;
+  }
+  .ex-gif-btn:active .ex-gif-overlay { opacity: 1; }
+  @media (hover: hover) {
+    .ex-gif-btn:hover .ex-gif-overlay { opacity: 1; }
+  }
+  .ex-gif-overlay .mi { font-size: 22px; }
   .ex-gif {
     width: 56px;
     height: 56px;
     border-radius: var(--r-md);
     object-fit: cover;
     background: var(--bg-3);
+    display: block;
   }
   .ex-info { flex: 1; min-width: 0; }
   .ex-name { font-weight: 700; font-size: var(--fs-md); }

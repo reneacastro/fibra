@@ -49,13 +49,28 @@ export async function listRanking(params: {
 /**
  * Pipeline: busca sessões, computa ranking, salva no doc público.
  * Chama isso depois de saveSession se publicProfile = true.
+ *
+ * Throttle: se o último sync foi há menos de 10 minutos, pula —
+ * ninguém precisa de ranking atualizado a cada segundo, e cada sync
+ * custa ~100 reads no Firestore.
  */
+const RANKING_SYNC_THROTTLE_MS = 10 * 60 * 1000;
+
 export async function syncRanking(uid: string, profile: UserProfile, opts: {
   displayName?: string;
   avatar?: string;
+  force?: boolean;
 }): Promise<void> {
-  // Pega até 500 sessões — mais que suficiente pra ranking rolante
-  const sessions = await listSessions(uid, 500);
+  if (!opts.force) {
+    // Lê o doc existente pra ver se sync recente (1 read, barato)
+    const existing = await getMyRanking(uid);
+    if (existing && Date.now() - (existing.updatedAt ?? 0) < RANKING_SYNC_THROTTLE_MS) {
+      return; // Sync recente, pula
+    }
+  }
+  // 100 sessões é suficiente pra ranking (week=7d, month=30d, total agregado).
+  // Antes era 500 = 500 reads por save. Agora 100 = 5x economia.
+  const sessions = await listSessions(uid, 100);
   const entry = computeRankingEntry({ uid, profile, sessions, ...opts });
   await saveRanking(entry);
 }

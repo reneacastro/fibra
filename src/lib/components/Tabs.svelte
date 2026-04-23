@@ -39,7 +39,10 @@
     gap: 4px;
     overflow-x: auto;
     scroll-behavior: smooth;
-    padding: 4px;
+    /* overflow-x: auto força overflow-y: hidden implícito, cortando o
+       glow (--shadow-glow = 24px) da aba ativa. Padding vertical 12px
+       dá espaço suficiente sem inflar a barra. */
+    padding: 12px 6px;
     background: var(--bg-2);
     border: 1px solid var(--border);
     border-radius: var(--r-full);

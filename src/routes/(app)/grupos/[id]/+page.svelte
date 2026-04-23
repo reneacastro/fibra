@@ -96,7 +96,7 @@
   async function openAddSheet() {
     addSheetOpen = true;
     try {
-      const ranking = await listRanking({ orderBy: 'totalSessions', max: 200 });
+      const ranking = await listRanking({ orderBy: 'totalSessions', max: 50 });
       const existing = new Set(group?.memberUids ?? []);
       candidates = ranking
         .filter((r) => !existing.has(r.uid))

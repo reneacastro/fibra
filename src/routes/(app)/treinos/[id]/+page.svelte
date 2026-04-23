@@ -195,7 +195,7 @@
     if (recipients.length > 0) return;
     try {
       const { listRanking } = await import('$lib/db/rankings');
-      const all = await listRanking({ orderBy: 'totalSessions', max: 200 });
+      const all = await listRanking({ orderBy: 'totalSessions', max: 50 });
       recipients = all
         .filter((r) => r.uid !== authStore.uid)
         .map((r) => ({ uid: r.uid, name: r.displayName, avatar: r.avatar }));

@@ -57,12 +57,12 @@
       const [p, r, pub, rec, inv, mg, fg] = await withTimeout(
         Promise.all([
           authStore.uid ? getProfile(authStore.uid) : Promise.resolve(null),
-          listRanking({ orderBy, category: filterCategory || undefined, max: 50 }),
-          listPublicShared({ max: 50 }),
-          authStore.uid ? listReceived(authStore.uid, 50) : Promise.resolve([]),
+          listRanking({ orderBy, category: filterCategory || undefined, max: 20 }),
+          listPublicShared({ max: 20 }),
+          authStore.uid ? listReceived(authStore.uid, 20) : Promise.resolve([]),
           authStore.uid ? listPendingForMe(authStore.uid) : Promise.resolve([]),
           authStore.uid ? listMyGroups(authStore.uid) : Promise.resolve([]),
-          listPublicGroups(20)
+          listPublicGroups(10)
         ]),
         12_000,
         'comunidade'
@@ -93,7 +93,7 @@
 
   async function reloadRanking() {
     try {
-      ranking = await listRanking({ orderBy, category: filterCategory || undefined, max: 50 });
+      ranking = await listRanking({ orderBy, category: filterCategory || undefined, max: 20 });
     } catch (e) {
       console.warn('Falha ao carregar ranking:', e);
     }

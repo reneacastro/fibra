@@ -70,7 +70,7 @@
   async function openInvite() {
     inviteSheetOpen = true;
     try {
-      const ranking = await listRanking({ orderBy: 'totalSessions', max: 200 });
+      const ranking = await listRanking({ orderBy: 'totalSessions', max: 50 });
       candidates = ranking
         .filter((r) => r.uid !== authStore.uid && !clients.some((c) => c.clientUid === r.uid))
         .map((r) => ({ uid: r.uid, name: r.displayName, avatar: r.avatar }));

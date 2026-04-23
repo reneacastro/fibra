@@ -42,7 +42,7 @@
         Promise.all([
           getProfile(authStore.uid),
           listWorkouts(authStore.uid),
-          listSessions(authStore.uid, 50),
+          listSessions(authStore.uid, 30),
           getSchedule(authStore.uid),
           checkIsAdmin(authStore.uid),
           listMyTrainers(authStore.uid).catch(() => [] as Relationship[])
