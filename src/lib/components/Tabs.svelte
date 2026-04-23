@@ -39,10 +39,7 @@
     gap: 4px;
     overflow-x: auto;
     scroll-behavior: smooth;
-    /* overflow-x: auto força overflow-y: hidden implícito, cortando o
-       glow (--shadow-glow = 24px) da aba ativa. Padding vertical 12px
-       dá espaço suficiente sem inflar a barra. */
-    padding: 12px 6px;
+    padding: 4px;
     background: var(--bg-2);
     border: 1px solid var(--border);
     border-radius: var(--r-full);
@@ -62,14 +59,17 @@
     white-space: nowrap;
     transition: all var(--dur-fast);
   }
-  .tab:hover:not(.on) {
-    background: var(--bg-3);
-    color: var(--text);
+  @media (hover: hover) {
+    .tab:hover:not(.on) {
+      background: var(--bg-3);
+      color: var(--text);
+    }
   }
+  /* Sem glow/shadow — overflow-x:auto do container corta sombras
+     verticais e fica feio. Gradient sozinho já destaca. */
   .tab.on {
     background: var(--grad-primary);
     color: var(--bg-0);
-    box-shadow: var(--shadow-glow);
   }
 
   .ic { font-size: 14px; }

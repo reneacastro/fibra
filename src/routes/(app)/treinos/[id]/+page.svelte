@@ -304,6 +304,7 @@
 {#if loading}
   <div class="loading"><span class="mi spin">progress_activity</span></div>
 {:else}
+  <div class="page-stack">
   <Card>
     <Input label="Nome do treino" icon="edit" bind:value={workout.name} placeholder="Ex: Superior A Pesado" />
     <div class="spacer"></div>
@@ -550,6 +551,7 @@
       {isNew ? 'Criar treino' : 'Salvar alterações'}
     </Button>
   </div>
+  </div>
 
   {#if publishSheetOpen}
     <div class="pub-backdrop" role="presentation" onclick={() => (publishSheetOpen = false)}>
@@ -691,20 +693,22 @@
         </div>
       </div>
 
-      <Tabs
-        tabs={CATS.map((c) => ({
-          id: c,
-          label: CATEGORY_LABEL[c],
-          icon: CATEGORY_ICON[c],
-          count: catalogStore.byCategory(c).length
-        }))}
-        value={pickerCat}
-        onChange={(id) => (pickerCat = id as WorkoutCategory)}
-      />
+      <div class="picker-tabs">
+        <Tabs
+          tabs={CATS.map((c) => ({
+            id: c,
+            label: CATEGORY_LABEL[c],
+            icon: CATEGORY_ICON[c],
+            count: catalogStore.byCategory(c).length
+          }))}
+          value={pickerCat}
+          onChange={(id) => (pickerCat = id as WorkoutCategory)}
+        />
+      </div>
 
-      <div class="spacer"></div>
-      <Input icon="search" placeholder="Buscar…" bind:value={pickerSearch} />
-      <div class="spacer"></div>
+      <div class="picker-search">
+        <Input icon="search" placeholder="Buscar…" bind:value={pickerSearch} />
+      </div>
 
       {#if pickerTotal > pickerResults.length}
         <div class="picker-hint">
@@ -717,7 +721,6 @@
           <ExerciseCard
             exercise={ex}
             compact
-            disableZoom
             onclick={() => { addExercise(ex.id); pickerOpen = false; }}
           />
         {:else}
@@ -780,8 +783,13 @@
     color: var(--accent);
   }
 
+  .page-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+  }
   .sec {
-    margin: var(--s-4) 0;
+    margin: 0;
   }
   .sec-title {
     display: flex;
@@ -1203,18 +1211,29 @@
     font-weight: 800;
   }
   .sheet-actions { display: flex; gap: 4px; }
+  .picker-tabs {
+    margin-bottom: var(--s-3);
+    flex-shrink: 0;
+  }
+  .picker-search {
+    margin-bottom: var(--s-3);
+    flex-shrink: 0;
+  }
   .picker-hint {
     font-size: 11px;
     color: var(--text-mute);
     text-align: center;
-    margin-bottom: 6px;
+    margin-bottom: var(--s-2);
+    flex-shrink: 0;
   }
   .picker-list {
     display: flex;
     flex-direction: column;
     gap: var(--s-2);
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     flex: 1;
+    min-height: 0;
     padding-bottom: var(--s-4);
   }
   .empty {
