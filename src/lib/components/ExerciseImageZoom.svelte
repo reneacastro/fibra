@@ -1,13 +1,25 @@
 <script lang="ts">
+  import { onMount, onDestroy } from 'svelte';
   import type { Exercise } from '$lib/types';
   import { CATEGORY_ICON } from '$lib/utils/format';
+  import Button from './Button.svelte';
 
   interface Props {
     exercise: Exercise;
     onClose: () => void;
+    /** Se passada, mostra botão "Adicionar ao treino" */
+    onAdd?: () => void;
   }
 
-  let { exercise, onClose }: Props = $props();
+  let { exercise, onClose, onAdd }: Props = $props();
+
+  // Lock do scroll do body enquanto modal aberto (evita scroll bleed
+  // pro picker/pagina atras)
+  onMount(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  });
 
   let frame = $state(0);
   let interval: ReturnType<typeof setInterval> | undefined;
@@ -85,6 +97,14 @@
       {#if exercise.instructions}
         <p class="instructions">{exercise.instructions}</p>
       {/if}
+
+      {#if onAdd}
+        <div class="add-row">
+          <Button icon="add" full size="lg" onclick={() => { onAdd(); onClose(); }}>
+            Adicionar ao treino
+          </Button>
+        </div>
+      {/if}
     </div>
   </div>
 </div>
@@ -140,16 +160,21 @@
   .img-wrap {
     position: relative;
     width: 100%;
-    aspect-ratio: 1;
+    max-height: 55dvh;
     background: #000;
     border-radius: var(--r-lg);
     overflow: hidden;
     margin-bottom: var(--s-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .img-wrap img {
     width: 100%;
-    height: 100%;
+    height: auto;
+    max-height: 55dvh;
     object-fit: contain;
+    display: block;
     transition: opacity 200ms;
   }
 
@@ -235,5 +260,9 @@
     padding: var(--s-3);
     background: var(--bg-3);
     border-radius: var(--r-md);
+  }
+
+  .add-row {
+    margin-top: var(--s-3);
   }
 </style>

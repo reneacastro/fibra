@@ -109,6 +109,11 @@
     <div class="check">
       <span class="mi">check</span>
     </div>
+  {:else if onclick}
+    <!-- Botão + explícito pra ficar claro que o card adiciona -->
+    <div class="add-ind" aria-hidden="true">
+      <span class="mi">add</span>
+    </div>
   {/if}
 </div>
 
@@ -116,6 +121,7 @@
   <ExerciseImageZoom
     exercise={exercise}
     onClose={() => (zoomOpen = false)}
+    onAdd={onclick}
   />
 {/if}
 
@@ -243,4 +249,17 @@
     flex-shrink: 0;
   }
   .check .mi { font-size: 18px; font-variation-settings: 'FILL' 1, 'wght' 700; }
+
+  .add-ind {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--bg-3);
+    color: var(--accent);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+  .add-ind .mi { font-size: 20px; font-variation-settings: 'wght' 700; }
 </style>
