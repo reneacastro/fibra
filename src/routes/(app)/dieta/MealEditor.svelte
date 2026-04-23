@@ -14,7 +14,8 @@
   let { meal, onSave, onClose }: Props = $props();
 
   let local = $state<LoggedMeal>(structuredClone(meal));
-  let pickerOpen = $state(false);
+  // Modo: 'editor' | 'picker' — in-place swap, sem popup-em-popup
+  let mode = $state<'editor' | 'picker'>('editor');
 
   function addFood(food: Food, grams: number) {
     const macros = computeItemMacros(food, grams);
@@ -25,6 +26,7 @@
       grams,
       ...macros
     }];
+    mode = 'editor';
   }
 
   function removeItem(id: string) {
@@ -46,10 +48,16 @@
   }
 
   function handleBackdrop(e: MouseEvent) {
-    if (e.target === e.currentTarget) onClose();
+    if (e.target === e.currentTarget) {
+      if (mode === 'picker') mode = 'editor';
+      else onClose();
+    }
   }
   function handleKey(e: KeyboardEvent) {
-    if (e.key === 'Escape' && !pickerOpen) onClose();
+    if (e.key === 'Escape') {
+      if (mode === 'picker') mode = 'editor';
+      else onClose();
+    }
   }
 </script>
 
@@ -59,78 +67,94 @@
   <div class="sheet" role="dialog" aria-modal="true">
     <div class="handle"></div>
 
-    <!-- Head -->
-    <div class="head">
-      <div class="head-fields">
-        <input
-          class="name-inp"
-          bind:value={local.name}
-          placeholder="Nome da refeição"
-        />
-        <input
-          type="time"
-          class="time-inp mono"
-          bind:value={local.time}
+    {#if mode === 'picker'}
+      <!-- Modo PICKER (in-place, sem popup-em-popup) -->
+      <div class="picker-head">
+        <button class="close" onclick={() => (mode = 'editor')} aria-label="Voltar">
+          <span class="mi">arrow_back</span>
+        </button>
+        <h3>Adicionar alimento</h3>
+        <button class="close" onclick={onClose} aria-label="Fechar">
+          <span class="mi">close</span>
+        </button>
+      </div>
+      <div class="picker-wrap">
+        <FoodPicker
+          inline
+          onPick={addFood}
+          onClose={() => (mode = 'editor')}
         />
       </div>
-      <button class="close" onclick={onClose} aria-label="Fechar"><span class="mi">close</span></button>
-    </div>
-
-    <!-- Items -->
-    <div class="items">
-      {#if local.items.length === 0}
-        <div class="empty">
-          <span class="mi">restaurant</span>
-          <p>Adicione alimentos a essa refeição</p>
+    {:else}
+      <!-- Modo EDITOR -->
+      <div class="head">
+        <div class="head-fields">
+          <input
+            class="name-inp"
+            bind:value={local.name}
+            placeholder="Nome da refeição"
+          />
+          <input
+            type="time"
+            class="time-inp mono"
+            bind:value={local.time}
+          />
         </div>
-      {:else}
-        {#each local.items as item (item.id)}
-          <div class="item">
-            <div class="item-main">
-              <div class="item-name">{item.foodName}</div>
-              <div class="item-meta mono">
-                <span>{item.grams}g</span>
-                <span class="dot">·</span>
-                <span>{item.kcal} kcal</span>
-                <span class="dot">·</span>
-                <span>P{item.proteinG} C{item.carbG} G{item.fatG}</span>
-              </div>
-            </div>
-            <button class="remove-btn" onclick={() => removeItem(item.id)} aria-label="Remover">
-              <span class="mi">close</span>
-            </button>
+        <button class="close" onclick={onClose} aria-label="Fechar"><span class="mi">close</span></button>
+      </div>
+
+      <!-- Items -->
+      <div class="items">
+        {#if local.items.length === 0}
+          <div class="empty">
+            <span class="mi">restaurant</span>
+            <p>Adicione alimentos a essa refeição</p>
           </div>
-        {/each}
-      {/if}
-    </div>
+        {:else}
+          {#each local.items as item (item.id)}
+            <div class="item">
+              <div class="item-main">
+                <div class="item-name">{item.foodName}</div>
+                <div class="item-meta mono">
+                  <span>{item.grams}g</span>
+                  <span class="dot">·</span>
+                  <span>{item.kcal} kcal</span>
+                  <span class="dot">·</span>
+                  <span>P{item.proteinG} C{item.carbG} G{item.fatG}</span>
+                </div>
+              </div>
+              <button class="remove-btn" onclick={() => removeItem(item.id)} aria-label="Remover">
+                <span class="mi">close</span>
+              </button>
+            </div>
+          {/each}
+        {/if}
+      </div>
 
-    <Button icon="add" variant="secondary" full onclick={() => (pickerOpen = true)}>
-      Adicionar alimento
-    </Button>
+      <Button icon="add" variant="secondary" full onclick={() => (mode = 'picker')}>
+        Adicionar alimento
+      </Button>
 
-    <!-- Totals -->
-    {#if local.items.length > 0}
-      <div class="totals">
-        <div class="t-main mono">{Math.round(totals.kcal)}<span>kcal</span></div>
-        <div class="t-macros">
-          <div><span class="l">P</span><span class="v mono">{Math.round(totals.p)}g</span></div>
-          <div><span class="l">C</span><span class="v mono">{Math.round(totals.c)}g</span></div>
-          <div><span class="l">G</span><span class="v mono">{Math.round(totals.g)}g</span></div>
+      <!-- Totals -->
+      {#if local.items.length > 0}
+        <div class="totals">
+          <div class="t-main mono">{Math.round(totals.kcal)}<span>kcal</span></div>
+          <div class="t-macros">
+            <div><span class="l">P</span><span class="v mono">{Math.round(totals.p)}g</span></div>
+            <div><span class="l">C</span><span class="v mono">{Math.round(totals.c)}g</span></div>
+            <div><span class="l">G</span><span class="v mono">{Math.round(totals.g)}g</span></div>
+          </div>
         </div>
+      {/if}
+
+      <div class="spacer"></div>
+      <div class="btns">
+        <Button variant="ghost" onclick={onClose}>Cancelar</Button>
+        <Button icon="save" variant="success" full onclick={save}>Salvar refeição</Button>
       </div>
     {/if}
-
-    <div class="spacer"></div>
-    <div class="btns">
-      <Button variant="ghost" onclick={onClose}>Cancelar</Button>
-      <Button icon="save" variant="success" full onclick={save}>Salvar refeição</Button>
-    </div>
   </div>
 </div>
-
-{#if pickerOpen}
-  <FoodPicker onPick={addFood} onClose={() => (pickerOpen = false)} />
-{/if}
 
 <style>
   .backdrop {
@@ -296,4 +320,33 @@
 
   .btns { display: flex; gap: var(--s-2); }
   .spacer { height: var(--s-3); }
+
+  /* Modo picker inline */
+  .picker-head {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    margin-bottom: var(--s-3);
+  }
+  .picker-head h3 {
+    flex: 1;
+    font-size: var(--fs-lg);
+    font-weight: 800;
+    text-align: center;
+  }
+  .picker-wrap {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  /* FoodPicker em modo inline: o :global e necessario pq o FoodPicker
+     define suas classes em style local; aqui garantimos que usem o
+     espaco do wrapper */
+  .picker-wrap :global(.list) {
+    flex: 1;
+  }
 </style>

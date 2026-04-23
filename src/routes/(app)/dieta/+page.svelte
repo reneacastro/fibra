@@ -13,7 +13,6 @@
   import Button from '$lib/components/Button.svelte';
   import Badge from '$lib/components/Badge.svelte';
   import MacroRing from '$lib/components/MacroRing.svelte';
-  import FoodPicker from './FoodPicker.svelte';
   import MealEditor from './MealEditor.svelte';
 
   let plan = $state<DietPlan | null>(null);

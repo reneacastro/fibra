@@ -342,11 +342,16 @@
 
   .preview-area {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
-    max-height: 50dvh;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     padding: var(--s-3);
     background: var(--bg-1);
     border: 1px solid var(--border);
     border-radius: var(--r-md);
+    /* Sem max-height: o sheet ja limita a 90dvh. Double constraint
+       (50dvh dentro de 90dvh) bagunca no iOS. flex:1 + min-height:0
+       faz o preview ocupar o espaco disponivel sem empilhar constraints. */
   }
 </style>

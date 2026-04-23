@@ -21,7 +21,6 @@
   import RestTimer from '$lib/components/RestTimer.svelte';
   import ExerciseHistoryCompact from '$lib/components/ExerciseHistoryCompact.svelte';
   import ExerciseImageZoom from '$lib/components/ExerciseImageZoom.svelte';
-  import ExerciseDetailSheet from '$lib/components/ExerciseDetailSheet.svelte';
   import CrossfitTimer from '$lib/components/CrossfitTimer.svelte';
   import GpsTracker from '$lib/components/GpsTracker.svelte';
   import { isDurationBased, isCardio, fmtSec, fmtPace, parsePace } from '$lib/utils/exercise';
@@ -73,7 +72,6 @@
 
   let wodResult = $state<{ elapsedSec: number; rounds?: number } | null>(null);
 
-  let detailExId = $state<string | null>(null);
   let zoomExId = $state<string | null>(null);
   const zoomExercise = $derived(zoomExId ? catalogStore.byId(zoomExId) : null);
 
@@ -563,7 +561,7 @@
             <div class="pre-sets">
               <ExerciseHistoryCompact
                 exerciseId={pe.exerciseId}
-                onOpenDetail={() => (detailExId = pe.exerciseId)}
+                onOpenDetail={() => goto(`/exercicios/${pe.exerciseId}`)}
               />
 
               {#if !isDurationBased(meta) && !isCardio(meta)}
@@ -791,10 +789,6 @@
       </div>
     </Card>
   {/if}
-{/if}
-
-{#if detailExId}
-  <ExerciseDetailSheet exerciseId={detailExId} onClose={() => (detailExId = null)} />
 {/if}
 
 {#if zoomExercise}

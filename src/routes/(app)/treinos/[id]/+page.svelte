@@ -18,14 +18,10 @@
   import ExerciseCard from '$lib/components/ExerciseCard.svelte';
   import Tabs from '$lib/components/Tabs.svelte';
   import ExerciseHistoryCompact from '$lib/components/ExerciseHistoryCompact.svelte';
-  import ExerciseDetailSheet from '$lib/components/ExerciseDetailSheet.svelte';
   import CrossfitEditor from '$lib/components/CrossfitEditor.svelte';
-  import NewExerciseSheet from '$lib/components/NewExerciseSheet.svelte';
   import Sortable from 'sortablejs';
   import { isDurationBased, isCardio, fmtSec, fmtPace, parsePace } from '$lib/utils/exercise';
   import type { Exercise } from '$lib/types';
-
-  let newExOpen = $state(false);
 
   const isNew = $derived(page.params.id === 'novo');
 
@@ -88,8 +84,7 @@
     detailPaused = false;
   }
 
-  // Modal de histórico
-  let detailExId = $state<string | null>(null);
+  // Histórico: navega pra rota /exercicios/[id]
 
   // Drag-n-drop
   let stackEl = $state<HTMLDivElement | null>(null);
@@ -141,6 +136,15 @@
       console.error('Falha ao carregar treino:', e);
     } finally {
       loading = false;
+    }
+
+    // Auto-add de exercicio recem-criado em /exercicios/novo
+    const createdEx = page.url.searchParams.get('createdEx');
+    if (createdEx) {
+      addExercise(createdEx);
+      const newUrl = new URL(page.url);
+      newUrl.searchParams.delete('createdEx');
+      history.replaceState(null, '', newUrl.toString());
     }
   });
 
@@ -409,7 +413,7 @@
 
               <ExerciseHistoryCompact
                 exerciseId={we.exerciseId}
-                onOpenDetail={() => (detailExId = we.exerciseId)}
+                onOpenDetail={() => goto(`/exercicios/${we.exerciseId}`)}
               />
               <div class="spacer-sm"></div>
 
@@ -693,25 +697,7 @@
   {/if}
 {/if}
 
-<!-- Detail sheet -->
-{#if detailExId}
-  <ExerciseDetailSheet
-    exerciseId={detailExId}
-    onClose={() => (detailExId = null)}
-  />
-{/if}
 
-{#if newExOpen}
-  <NewExerciseSheet
-    defaultCategory={pickerCat}
-    onCreated={(ex: Exercise) => {
-      addExercise(ex.id);
-      newExOpen = false;
-      closePicker();
-    }}
-    onClose={() => (newExOpen = false)}
-  />
-{/if}
 
 <!-- Picker modal (bottom sheet) -->
 {#if pickerOpen}
@@ -800,7 +786,14 @@
         <div class="sheet-head">
           <h3>Adicionar exercício</h3>
           <div class="sheet-actions">
-            <button class="icon-btn" onclick={() => (newExOpen = true)} aria-label="Criar novo">
+            <button
+              class="icon-btn"
+              onclick={() => {
+                closePicker();
+                goto(`/exercicios/novo?category=${pickerCat}&returnTo=${encodeURIComponent(page.url.pathname)}`);
+              }}
+              aria-label="Criar novo"
+            >
               <span class="mi">add_circle</span>
             </button>
             <button class="icon-btn" onclick={closePicker} aria-label="Fechar">

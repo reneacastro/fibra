@@ -545,7 +545,8 @@
     max-width: 100%;
     position: relative;
     transition: opacity var(--dur-fast);
-    touch-action: none;
+    /* touch-action so nos overlays draggaveis; no wrapper liberamos pan
+       pra nao bloquear scroll da sheet quando toque cai fora dos stickers */
   }
   .preview-error {
     display: flex;

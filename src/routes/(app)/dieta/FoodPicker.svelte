@@ -10,9 +10,12 @@
   interface Props {
     onPick: (food: Food, grams: number) => void;
     onClose: () => void;
+    /** Quando true, renderiza sem backdrop/sheet (pra uso inline dentro
+        de outro container). Evita popup-em-popup. */
+    inline?: boolean;
   }
 
-  let { onPick, onClose }: Props = $props();
+  let { onPick, onClose, inline = false }: Props = $props();
 
   let search = $state('');
   let searching = $state(false);
@@ -128,16 +131,15 @@
   });
 </script>
 
-<svelte:window onkeydown={handleKey} />
+<svelte:window onkeydown={(e) => !inline && handleKey(e)} />
 
-<div class="backdrop" onclick={handleBackdrop} role="presentation">
-  <div class="sheet" role="dialog" aria-modal="true">
-    <div class="handle"></div>
-
-    <div class="head">
-      <h3>Adicionar alimento</h3>
-      <button class="close" onclick={onClose} aria-label="Fechar"><span class="mi">close</span></button>
-    </div>
+{#snippet bodyContent()}
+    {#if !inline}
+      <div class="head">
+        <h3>Adicionar alimento</h3>
+        <button class="close" onclick={onClose} aria-label="Fechar"><span class="mi">close</span></button>
+      </div>
+    {/if}
 
     {#if picked}
       <!-- Escolhido -->
@@ -328,8 +330,18 @@
         </Button>
       {/if}
     {/if}
+{/snippet}
+
+{#if inline}
+  {@render bodyContent()}
+{:else}
+  <div class="backdrop" onclick={handleBackdrop} role="presentation">
+    <div class="sheet" role="dialog" aria-modal="true">
+      <div class="handle"></div>
+      {@render bodyContent()}
+    </div>
   </div>
-</div>
+{/if}
 
 <style>
   .backdrop {
