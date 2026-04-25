@@ -20,6 +20,8 @@
   import { historyForExercise } from '$lib/db/sessions';
   import { getProfile } from '$lib/db/profile';
   import { listBodyComp } from '$lib/db/bodyComp';
+  import { WORKOUT_TEMPLATES, type WorkoutTemplate } from '$lib/data/workoutTemplates';
+  import type { WorkoutExercise } from '$lib/types';
 
   type TabId = 'meus' | WorkoutCategory;
 
@@ -143,6 +145,66 @@
     if (!confirm(`Apagar o treino "${w.name}"?`)) return;
     await deleteWorkout(authStore.uid, w.id);
     await reloadWorkouts();
+  }
+
+  // ─── Templates iniciais ─────────────────────────────
+  // Converte um template em workouts e salva pro usuario.
+  // Retorna IDs criados pra navegar pra primeiro automaticamente.
+  let cloningTemplate = $state<string | null>(null);
+  let cloneError = $state<string | null>(null);
+
+  function genWeId(): string {
+    return 'we_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+  }
+
+  async function cloneTemplate(template: WorkoutTemplate) {
+    if (!authStore.uid) return;
+    if (!confirm(`Clonar "${template.name}"? Vou criar ${template.workouts.length} ${template.workouts.length === 1 ? 'treino' : 'treinos'} no seu perfil.`)) return;
+    cloningTemplate = template.slug;
+    cloneError = null;
+    try {
+      const baseOrder = workouts.length;
+      const created: string[] = [];
+      for (let i = 0; i < template.workouts.length; i++) {
+        const tw = template.workouts[i];
+        const exercises: WorkoutExercise[] = tw.exercises.map((e, idx) => {
+          const setObj = e.distanceM !== undefined
+            ? { type: 'normal' as const, distanceM: e.distanceM, paceSecPerKm: e.paceSecPerKm }
+            : e.durationSec !== undefined
+            ? { type: 'isométrica' as const, durationSec: e.durationSec }
+            : Array.isArray(e.reps)
+            ? { type: 'normal' as const, repsRange: e.reps as [number, number], weight: 0 }
+            : { type: 'normal' as const, reps: e.reps, weight: 0 };
+          return {
+            id: genWeId(),
+            exerciseId: e.exerciseId,
+            order: idx,
+            sets: Array.from({ length: e.sets }, () => ({ ...setObj })),
+            restSeconds: e.restSec
+          };
+        });
+        const wid = newWorkoutId();
+        const now = Date.now();
+        await saveWorkout(authStore.uid, {
+          id: wid,
+          name: tw.name,
+          category: tw.category,
+          description: tw.description,
+          exercises,
+          order: baseOrder + i,
+          createdAt: now,
+          updatedAt: now
+        });
+        created.push(wid);
+      }
+      await reloadWorkouts();
+      // Vai pra primeiro treino criado pra user revisar/editar
+      if (created.length > 0) goto(`/treinos/${created[0]}`);
+    } catch (e) {
+      cloneError = (e as Error).message;
+    } finally {
+      cloningTemplate = null;
+    }
   }
 
   // ─── AI Workout Builder ─────────────────────────────
@@ -271,10 +333,50 @@
         <div class="empty-ic">📁</div>
         <div class="empty-title">Nenhum treino montado ainda</div>
         <div class="empty-sub">
-          Monte seu primeiro treino escolhendo exercícios das categorias acima.
+          Comece com um <strong>template pronto</strong> abaixo ou monte do zero pelo botão "Novo".
         </div>
+        <Button icon="add" onclick={() => goto('/treinos/novo')}>Montar do zero</Button>
       </div>
     </Card>
+
+    <!-- Templates prontos pra usuario clonar -->
+    <div class="tpl-section">
+      <div class="tpl-head">
+        <span class="mi">auto_awesome</span>
+        <div>
+          <div class="tpl-title">Templates prontos</div>
+          <div class="tpl-sub">Toque pra clonar — você ajusta pesos/reps depois</div>
+        </div>
+      </div>
+      {#if cloneError}
+        <div class="tpl-error"><span class="mi">error</span>{cloneError}</div>
+      {/if}
+      <div class="tpl-list">
+        {#each WORKOUT_TEMPLATES as t (t.slug)}
+          <Card onclick={() => cloneTemplate(t)}>
+            <div class="tpl-card">
+              <div class="tpl-emoji">{t.emoji}</div>
+              <div class="tpl-body">
+                <div class="tpl-name">{t.name}</div>
+                <div class="tpl-desc">{t.description}</div>
+                <div class="tpl-meta">
+                  <span><strong>{t.audience}</strong></span>
+                  <span class="dot">·</span>
+                  <span>{t.frequency}</span>
+                  <span class="dot">·</span>
+                  <span>{t.workouts.length} {t.workouts.length === 1 ? 'treino' : 'treinos'}</span>
+                </div>
+              </div>
+              {#if cloningTemplate === t.slug}
+                <span class="mi spin">progress_activity</span>
+              {:else}
+                <span class="mi chev">chevron_right</span>
+              {/if}
+            </div>
+          </Card>
+        {/each}
+      </div>
+    </div>
   {:else}
     <div class="wk-list" bind:this={listEl}>
       {#each workouts as w (w.id)}
@@ -501,6 +603,86 @@
   }
   .empty-ic { font-size: 48px; margin-bottom: var(--s-3); }
   .empty-title { font-weight: 700; font-size: var(--fs-md); margin-bottom: 4px; }
+
+  /* Templates */
+  .tpl-section {
+    margin-top: var(--s-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+  }
+  .tpl-head {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: 0 var(--s-2);
+    margin-bottom: var(--s-1);
+  }
+  .tpl-head .mi {
+    font-size: 28px;
+    color: var(--accent);
+  }
+  .tpl-title {
+    font-weight: 800;
+    font-size: var(--fs-md);
+    letter-spacing: -0.01em;
+  }
+  .tpl-sub {
+    font-size: var(--fs-xs);
+    color: var(--text-mute);
+  }
+  .tpl-error {
+    color: var(--danger);
+    font-size: var(--fs-xs);
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .tpl-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+  }
+  .tpl-card {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+  }
+  .tpl-emoji {
+    font-size: 32px;
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    background: var(--accent-glow);
+    border-radius: var(--r-md);
+  }
+  .tpl-body {
+    flex: 1;
+    min-width: 0;
+  }
+  .tpl-name {
+    font-weight: 700;
+    font-size: var(--fs-sm);
+    margin-bottom: 4px;
+  }
+  .tpl-desc {
+    font-size: var(--fs-xs);
+    color: var(--text-mute);
+    line-height: 1.4;
+    margin-bottom: 4px;
+  }
+  .tpl-meta {
+    font-size: 10px;
+    color: var(--text-dim);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .tpl-meta .dot { color: var(--text-dim); }
+  .tpl-card .chev { color: var(--text-dim); font-size: 20px; }
+  .tpl-card .mi.spin { color: var(--accent); animation: spin 1s linear infinite; }
   .empty-sub { color: var(--text-mute); font-size: var(--fs-sm); }
 
   .spin {

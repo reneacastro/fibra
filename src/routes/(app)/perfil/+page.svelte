@@ -270,6 +270,37 @@
     {/if}
   </Card>
 
+  <!-- Suporte e legal -->
+  <Card>
+    <div class="sec-title">Suporte e termos</div>
+    <div class="support-list">
+      <a class="support-item" href="https://wa.me/5511999999999?text={encodeURIComponent('Oi FIBRA! Preciso de ajuda com')}" target="_blank" rel="noopener">
+        <span class="mi" style="color: #25d366;">chat</span>
+        <div class="support-body">
+          <div class="support-t">Falar no WhatsApp</div>
+          <div class="support-s">Resposta em até 1 dia útil</div>
+        </div>
+        <span class="mi chev">open_in_new</span>
+      </a>
+      <a class="support-item" href="mailto:contato@fibra.app?subject={encodeURIComponent('FIBRA — suporte')}">
+        <span class="mi" style="color: var(--accent);">mail</span>
+        <div class="support-body">
+          <div class="support-t">Mandar e-mail</div>
+          <div class="support-s">contato@fibra.app</div>
+        </div>
+        <span class="mi chev">chevron_right</span>
+      </a>
+      <a class="support-item" href="/legal" rel="noopener">
+        <span class="mi" style="color: var(--text-mute);">gavel</span>
+        <div class="support-body">
+          <div class="support-t">Termos de uso e privacidade</div>
+          <div class="support-s">Como tratamos seus dados (LGPD)</div>
+        </div>
+        <span class="mi chev">chevron_right</span>
+      </a>
+    </div>
+  </Card>
+
   <!-- Ações -->
   <div class="footer">
     <Button variant="ghost" icon="logout" onclick={logout}>Sair</Button>
@@ -285,6 +316,36 @@
   .loading { min-height: 40vh; display: grid; place-content: center; }
   .loading .mi { font-size: 32px; color: var(--accent); animation: spin 1s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  .sec-title {
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    color: var(--text-mute);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: var(--s-2);
+  }
+  .support-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-1);
+  }
+  .support-item {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    padding: var(--s-3) var(--s-2);
+    border-radius: var(--r-md);
+    text-decoration: none;
+    color: inherit;
+    transition: background var(--dur-fast);
+  }
+  .support-item:hover { background: var(--bg-3); }
+  .support-item .mi:first-child { font-size: 24px; flex-shrink: 0; }
+  .support-body { flex: 1; min-width: 0; }
+  .support-t { font-weight: 700; font-size: var(--fs-sm); }
+  .support-s { font-size: var(--fs-xs); color: var(--text-mute); margin-top: 2px; }
+  .support-item .chev { color: var(--text-dim); font-size: 18px; }
 
   .hero {
     display: flex;

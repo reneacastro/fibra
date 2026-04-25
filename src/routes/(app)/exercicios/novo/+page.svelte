@@ -132,14 +132,6 @@
 </svelte:head>
 
 <div class="page">
-  <header class="top-bar">
-    <button class="icon-btn" onclick={cancel} aria-label="Voltar">
-      <span class="mi">arrow_back</span>
-    </button>
-    <h1 class="title">Novo exercício</h1>
-    <div style="width: 32px"></div>
-  </header>
-
   <div class="content">
     <Input label="Nome do exercício" bind:value={name} placeholder="Ex: Agachamento búlgaro" />
     <div class="spacer"></div>
@@ -241,35 +233,6 @@
     flex-direction: column;
     padding-bottom: calc(var(--safe-bottom) + var(--s-3));
   }
-  .top-bar {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    gap: var(--s-2);
-    padding: var(--s-3);
-    background: color-mix(in srgb, var(--bg-1) 90%, transparent);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--border);
-  }
-  .title {
-    flex: 1;
-    font-size: var(--fs-lg);
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    text-align: center;
-  }
-  .icon-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    color: var(--text);
-    display: grid;
-    place-items: center;
-  }
-  .icon-btn:hover { background: var(--bg-3); }
-
   .content {
     flex: 1;
     padding: var(--s-4);

@@ -83,7 +83,11 @@
     <div class="empty-card">
       <div class="empty-ic">📁</div>
       <div class="empty-title">Sem treinos salvos ainda</div>
-      <div class="empty-sub">Use uma das opções acima. Ao fim, você pode salvar o que fez como um treino reutilizável.</div>
+      <div class="empty-sub">Comece com um <strong>template pronto</strong> ou monte do zero.</div>
+      <div class="empty-actions">
+        <Button icon="auto_awesome" variant="secondary" onclick={() => goto('/treinos')}>Ver templates</Button>
+        <Button icon="add" onclick={() => goto('/treinos/novo?then=register')}>Montar do zero</Button>
+      </div>
     </div>
   </Card>
 {:else}
@@ -107,10 +111,13 @@
 <div class="sec-title">Histórico recente</div>
 
 {#if recentSessions.length === 0 && !loading}
-  <div class="empty">
-    <span class="mi">history</span>
-    <span>Nenhum treino registrado ainda</span>
-  </div>
+  <Card>
+    <div class="empty-card">
+      <span class="mi" style="font-size: 32px; color: var(--text-dim);">history</span>
+      <div class="empty-title">Nenhum treino registrado</div>
+      <div class="empty-sub">Faça o primeiro pra começar a aparecer aqui.</div>
+    </div>
+  </Card>
 {:else}
   <div class="hist">
     {#each recentSessions as s (s.id)}
@@ -284,7 +291,13 @@
   .empty-card { text-align: center; padding: var(--s-5); }
   .empty-ic { font-size: 48px; margin-bottom: var(--s-3); }
   .empty-title { font-weight: 700; font-size: var(--fs-md); margin-bottom: 4px; }
-  .empty-sub { color: var(--text-mute); font-size: var(--fs-sm); }
+  .empty-sub { color: var(--text-mute); font-size: var(--fs-sm); margin-bottom: var(--s-3); }
+  .empty-actions {
+    display: flex;
+    gap: var(--s-2);
+    justify-content: center;
+    flex-wrap: wrap;
+  }
 
   .spin { animation: spin 1s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }

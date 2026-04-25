@@ -16,7 +16,9 @@
     { id: 'lesao',       icon: '🩹',  label: 'Recuperação'     }
   ];
 
+  // Steps 1-4 = formulário do perfil, 5 = welcome+CTAs (depois do save)
   let step = $state(1);
+  let savedProfile = $state(false);
   let name = $state('');
   let surname = $state('');
   let avatar = $state('🏋️‍♂️');
@@ -70,7 +72,8 @@
         activityLevel,
         settings: defaultSettings()
       });
-      goto('/home');
+      savedProfile = true;
+      step = 5; // tela de "primeiro passo" pos-save
     } finally {
       busy = false;
     }
@@ -78,9 +81,11 @@
 </script>
 
 <div class="wrap">
-  <div class="progress">
-    <div class="bar" style="width: {(step / 4) * 100}%"></div>
-  </div>
+  {#if step <= 4}
+    <div class="progress">
+      <div class="bar" style="width: {(step / 4) * 100}%"></div>
+    </div>
+  {/if}
 
   <div class="card">
     {#if step === 1}
@@ -177,22 +182,67 @@
           </div>
         </button>
       {/each}
+
+    {:else if step === 5}
+      <div class="step-head welcome">
+        <div class="welcome-emoji">🎉</div>
+        <h2>Tudo certo, {name}!</h2>
+        <p>Por onde você quer começar?</p>
+      </div>
+
+      <button class="next-card" onclick={() => goto('/treinos')}>
+        <div class="next-emoji">🔁</div>
+        <div class="next-body">
+          <div class="next-t">Começar com um template pronto</div>
+          <div class="next-s">PPL, Upper/Lower, Full Body, Glúteo+Posterior, Corrida</div>
+        </div>
+        <span class="mi chev">arrow_forward</span>
+      </button>
+
+      <button class="next-card" onclick={() => goto('/treinos/novo?then=register')}>
+        <div class="next-emoji">📝</div>
+        <div class="next-body">
+          <div class="next-t">Montar meu treino do zero</div>
+          <div class="next-s">Escolho exercícios e séries por categoria</div>
+        </div>
+        <span class="mi chev">arrow_forward</span>
+      </button>
+
+      <button class="next-card" onclick={() => goto('/dieta')}>
+        <div class="next-emoji">🍽️</div>
+        <div class="next-body">
+          <div class="next-t">Configurar dieta e macros</div>
+          <div class="next-s">Plano de refeições baseado nos seus objetivos</div>
+        </div>
+        <span class="mi chev">arrow_forward</span>
+      </button>
+
+      <button class="next-card subtle" onclick={() => goto('/home')}>
+        <div class="next-emoji">🏠</div>
+        <div class="next-body">
+          <div class="next-t">Pular e explorar o app</div>
+          <div class="next-s">Vou pra tela inicial</div>
+        </div>
+        <span class="mi chev">arrow_forward</span>
+      </button>
     {/if}
 
-    <div class="nav-row">
-      {#if step > 1}
-        <Button variant="ghost" onclick={() => step--}>Voltar</Button>
-      {/if}
-      {#if step < 4}
-        <Button disabled={!canProceed} onclick={() => step++} iconRight="arrow_forward" full>
-          Continuar
-        </Button>
-      {:else}
-        <Button variant="success" onclick={finish} loading={busy} icon="check_circle" full>
-          Concluir e entrar
-        </Button>
-      {/if}
-    </div>
+    {#if step <= 4}
+      <div class="nav-row">
+        {#if step > 1}
+          <Button variant="ghost" onclick={() => step--}>Voltar</Button>
+        {/if}
+        {#if step < 4}
+          <Button disabled={!canProceed} onclick={() => step++} iconRight="arrow_forward" full>
+            Continuar
+          </Button>
+        {:else}
+          <Button variant="success" onclick={finish} loading={busy} icon="check_circle" full>
+            Concluir e entrar
+          </Button>
+        {/if}
+      </div>
+    {/if}
   </div>
 </div>
 
@@ -235,6 +285,51 @@
   }
 
   .step-head { text-align: center; }
+  .step-head.welcome { padding: var(--s-3) 0; }
+  .welcome-emoji { font-size: 64px; margin-bottom: var(--s-2); animation: bounce 1.5s ease infinite; }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .next-card {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    padding: var(--s-3);
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    text-align: left;
+    color: var(--text);
+    transition: all var(--dur-fast);
+  }
+  .next-card:hover {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 8%, var(--bg-3));
+    transform: translateY(-1px);
+  }
+  .next-card.subtle {
+    background: transparent;
+    border-color: var(--border-strong);
+  }
+  .next-emoji {
+    font-size: 28px;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    background: var(--accent-glow);
+    border-radius: var(--r-md);
+  }
+  .next-card.subtle .next-emoji {
+    background: var(--bg-4);
+  }
+  .next-body { flex: 1; min-width: 0; }
+  .next-t { font-weight: 700; font-size: var(--fs-sm); margin-bottom: 2px; }
+  .next-s { font-size: var(--fs-xs); color: var(--text-mute); line-height: 1.4; }
+  .next-card .chev { color: var(--text-dim); font-size: 20px; flex-shrink: 0; }
   .step-num {
     display: inline-block;
     padding: 4px 12px;

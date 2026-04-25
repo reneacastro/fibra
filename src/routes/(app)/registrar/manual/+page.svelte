@@ -135,14 +135,6 @@
 </svelte:head>
 
 <div class="page">
-  <header class="top-bar">
-    <button class="icon-btn" onclick={back} aria-label="Voltar">
-      <span class="mi">arrow_back</span>
-    </button>
-    <h1 class="title">Registrar treino antigo</h1>
-    <div style="width: 32px"></div>
-  </header>
-
   {#if loading}
     <div class="loading"><span class="mi spin">progress_activity</span></div>
   {:else if !selectedWorkout}
@@ -324,39 +316,6 @@
     display: flex;
     flex-direction: column;
     gap: var(--s-3);
-  }
-  .top-bar {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    gap: var(--s-2);
-    padding: var(--s-3) 0;
-    margin: 0 calc(var(--s-4) * -1);
-    padding-left: var(--s-3);
-    padding-right: var(--s-3);
-    background: color-mix(in srgb, var(--bg-1) 90%, transparent);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--border);
-  }
-  .title {
-    flex: 1;
-    font-size: var(--fs-lg);
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    text-align: center;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .icon-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    color: var(--text);
-    display: grid;
-    place-items: center;
   }
   .loading { padding: var(--s-8); text-align: center; }
   .loading .mi { font-size: 32px; color: var(--accent); animation: spin 1s linear infinite; }

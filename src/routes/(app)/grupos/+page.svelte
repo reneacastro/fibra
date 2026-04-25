@@ -147,12 +147,13 @@
 
   {#if mine.length === 0 && publicGroups.length === 0}
     <Card>
-      <div class="empty">
-        <span class="mi">groups</span>
+      <div class="empty" style="flex-direction: column; text-align: center; gap: var(--s-2);">
+        <span class="mi" style="font-size: 40px;">groups</span>
         <div>
           <div class="empty-t">Nenhum grupo ainda</div>
-          <div class="empty-s">Crie o primeiro e convide amigos pra competir.</div>
+          <div class="empty-s" style="margin-bottom: var(--s-3);">Crie o primeiro e convide amigos pra competir.</div>
         </div>
+        <Button icon="add" onclick={() => (createOpen = true)}>Criar grupo</Button>
       </div>
     </Card>
   {/if}
