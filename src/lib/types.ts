@@ -112,6 +112,11 @@ export interface Workout {
 }
 
 export interface WorkoutExercise {
+  /** ID estavel por linha — evita colisao de chaves no keyed each do
+   *  Svelte quando o mesmo exercicio aparece 2x e estabiliza drag&drop.
+   *  Opcional pra retro-compat: treinos antigos ganham ID na primeira
+   *  load via migrate em /treinos/[id]. */
+  id?: string;
   exerciseId: string;
   order: number;
   sets: ExerciseSet[];

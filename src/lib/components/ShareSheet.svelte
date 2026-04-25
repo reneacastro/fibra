@@ -354,10 +354,12 @@
               <span>Adicionar selfie / foto</span>
             </button>
           {/if}
+          <!-- Sem `capture` o iOS abre sheet com opcoes (camera ou
+               biblioteca). Antes tinha `capture="user"` que forcava
+               selfie e impedia escolher foto da galeria. -->
           <input
             type="file"
             accept="image/*"
-            capture="user"
             bind:this={photoInput}
             onchange={onPhoto}
             style="display:none"

@@ -122,7 +122,7 @@
                   <span class="dot">·</span>
                   <span>{item.kcal} kcal</span>
                   <span class="dot">·</span>
-                  <span>P{item.proteinG} C{item.carbG} G{item.fatG}</span>
+                  <span>Prot {item.proteinG}g · Carb {item.carbG}g · Gord {item.fatG}g</span>
                 </div>
               </div>
               <button class="remove-btn" onclick={() => removeItem(item.id)} aria-label="Remover">
@@ -142,9 +142,9 @@
         <div class="totals">
           <div class="t-main mono">{Math.round(totals.kcal)}<span>kcal</span></div>
           <div class="t-macros">
-            <div><span class="l">P</span><span class="v mono">{Math.round(totals.p)}g</span></div>
-            <div><span class="l">C</span><span class="v mono">{Math.round(totals.c)}g</span></div>
-            <div><span class="l">G</span><span class="v mono">{Math.round(totals.g)}g</span></div>
+            <div><span class="l">Proteína</span><span class="v mono">{Math.round(totals.p)}g</span></div>
+            <div><span class="l">Carboidrato</span><span class="v mono">{Math.round(totals.c)}g</span></div>
+            <div><span class="l">Gordura</span><span class="v mono">{Math.round(totals.g)}g</span></div>
           </div>
         </div>
       {/if}

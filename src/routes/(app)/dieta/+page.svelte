@@ -22,6 +22,24 @@
   let editingMealIdx = $state<number | null>(null);
   let adding = $state(false);
   let tab = $state<'hoje' | 'plano' | 'agenda'>('hoje');
+  // Index global de alimentos pra resolver unit/servingSize na exibicao
+  // do card (qdo alimento tem unidade — ex: ovo, banana, fatia)
+  let foodIndex = $state<Map<string, Food>>(new Map());
+
+  // Helper: formata quantidade do item considerando unit
+  function fmtItemQuantity(item: LoggedFoodItem): string {
+    const food = foodIndex.get(item.foodId);
+    if (food?.unit && food.servingSize > 0) {
+      const units = item.grams / food.servingSize;
+      // Arredonda pra meia unidade pra ficar legivel
+      const rounded = Math.round(units * 2) / 2;
+      const unitLabel = rounded === 1 ? food.unit : `${food.unit}s`;
+      // Mostra "2 ovos (100g)" ou "1.5 col (22g)"
+      const numStr = rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(1);
+      return `${numStr} ${unitLabel} (${item.grams}g)`;
+    }
+    return `${item.grams}g`;
+  }
 
   onMount(async () => {
     if (!authStore.uid) return;
@@ -39,13 +57,16 @@
       ]);
       plan = p;
 
+      // Mantem index de alimentos disponivel pra exibicao do card
+      // (precisa pra mostrar unidade — ex: "2 ovos" em vez de "100g")
+      foodIndex = new Map();
+      for (const f of TACO_BASICS) foodIndex.set(f.id, f);
+      for (const f of userFoods) foodIndex.set(f.id, f);
+
       if (existingLog) {
         log = existingLog;
       } else {
         // Cria log do dia pré-populando com itens do plano (usuário confirma/edita depois)
-        const foodIndex = new Map<string, Food>();
-        for (const f of TACO_BASICS) foodIndex.set(f.id, f);
-        for (const f of userFoods) foodIndex.set(f.id, f);
 
         // Dia da semana atual (0=dom, 6=sáb)
         const todayDow = new Date(today + 'T12:00:00').getDay();
@@ -258,7 +279,7 @@
                     <span class="dot">·</span>
                     <span class="mono">{Math.round(mealTotals.kcal)} kcal</span>
                     <span class="dot">·</span>
-                    <span class="mono">{Math.round(mealTotals.protein)}g prot</span>
+                    <span class="mono">{Math.round(mealTotals.protein)}g proteína</span>
                   {/if}
                 </div>
               </div>
@@ -271,7 +292,7 @@
                 {#each meal.items.slice(0, 3) as item (item.id)}
                   <div class="it">
                     <span class="it-n">{item.foodName}</span>
-                    <span class="it-g mono">{item.grams}g</span>
+                    <span class="it-g mono">{fmtItemQuantity(item)}</span>
                   </div>
                 {/each}
                 {#if meal.items.length > 3}

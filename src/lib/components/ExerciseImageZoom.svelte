@@ -116,17 +116,14 @@
     background: rgba(0, 0, 0, 0.92);
     backdrop-filter: blur(8px);
     z-index: 500;
-    /* Centraliza e permite scroll do conteúdo quando maior que viewport.
-       Fallback pra height: 100% em iOS antigo (sem dvh) — não usamos dvh
-       direto em criticals. */
+    /* Bottom-sheet: alinha no fim, padrao consistente com outros sheets
+       do app. Backdrop ainda eh scrollavel se modal for muito alto. */
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
+    justify-content: flex-end;
     align-items: center;
-    padding: 12px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    /* touch-action none evita scroll-bleed vertical no iOS */
     overscroll-behavior: contain;
     animation: fade 200ms;
   }
@@ -134,18 +131,28 @@
 
   .modal {
     width: 100%;
-    max-width: 480px;
+    max-width: 640px;
     background: var(--bg-2);
     border: 1px solid var(--border);
-    border-radius: var(--r-2xl);
-    padding: 16px;
+    border-top-left-radius: var(--r-2xl);
+    border-top-right-radius: var(--r-2xl);
+    padding: 12px var(--s-4) calc(var(--s-6) + var(--safe-bottom));
     position: relative;
-    animation: pop 240ms var(--ease-spring);
-    /* Modal NAO tem max-height — backdrop scrolla tudo */
+    animation: slide-up 320ms var(--ease-spring);
   }
-  @keyframes pop {
-    from { transform: scale(0.92); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+  @keyframes slide-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  /* Handle visual padrao bottom-sheet */
+  .modal::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: var(--bg-4);
+    border-radius: var(--r-full);
+    margin: 0 auto 10px;
   }
 
   .close {

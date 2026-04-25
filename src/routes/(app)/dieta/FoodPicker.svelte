@@ -146,7 +146,7 @@
       <div class="picked">
         <div class="picked-name">{picked.name}</div>
         <div class="picked-meta">
-          {picked.kcalPer100g} kcal · P {picked.proteinPer100g}g · C {picked.carbPer100g}g · G {picked.fatPer100g}g / 100g
+          {picked.kcalPer100g} kcal · Prot {picked.proteinPer100g}g · Carb {picked.carbPer100g}g · Gord {picked.fatPer100g}g / 100g
         </div>
       </div>
 
@@ -196,9 +196,9 @@
           <div class="pv-kcal mono">{preview.kcal}</div>
           <div class="pv-kcal-l">kcal</div>
           <div class="pv-macros">
-            <div><span class="m-l">P</span><span class="m-v mono">{preview.p}g</span></div>
-            <div><span class="m-l">C</span><span class="m-v mono">{preview.c}g</span></div>
-            <div><span class="m-l">G</span><span class="m-v mono">{preview.g}g</span></div>
+            <div><span class="m-l">Proteína</span><span class="m-v mono">{preview.p}g</span></div>
+            <div><span class="m-l">Carboidrato</span><span class="m-v mono">{preview.c}g</span></div>
+            <div><span class="m-l">Gordura</span><span class="m-v mono">{preview.g}g</span></div>
           </div>
         </div>
       {/if}
@@ -242,7 +242,7 @@
               <button class="f-row" onclick={() => pick(f)}>
                 <div class="f-body">
                   <div class="f-name">{f.name}</div>
-                  <div class="f-macro mono">{f.kcalPer100g} kcal · P{f.proteinPer100g} C{f.carbPer100g} G{f.fatPer100g} /100g</div>
+                  <div class="f-macro mono">{f.kcalPer100g} kcal · Prot {f.proteinPer100g}g · Carb {f.carbPer100g}g · Gord {f.fatPer100g}g /100g</div>
                 </div>
                 <span class="mi">chevron_right</span>
               </button>
@@ -285,7 +285,7 @@
               <button class="f-row" onclick={() => pick(f)}>
                 <div class="f-body">
                   <div class="f-name">{f.name}{f.brand ? ` · ${f.brand}` : ''}</div>
-                  <div class="f-macro mono">{f.kcalPer100g} kcal · P{f.proteinPer100g} C{f.carbPer100g} G{f.fatPer100g} /100g</div>
+                  <div class="f-macro mono">{f.kcalPer100g} kcal · Prot {f.proteinPer100g}g · Carb {f.carbPer100g}g · Gord {f.fatPer100g}g /100g</div>
                 </div>
                 <span class="mi">chevron_right</span>
               </button>

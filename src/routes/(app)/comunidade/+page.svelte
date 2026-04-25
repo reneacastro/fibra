@@ -4,7 +4,7 @@
   import { authStore } from '$lib/stores/auth.svelte';
   import { catalogStore } from '$lib/stores/catalog.svelte';
   import { getProfile, saveProfile } from '$lib/db/profile';
-  import { listRanking, type RankingOrder } from '$lib/db/rankings';
+  import { listRanking, syncRanking, type RankingOrder } from '$lib/db/rankings';
   import { listPublicShared, listReceived, cloneToWorkout } from '$lib/db/sharedWorkouts';
   import { listPendingForMe, acceptInvite, deleteInvite } from '$lib/db/relationships';
   import { listMyGroups, listPublicGroups } from '$lib/db/groups';
@@ -76,6 +76,22 @@
       const myIds = new Set(mg.map((g) => g.id));
       featuredGroups = fg.filter((g) => !myIds.has(g.id));
       await catalogStore.ensure();
+
+      // Auto-heal: se meu ranking esta no doc publico mas SEM avatar e
+      // meu profile tem, forca uma ressincronia. Conserta usuarios que
+      // sincronizaram antes da Google photoURL/avatar estar disponivel.
+      if (authStore.uid && p?.settings?.publicProfile) {
+        const me = r.find((x) => x.uid === authStore.uid);
+        const expectedAvatar = authStore.user?.photoURL || p.avatar;
+        if (me && expectedAvatar && me.avatar !== expectedAvatar) {
+          // fire-and-forget — proxima visita ja vera atualizado
+          syncRanking(authStore.uid, p, {
+            displayName: p.name,
+            avatar: expectedAvatar,
+            force: true
+          }).catch((e) => console.warn('Auto-heal ranking falhou:', e));
+        }
+      }
     } catch (e) {
       loadError = (e as Error).message;
     } finally {

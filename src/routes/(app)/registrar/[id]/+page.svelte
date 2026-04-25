@@ -106,6 +106,10 @@
         saveAsTemplate,
         templateName,
         templateCategory,
+        // Snapshot do treino na hora que a sessao comecou — pra detectar
+        // edicao do template entre o iniciar e o restore. Se mudou,
+        // descarta e comeca do zero (caso #2 do bug-list).
+        workoutUpdatedAt: workout?.updatedAt ?? 0,
         savedAt: Date.now()
       }));
     } catch {
@@ -124,6 +128,16 @@
       const data = JSON.parse(raw);
       // Descarta sessao parada ha mais de 12h
       if (Date.now() - data.savedAt > 12 * 3600_000) {
+        clearPersistedSession();
+        return false;
+      }
+      // Descarta se o treino foi editado entre o iniciar e o restore
+      // (template mudou: exercicios novos, removidos ou reordenados).
+      // Sem isso, performed[] referencia exerciseIds desatualizados e
+      // o usuario ve dados velhos mesmo apos editar.
+      const persistedWorkoutAt = data.workoutUpdatedAt ?? 0;
+      const currentWorkoutAt = workout?.updatedAt ?? 0;
+      if (persistedWorkoutAt && currentWorkoutAt && persistedWorkoutAt < currentWorkoutAt) {
         clearPersistedSession();
         return false;
       }

@@ -149,7 +149,10 @@ export function computeRankingEntry(params: {
   return {
     uid,
     displayName: displayName ?? profile.name ?? 'Atleta',
-    avatar,
+    // Fallback: se quem chamou nao passou avatar mas o profile tem,
+    // usa o do profile. Garante que ranking nunca fica sem avatar
+    // quando o usuario tem foto/emoji configurada no perfil.
+    avatar: avatar ?? profile.avatar,
     totalSessions,
     totalVolumeKg: Math.round(totalVolumeKg),
     totalPRs,

@@ -7,5 +7,5 @@
  * O +layout compara com localStorage.fibra_app_version e, se diferente,
  * força signOut pra usuário reautenticar em cima do código novo (sem cache).
  */
-export const APP_VERSION = '2.12.1';
+export const APP_VERSION = '2.13.0';
 export const VERSION_STORAGE_KEY = 'fibra_app_version';

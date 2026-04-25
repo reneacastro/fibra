@@ -8,7 +8,7 @@
     getWorkout, saveWorkout, deleteWorkout, newWorkoutId, saveWorkoutForClient
   } from '$lib/db/workouts';
   import type {
-    Workout, WorkoutCategory, WorkoutExercise, ExerciseSet
+    Workout, WorkoutCategory, WorkoutExercise, ExerciseSet, MuscleGroup
   } from '$lib/types';
   import { CATEGORY_LABEL, CATEGORY_ICON } from '$lib/utils/format';
   import Card from '$lib/components/Card.svelte';
@@ -40,7 +40,29 @@
   // Picker de exercícios
   let pickerOpen = $state(false);
   let pickerCat = $state<WorkoutCategory>('superior');
+  let pickerMuscle = $state<MuscleGroup | null>(null);
   let pickerSearch = $state('');
+  let pickerListEl = $state<HTMLDivElement | null>(null);
+  // Reset filtro de musculo quando muda categoria (cada macro tem
+  // grupos diferentes; manter um filtro de "peito" ao mudar pra
+  // Inferior nao faz sentido)
+  $effect(() => {
+    pickerCat;
+    pickerMuscle = null;
+  });
+  // Acordeao: id do exercicio expandido (so um por vez). null = todos
+  // colapsados. Ao adicionar exercicio novo, expande pra editar setes.
+  let expandedExId = $state<string | null>(null);
+  function toggleExpand(id: string | undefined) {
+    if (!id) return;
+    expandedExId = expandedExId === id ? null : id;
+  }
+  // Quando muda busca ou categoria, scrolla pro topo da lista
+  // (senao o primeiro match fica fora da viewport se user ja scrollou)
+  $effect(() => {
+    pickerSearch; pickerCat; // declara dependencias
+    if (pickerListEl) pickerListEl.scrollTop = 0;
+  });
   // Modo detalhe DENTRO do picker (sem popup-em-popup).
   // null = lista; id = mostra exercicio grande com Adicionar/Voltar
   let pickerDetailId = $state<string | null>(null);
@@ -99,12 +121,13 @@
       onEnd: (evt) => {
         if (evt.oldIndex === undefined || evt.newIndex === undefined) return;
         if (evt.oldIndex === evt.newIndex) return;
-        const { item, oldIndex, newIndex } = evt;
+        const { oldIndex, newIndex } = evt;
 
-        // Desfaz a mutação do Sortable — Svelte renderiza da ordem do state.
-        const refNode = el.children[oldIndex] || null;
-        el.insertBefore(item, refNode);
-
+        // NAO desfazer a mutacao do DOM do Sortable. Com keyed each
+        // (each {(we.id ?? we.exerciseId)}) o Svelte 5 reconcilia
+        // pela chave estavel quando o state muda. Tentar dar
+        // insertBefore antes de atualizar o state cria uma janela
+        // onde DOM e state divergem e o reconcile renumera errado.
         const next = [...workout.exercises];
         const [moved] = next.splice(oldIndex, 1);
         next.splice(newIndex, 0, moved);
@@ -123,13 +146,36 @@
   const targetUid = $derived(page.url.searchParams.get('clientUid') || authStore.uid || '');
   const isClientMode = $derived(!!page.url.searchParams.get('clientUid'));
 
+  function genWeId(): string {
+    return 'we_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+  }
+
   onMount(async () => {
     try {
       await catalogStore.ensure();
       if (!isNew && targetUid && page.params.id) {
         const w = await getWorkout(targetUid, page.params.id);
-        if (w) workout = w;
-        else goto(isClientMode ? `/trainer/cliente/${targetUid}` : '/treinos');
+        if (w) {
+          // Migracao: garante id unico por linha (treinos antigos sem id)
+          let migrated = false;
+          w.exercises = w.exercises.map((e) => {
+            if (e.id) return e;
+            migrated = true;
+            return { ...e, id: genWeId() };
+          });
+          workout = w;
+          // Persiste a migracao no banco — sem isso, os IDs gerados
+          // ficam apenas em memoria e a proxima carga gera outros,
+          // perdendo estabilidade do keyed each entre sessoes.
+          if (migrated) {
+            try {
+              if (isClientMode) await saveWorkoutForClient(targetUid, w);
+              else if (authStore.uid) await saveWorkout(authStore.uid, w);
+            } catch (e) {
+              console.warn('Falha ao persistir migracao de IDs:', e);
+            }
+          }
+        } else goto(isClientMode ? `/trainer/cliente/${targetUid}` : '/treinos');
       }
     } catch (e) {
       console.error('Falha ao carregar treino:', e);
@@ -153,17 +199,37 @@
     'cardio','mobilidade','alongamento','livre'
   ];
 
+  // Helpers pra filtro por musculo
+  function exerciseHasMuscle(e: { muscleGroup: MuscleGroup | MuscleGroup[] }, m: MuscleGroup): boolean {
+    return Array.isArray(e.muscleGroup) ? e.muscleGroup.includes(m) : e.muscleGroup === m;
+  }
+
+  // Lista de musculos disponiveis pra macro categoria atual (derivada
+  // do catalogo, ordenada por frequencia desc). Mostra como sub-tabs
+  // logo abaixo das macro-categorias quando ha 2+ opcoes.
+  const muscleOptions = $derived.by(() => {
+    const exs = catalogStore.byCategory(pickerCat);
+    const counts = new Map<MuscleGroup, number>();
+    for (const e of exs) {
+      const ms = Array.isArray(e.muscleGroup) ? e.muscleGroup : [e.muscleGroup];
+      for (const m of ms) counts.set(m, (counts.get(m) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  });
+
   // Quando há busca, procura em TODAS as categorias. Sem busca, filtra só pela ativa.
   const pickerResults = $derived.by(() => {
     const q = pickerSearch.trim().toLowerCase();
-    const list = q ? catalogStore.all : catalogStore.byCategory(pickerCat);
+    let list = q ? catalogStore.all : catalogStore.byCategory(pickerCat);
+    if (pickerMuscle && !q) list = list.filter((e) => exerciseHasMuscle(e, pickerMuscle!));
     const already = new Set(workout.exercises.map((e) => e.exerciseId));
     const filtered = list.filter((e) => !already.has(e.id) && (!q || e.name.toLowerCase().includes(q)));
     return filtered.slice(0, 100);
   });
   const pickerTotal = $derived.by(() => {
     const q = pickerSearch.trim().toLowerCase();
-    const list = q ? catalogStore.all : catalogStore.byCategory(pickerCat);
+    let list = q ? catalogStore.all : catalogStore.byCategory(pickerCat);
+    if (pickerMuscle && !q) list = list.filter((e) => exerciseHasMuscle(e, pickerMuscle!));
     const already = new Set(workout.exercises.map((e) => e.exerciseId));
     return list.filter((e) => !already.has(e.id) && (!q || e.name.toLowerCase().includes(q))).length;
   });
@@ -185,12 +251,15 @@
       set = { type: 'normal', reps: 10, weight: 0 };
     }
     const we: WorkoutExercise = {
+      id: genWeId(),
       exerciseId,
       order: workout.exercises.length,
       sets: Array.from({ length: seriesCount }, () => ({ ...set })),
       restSeconds: rest
     };
     workout = { ...workout, exercises: [...workout.exercises, we] };
+    // Expande o recem-adicionado pra editar series imediatamente
+    expandedExId = we.id ?? null;
   }
 
   function removeExercise(idx: number) {
@@ -255,6 +324,9 @@
   });
 
   async function openPublishSheet() {
+    // Defensiva: fecha picker se aberto pra evitar 2 sheets stackados
+    // (z-index conflict + clicks ambiguos no iOS Safari)
+    closePicker();
     publishSheetOpen = true;
     loadRecipients();
   }
@@ -391,7 +463,7 @@
       </Card>
     {:else}
       <div class="ex-stack" bind:this={stackEl}>
-        {#each workout.exercises as we, idx (we.exerciseId)}
+        {#each workout.exercises as we, idx (we.id ?? we.exerciseId)}
           {@const meta = catalogStore.byId(we.exerciseId)}
           {#if meta}
             <div class="we-wrap" data-id={we.exerciseId}>
@@ -401,15 +473,43 @@
                   <span class="mi">drag_indicator</span>
                 </button>
                 <div class="we-order mono">{idx + 1}</div>
-                <div class="we-info">
+                {#if meta.gifUrl}
+                  <button
+                    type="button"
+                    class="we-thumb"
+                    onclick={(e) => { e.stopPropagation(); goto(`/exercicios/${we.exerciseId}`); }}
+                    aria-label="Ver detalhes de {meta.name}"
+                  >
+                    <img src={meta.gifUrl} alt={meta.name} loading="lazy" />
+                  </button>
+                {/if}
+                <button
+                  type="button"
+                  class="we-info"
+                  onclick={() => toggleExpand(we.id)}
+                  aria-expanded={expandedExId === we.id}
+                  aria-label="{meta.name} — {expandedExId === we.id ? 'recolher' : 'expandir'} séries"
+                >
                   <div class="we-name">{meta.name}</div>
-                  <div class="we-muscle">{Array.isArray(meta.muscleGroup) ? meta.muscleGroup.join(' · ') : meta.muscleGroup}</div>
-                </div>
+                  <div class="we-muscle">
+                    {Array.isArray(meta.muscleGroup) ? meta.muscleGroup.join(' · ') : meta.muscleGroup}
+                    <span class="we-meta-sets">· {we.sets.length} {we.sets.length === 1 ? 'série' : 'séries'}</span>
+                  </div>
+                </button>
                 <div class="we-ctrl">
+                  <button
+                    class="icon-btn sm we-chev"
+                    class:on={expandedExId === we.id}
+                    onclick={() => toggleExpand(we.id)}
+                    aria-label={expandedExId === we.id ? 'Recolher' : 'Expandir'}
+                  >
+                    <span class="mi">expand_more</span>
+                  </button>
                   <button class="icon-btn sm danger" onclick={() => removeExercise(idx)} aria-label="Remover"><span class="mi">close</span></button>
                 </div>
               </div>
 
+              {#if expandedExId === we.id}
               <ExerciseHistoryCompact
                 exerciseId={we.exerciseId}
                 onOpenDetail={() => goto(`/exercicios/${we.exerciseId}`)}
@@ -542,6 +642,7 @@
                   <span class="suf">seg</span>
                 </div>
               </div>
+              {/if}
             </Card>
             </div>
           {/if}
@@ -814,6 +915,30 @@
           />
         </div>
 
+        <!-- Sub-filtros por musculo (so aparece quando ha 2+ opcoes
+             e usuario nao esta buscando por texto livre) -->
+        {#if muscleOptions.length > 1 && !pickerSearch.trim()}
+          <div class="muscle-chips">
+            <button
+              type="button"
+              class="muscle-chip"
+              class:on={pickerMuscle === null}
+              onclick={() => (pickerMuscle = null)}
+            >Todos</button>
+            {#each muscleOptions as [m, count] (m)}
+              <button
+                type="button"
+                class="muscle-chip"
+                class:on={pickerMuscle === m}
+                onclick={() => (pickerMuscle = m)}
+              >
+                {m}
+                <span class="muscle-chip-c mono">{count}</span>
+              </button>
+            {/each}
+          </div>
+        {/if}
+
         <div class="picker-search">
           <Input icon="search" placeholder="Buscar…" bind:value={pickerSearch} />
         </div>
@@ -824,7 +949,7 @@
           </div>
         {/if}
 
-        <div class="picker-list">
+        <div class="picker-list" bind:this={pickerListEl}>
           {#each pickerResults as ex (ex.id)}
             <ExerciseCard
               exercise={ex}
@@ -968,10 +1093,39 @@
     font-weight: 800;
     font-size: var(--fs-sm);
   }
-  .we-info { flex: 1; min-width: 0; }
+  .we-info {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    text-align: left;
+    color: inherit;
+    cursor: pointer;
+  }
   .we-name { font-weight: 700; font-size: var(--fs-sm); }
   .we-muscle { font-size: var(--fs-xs); color: var(--text-mute); text-transform: capitalize; }
-  .we-ctrl { display: flex; gap: 2px; }
+  .we-meta-sets { color: var(--text-dim); margin-left: 4px; text-transform: none; }
+  .we-ctrl { display: flex; gap: 2px; align-items: center; }
+  .we-chev .mi {
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .we-chev.on .mi {
+    transform: rotate(180deg);
+    color: var(--accent);
+  }
+  .we-thumb {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--r-md);
+    overflow: hidden;
+    background: var(--bg-3);
+    border: 0;
+    padding: 0;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .we-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
   .icon-btn {
     width: 32px;
@@ -1324,6 +1478,48 @@
   .picker-tabs {
     margin-bottom: var(--s-3);
     flex-shrink: 0;
+  }
+  .muscle-chips {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    padding-bottom: 4px;
+    margin-bottom: var(--s-3);
+    flex-shrink: 0;
+    scrollbar-width: none;
+  }
+  .muscle-chips::-webkit-scrollbar { display: none; }
+  .muscle-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: var(--r-full);
+    color: var(--text-mute);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    text-transform: capitalize;
+    white-space: nowrap;
+    transition: all var(--dur-fast);
+  }
+  .muscle-chip.on {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .muscle-chip-c {
+    font-size: 10px;
+    color: var(--text-dim);
+    padding: 1px 6px;
+    border-radius: var(--r-full);
+    background: rgba(0, 0, 0, 0.2);
+  }
+  .muscle-chip.on .muscle-chip-c {
+    color: var(--bg-0);
+    background: var(--accent);
   }
   .picker-search {
     margin-bottom: var(--s-3);

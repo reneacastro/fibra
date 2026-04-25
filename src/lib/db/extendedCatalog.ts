@@ -77,7 +77,12 @@ function inferCategoryFromMuscle(muscle: MuscleGroup | undefined, primary: Worko
   return [...cats];
 }
 
-function mapExercise(raw: RawExercise): Exercise {
+// Mapa de traducoes pt-BR por id (carregado em paralelo). Quando
+// presente, usa name/instructions traduzidos. Quando ausente, mantem
+// o original (degradacao gracefull).
+type TranslationMap = Record<string, { name?: string; instructions?: string[] }>;
+
+function mapExercise(raw: RawExercise, t?: TranslationMap): Exercise {
   const primaryMuscles = (raw.primaryMuscles ?? []).map((m) => MUSCLE_MAP[m]).filter(Boolean) as MuscleGroup[];
   const equipment = (raw.equipment && EQUIPMENT_MAP[raw.equipment]) || 'nenhum';
   const baseCategories: WorkoutCategory[] = [];
@@ -89,15 +94,28 @@ function mapExercise(raw: RawExercise): Exercise {
   const baseUrl = `https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/${folderName}`;
   const hasImages = raw.images && raw.images.length >= 1;
 
+  const translated = t?.[raw.id];
+  const finalName = translated?.name || raw.name;
+  // O arquivo de traducoes marca instrucoes nao traduzidas com prefixo
+  // [EN] seguidas do texto original em ingles. Ate completarmos a
+  // traducao, fazemos strip do marcador (mostra ingles limpo onde
+  // ainda nao tem pt-BR; mostra pt-BR onde ja foi traduzido).
+  // Regex robusto: pega [EN], [en], [EN]<space>, com whitespace variavel.
+  // Evita user ver o marcador caso a traducao tenha vindo com formato alternativo.
+  const stripEn = (s: string) => s.replace(/^\s*\[EN\]\s*/i, '');
+  const finalInstructions = translated?.instructions?.length
+    ? translated.instructions.map(stripEn).join('\n')
+    : (raw.instructions?.join('\n') || undefined);
+
   return {
     id: raw.id,
-    name: raw.name,
+    name: finalName,
     category: category.length === 1 ? category[0] : category,
     muscleGroup: primaryMuscles.length === 0 ? 'fullbody' : (primaryMuscles.length === 1 ? primaryMuscles[0] : primaryMuscles),
     equipment,
     gifUrl: hasImages ? `${baseUrl}/0.jpg` : undefined,
     gifEndUrl: raw.images && raw.images.length >= 2 ? `${baseUrl}/1.jpg` : undefined,
-    instructions: raw.instructions?.join('\n') || undefined,
+    instructions: finalInstructions,
     tags: [raw.level, raw.mechanic, raw.force].filter(Boolean) as string[]
   };
 }
@@ -106,10 +124,18 @@ let cached: Exercise[] | null = null;
 
 export async function loadExtendedCatalog(): Promise<Exercise[]> {
   if (cached) return cached;
-  const res = await fetch('/exercises-db.json');
-  if (!res.ok) throw new Error('Falha ao carregar catálogo estendido');
-  const raw: RawExercise[] = await res.json();
-  cached = raw.map(mapExercise);
+  // Carrega catalogo bruto (en) + traducoes pt-BR em paralelo. Se as
+  // traducoes falharem, segue com nomes em ingles (better than nothing).
+  const [raw, translations] = await Promise.all([
+    fetch('/exercises-db.json').then((r) => {
+      if (!r.ok) throw new Error('Falha ao carregar catálogo estendido');
+      return r.json() as Promise<RawExercise[]>;
+    }),
+    fetch('/exercises-db-pt.json')
+      .then((r) => (r.ok ? r.json() as Promise<TranslationMap> : null))
+      .catch(() => null)
+  ]);
+  cached = raw.map((r) => mapExercise(r, translations ?? undefined));
   return cached;
 }
 
