@@ -175,7 +175,7 @@
             <div class="t-body">
               <!-- fmtDuration recebe MS (nao segundos); por isso *1000 -->
               <div class="t-v mono">{fmtDuration(ranking.totalDurationSec * 1000)}</div>
-              <div class="t-l">tempo total</div>
+              <div class="t-l">tempo cronometrado <span class="t-fn">— sessões em tempo real</span></div>
             </div>
           </div>
         {/if}
@@ -353,6 +353,7 @@
     line-height: 1;
   }
   .t-l { font-size: var(--fs-xs); color: var(--text-mute); margin-top: 2px; }
+  .t-fn { color: var(--text-dim); font-size: 10px; }
 
   /* Category breakdown bars */
   .cat-list {

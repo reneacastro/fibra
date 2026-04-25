@@ -165,6 +165,11 @@ export interface Session {
   pace?: string;
   // PRs conquistados nessa sessão
   prsEarned?: string[]; // exerciseIds
+  /** Como a sessao foi gravada:
+   *  - 'realtime' (default): cronometrada na hora; finishedAt-startedAt e duracao real.
+   *  - 'manual': registro pos-fato (treino antigo); cronometro nao roda, duracao
+   *    nao entra em agregados publicos (ranking) pra nao "sujar" metrica de tempo. */
+  recording?: 'realtime' | 'manual';
   createdAt: number;
 }
 

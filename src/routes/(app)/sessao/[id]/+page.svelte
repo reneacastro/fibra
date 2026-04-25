@@ -168,10 +168,13 @@
     <Badge category={session.workoutCategory}>
       {CATEGORY_ICON[session.workoutCategory]} {CATEGORY_LABEL[session.workoutCategory]}
     </Badge>
+    {#if session.recording === 'manual'}
+      <Badge variant="default" size="sm">📅 Registrado depois</Badge>
+    {/if}
     <h1>{session.workoutName}</h1>
     <div class="hero-sub">
       {fmtDateShort(session.date)}
-      {#if duration > 0}· {fmtDuration(duration * 1000)}{/if}
+      {#if duration > 0 && session.recording !== 'manual'}· {fmtDuration(duration * 1000)}{/if}
     </div>
   </div>
 

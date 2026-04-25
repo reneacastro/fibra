@@ -58,6 +58,17 @@
   </div>
 </Card>
 
+<Card padding="md" onclick={() => goto('/registrar/manual')}>
+  <div class="quick">
+    <div class="quick-ic">📅</div>
+    <div class="quick-body">
+      <div class="quick-title">Registrar treino antigo</div>
+      <div class="quick-sub">Já fez mas não cronometrou? Adiciona ao histórico</div>
+    </div>
+    <span class="mi chev">chevron_right</span>
+  </div>
+</Card>
+
 <div class="sec-title">Ou escolha um treino salvo</div>
 
 {#if loading}
@@ -107,7 +118,12 @@
         <div class="hist-row">
           <div class="hist-ic">{CATEGORY_ICON[s.workoutCategory]}</div>
           <div class="hist-body">
-            <div class="hist-name">{s.workoutName}</div>
+            <div class="hist-name">
+              {s.workoutName}
+              {#if s.recording === 'manual'}
+                <span class="hist-tag" title="Registrado depois — fora do agregado de tempo">📅 legado</span>
+              {/if}
+            </div>
             <div class="hist-sub">
               {fmtDateRelative(s.date)}
               {#if s.calories}· 🔥 {s.calories} kcal{/if}
@@ -225,6 +241,17 @@
   }
   .hist-body { flex: 1; min-width: 0; }
   .hist-name { font-weight: 700; font-size: var(--fs-sm); }
+  .hist-tag {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 8px;
+    background: var(--bg-3);
+    color: var(--text-mute);
+    border-radius: var(--r-full);
+    font-size: 10px;
+    font-weight: 600;
+    vertical-align: middle;
+  }
   .hist-sub { font-size: var(--fs-xs); color: var(--text-mute); margin-top: 2px; }
 
   .chev { color: var(--text-dim); font-size: 22px; flex-shrink: 0; }

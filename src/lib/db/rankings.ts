@@ -103,8 +103,12 @@ export function computeRankingEntry(params: {
 
   for (const s of sessions) {
     totalSessions++;
-    const duration = s.finishedAt ? Math.floor((s.finishedAt - s.startedAt) / 1000) : 0;
-    totalDurationSec += duration;
+    // Duracao SO conta sessoes em tempo real. Manuals (registradas pos-fato)
+    // nao tem cronometro confiavel — sujariam o agregado de tempo.
+    if (s.recording !== 'manual') {
+      const duration = s.finishedAt ? Math.floor((s.finishedAt - s.startedAt) / 1000) : 0;
+      totalDurationSec += duration;
+    }
     totalPRs += s.prsEarned?.length ?? 0;
     totalVolumeKg += s.totalVolume ?? 0;
 
