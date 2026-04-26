@@ -340,9 +340,44 @@
   }
 
   function skipExercise(exIdx: number) {
-    const next = [...performed];
-    next[exIdx].skipped = !next[exIdx].skipped;
-    performed = next;
+    // Mantido pra retro-compat (sessoes antigas usam skipped).
+    // Update imutavel pra reatividade.
+    performed = performed.map((pe, i) =>
+      i === exIdx ? { ...pe, skipped: !pe.skipped } : pe
+    );
+  }
+
+  // Concluir exercicio: marca TODAS as series como done de uma vez +
+  // colapsa o card (visualmente "fecha o modal" como o user espera).
+  // Se ja esta concluido, reverte (uncheck + reabre).
+  function toggleCompleteExercise(exIdx: number) {
+    const ex = performed[exIdx];
+    if (!ex) return;
+    const allDoneInThisEx = ex.sets.length > 0 && ex.sets.every((s) => s.completed);
+    performed = performed.map((pe, i) => {
+      if (i !== exIdx) return pe;
+      return {
+        ...pe,
+        skipped: false, // sempre limpa skipped ao concluir
+        sets: pe.sets.map((s) => ({ ...s, completed: !allDoneInThisEx }))
+      };
+    });
+    // Atualiza set de cards expandidos manualmente — usuario pode
+    // querer reabrir mesmo que todos os sets estejam done
+    const next = new Set(forceExpanded);
+    if (allDoneInThisEx) next.add(exIdx); // estava done, agora reabriu, expand
+    else next.delete(exIdx);              // estava aberto, agora fechou
+    forceExpanded = next;
+  }
+
+  // Set de indices que o user expandiu manualmente apesar de estarem done.
+  // Por padrao: card colapsa quando allSetsDone. Tap no header expande.
+  let forceExpanded = $state<Set<number>>(new Set());
+  function toggleExpanded(exIdx: number) {
+    const next = new Set(forceExpanded);
+    if (next.has(exIdx)) next.delete(exIdx);
+    else next.add(exIdx);
+    forceExpanded = next;
   }
 
   // Progresso
@@ -561,8 +596,10 @@
     {#each performed as pe, idx (pe.exerciseId + idx)}
       {@const meta = catalogStore.byId(pe.exerciseId)}
       {@const workoutEx = workout.exercises[idx]}
+      {@const allSetsDone = pe.sets.length > 0 && pe.sets.every((s) => s.completed)}
+      {@const collapsed = allSetsDone && !forceExpanded.has(idx)}
       {#if meta && workoutEx}
-        <Card accent={pe.skipped ? 'default' : (pe.sets.every((s) => s.completed) ? 'glow' : 'default')}>
+        <Card accent={collapsed ? 'glow' : (pe.skipped ? 'default' : 'default')}>
           <div class="ex-head" class:dim={pe.skipped}>
             {#if meta.gifUrl}
               <button
@@ -574,23 +611,32 @@
                 <span class="ex-gif-overlay"><span class="mi">zoom_in</span></span>
               </button>
             {/if}
-            <div class="ex-info">
-              <div class="ex-name">{idx + 1}. {meta.name}</div>
+            <button
+              class="ex-info"
+              onclick={() => collapsed && toggleExpanded(idx)}
+              type="button"
+              aria-label={collapsed ? 'Expandir exercício' : meta.name}
+            >
+              <div class="ex-name">
+                {idx + 1}. {meta.name}
+                {#if collapsed}<span class="ex-done-tag">✓ feito</span>{/if}
+              </div>
               <div class="ex-muscle">
                 {Array.isArray(meta.muscleGroup) ? meta.muscleGroup.join(' · ') : meta.muscleGroup}
               </div>
-            </div>
+            </button>
             <button
               class="skip-btn"
-              class:on={pe.skipped}
-              onclick={() => skipExercise(idx)}
-              aria-label={pe.skipped ? 'Retomar' : 'Pular exercício'}
+              class:on={allSetsDone}
+              onclick={() => toggleCompleteExercise(idx)}
+              aria-label={allSetsDone ? 'Reabrir exercício' : 'Concluir exercício (marca todas as séries)'}
+              title={allSetsDone ? 'Reabrir' : 'Concluir tudo'}
             >
-              <span class="mi">{pe.skipped ? 'replay' : 'skip_next'}</span>
+              <span class="mi">{allSetsDone ? 'restart_alt' : 'done_all'}</span>
             </button>
           </div>
 
-          {#if !pe.skipped}
+          {#if !pe.skipped && !collapsed}
             <div class="pre-sets">
               <ExerciseHistoryCompact
                 exerciseId={pe.exerciseId}
@@ -926,9 +972,29 @@
     background: var(--bg-3);
     display: block;
   }
-  .ex-info { flex: 1; min-width: 0; }
+  .ex-info {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    text-align: left;
+    color: inherit;
+    cursor: default;
+  }
   .ex-name { font-weight: 700; font-size: var(--fs-md); }
   .ex-muscle { font-size: var(--fs-xs); color: var(--text-mute); text-transform: capitalize; margin-top: 2px; }
+  .ex-done-tag {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 8px;
+    background: var(--accent-glow);
+    color: var(--accent);
+    border-radius: var(--r-full);
+    font-size: 10px;
+    font-weight: 700;
+    vertical-align: middle;
+  }
 
   .skip-btn {
     width: 36px;
