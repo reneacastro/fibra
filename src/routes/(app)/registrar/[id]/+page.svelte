@@ -340,6 +340,11 @@
     (a, e) => a + (e.skipped ? 0 : e.sets.filter((s) => s.completed).length), 0
   ));
   const progressPct = $derived(totalSets === 0 ? 0 : Math.round((doneSets / totalSets) * 100));
+  // Pra finalizar: TODOS os sets nao-pulados precisam estar marcados.
+  // Bloqueia "Finalizar" se faltar set — usuario deve ou completar
+  // ou pular o exercicio inteiro.
+  const allDone = $derived(totalSets > 0 && doneSets === totalSets);
+  const remainingSets = $derived(totalSets - doneSets);
 
   const totalVolume = $derived(performed.reduce(
     (acc, e) => acc + e.sets.reduce(
@@ -715,93 +720,31 @@
     {/if}
   </div>
 
-  <!-- Finalização -->
-  {#if !showFinish}
+  <!-- Finalização (UI navega pra /registrar/[id]/finalizar) -->
+  {#if true}
+    {#if !allDone}
+      <div class="finish-blocker">
+        <span class="mi">checklist</span>
+        <div>
+          <div class="fb-t">Faltam {remainingSets} {remainingSets === 1 ? 'série' : 'séries'} pra fechar o treino</div>
+          <div class="fb-s">Marca cada série feita ou pula o exercício pra liberar o "Finalizar".</div>
+        </div>
+      </div>
+    {/if}
     <Button
       size="lg"
       icon="check_circle"
       full
-      onclick={() => (showFinish = true)}
+      disabled={!allDone}
+      onclick={() => {
+        // Garante que o estado mais recente foi persistido antes
+        // de navegar pra rota de finalizacao (que le do localStorage)
+        persistSession();
+        goto(`/registrar/${page.params.id}/finalizar`);
+      }}
     >
       Finalizar treino
     </Button>
-  {:else}
-    <Card title="Finalizar" icon="flag">
-      <Input type="number" label="🔥 Calorias (kcal)" bind:value={finalCalories} placeholder={String(suggestedCalories || 0)} />
-      {#if suggestedCalories > 0}
-        <div class="kcal-hint">
-          <span class="mi">bolt</span>
-          <span>Estimativa: <strong>{suggestedCalories} kcal</strong> com base na intensidade dos exercícios, seu peso e duração. Edite se tiver o número real.</span>
-        </div>
-      {/if}
-      <div class="spacer"></div>
-      <Input type="number" label="⚖️ Peso corporal hoje (kg)" bind:value={finalWeight} placeholder="0" step="0.1" />
-      <div class="spacer"></div>
-
-      <label class="mood-lbl">Como foi o treino?</label>
-      <div class="mood-row">
-        {#each MOODS as m (m.v)}
-          <button
-            class="mood-btn"
-            class:sel={finalMood === m.v}
-            onclick={() => (finalMood = m.v)}
-            title={m.l}
-          >
-            <span class="mood-e">{m.e}</span>
-            <span class="mood-l">{m.l}</span>
-          </button>
-        {/each}
-      </div>
-
-      <div class="spacer"></div>
-      <label class="notes-lbl">Notas (opcional)</label>
-      <textarea
-        bind:value={finalNotes}
-        placeholder="Como se sentiu? Alguma observação?"
-        rows="2"
-      ></textarea>
-
-      {#if workout.id === 'livre' && performed.length > 0}
-        <div class="spacer"></div>
-        <label class="tmpl-toggle">
-          <input type="checkbox" bind:checked={saveAsTemplate} />
-          <span>
-            <span class="tmpl-t">💾 Salvar como treino fixo</span>
-            <span class="tmpl-s">Cria um template pra reusar no futuro</span>
-          </span>
-        </label>
-
-        {#if saveAsTemplate}
-          <div class="spacer-sm"></div>
-          <Input
-            label="Nome do treino"
-            bind:value={templateName}
-            placeholder="Ex: Peito e tríceps terça"
-          />
-          <div class="spacer-sm"></div>
-          <label class="mood-lbl">Categoria</label>
-          <div class="tmpl-cats">
-            {#each ['superior','inferior','fullbody','forca','pump','core','funcional','calistenia','crossfit','hiit','cardio','mobilidade','alongamento','livre'] as c (c)}
-              <button
-                class="tmpl-cat"
-                class:on={templateCategory === c}
-                onclick={() => (templateCategory = c as WCat)}
-              >
-                {CATEGORY_ICON[c]} {CATEGORY_LABEL[c]}
-              </button>
-            {/each}
-          </div>
-        {/if}
-      {/if}
-
-      <div class="spacer"></div>
-      <div class="finish-btns">
-        <Button variant="ghost" onclick={() => (showFinish = false)}>Voltar</Button>
-        <Button variant="success" icon="check_circle" full loading={saving} onclick={finish}>
-          Salvar e concluir
-        </Button>
-      </div>
-    </Card>
   {/if}
 {/if}
 
@@ -1095,21 +1038,24 @@
     gap: 6px;
     flex: 1;
   }
-  .kcal-hint {
-    margin-top: 6px;
+  /* Bloqueio de finalizacao quando ha series faltando */
+  .finish-blocker {
     display: flex;
-    gap: 6px;
+    gap: 12px;
     align-items: flex-start;
-    padding: 8px 10px;
-    background: color-mix(in srgb, var(--accent) 8%, transparent);
-    border-left: 3px solid var(--accent);
-    border-radius: 0 var(--r-sm) var(--r-sm) 0;
-    font-size: 11px;
-    color: var(--text-mute);
-    line-height: 1.4;
+    padding: var(--s-3);
+    background: color-mix(in srgb, var(--warn, #f59e0b) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--warn, #f59e0b) 30%, transparent);
+    border-radius: var(--r-md);
+    margin-bottom: var(--s-2);
   }
-  .kcal-hint .mi { font-size: 14px; color: var(--accent); flex-shrink: 0; margin-top: 1px; }
-  .kcal-hint strong { color: var(--text); }
+  .finish-blocker .mi {
+    font-size: 24px;
+    color: var(--warn, #f59e0b);
+    flex-shrink: 0;
+  }
+  .fb-t { font-weight: 700; font-size: var(--fs-sm); margin-bottom: 4px; }
+  .fb-s { font-size: var(--fs-xs); color: var(--text-mute); line-height: 1.4; }
 
   .gps-btn {
     display: flex;
@@ -1174,98 +1120,7 @@
 
   .spacer { height: var(--s-3); }
 
-  .mood-lbl, .notes-lbl {
-    font-size: var(--fs-xs);
-    font-weight: 600;
-    color: var(--text-mute);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    display: block;
-    margin-bottom: 6px;
-  }
-  .mood-row {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 4px;
-  }
-  .mood-btn {
-    padding: 10px 6px;
-    background: var(--bg-3);
-    border: 1px solid var(--border);
-    border-radius: var(--r-md);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    transition: all var(--dur-fast);
-  }
-  .mood-btn:hover { background: var(--bg-4); }
-  .mood-btn.sel {
-    background: var(--accent-glow);
-    border-color: var(--accent);
-    transform: scale(1.05);
-  }
-  .mood-e { font-size: 22px; }
-  .mood-l { font-size: 10px; color: var(--text-mute); }
-
-  textarea {
-    width: 100%;
-    padding: var(--s-3);
-    background: var(--bg-3);
-    border: 1px solid var(--border);
-    border-radius: var(--r-md);
-    color: var(--text);
-    font-family: inherit;
-    font-size: var(--fs-sm);
-    resize: vertical;
-  }
-  textarea:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px var(--accent-glow);
-  }
-
-  .finish-btns {
-    display: flex;
-    gap: var(--s-2);
-  }
-
   .spacer-sm { height: var(--s-2); }
-
-  .tmpl-toggle {
-    display: flex;
-    gap: var(--s-3);
-    align-items: flex-start;
-    padding: var(--s-3);
-    background: var(--bg-3);
-    border: 1px solid var(--border);
-    border-radius: var(--r-md);
-    cursor: pointer;
-  }
-  .tmpl-toggle input { margin-top: 4px; accent-color: var(--accent); }
-  .tmpl-t { display: block; font-weight: 700; font-size: var(--fs-sm); }
-  .tmpl-s { display: block; color: var(--text-mute); font-size: var(--fs-xs); margin-top: 2px; }
-
-  .tmpl-cats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 6px;
-  }
-  .tmpl-cat {
-    padding: 6px 12px;
-    border-radius: var(--r-full);
-    background: var(--bg-3);
-    border: 1px solid var(--border);
-    color: var(--text-mute);
-    font-size: 11px;
-    font-weight: 700;
-  }
-  .tmpl-cat.on {
-    background: var(--accent-glow);
-    border-color: var(--accent);
-    color: var(--accent);
-  }
 
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>

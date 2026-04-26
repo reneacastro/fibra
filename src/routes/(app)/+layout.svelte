@@ -31,6 +31,7 @@
     if (p.match(/^\/trainer\/cliente\/[^/]+\/dieta/)) return { t: 'Dieta do cliente', s: 'Plano alimentar', back: true };
     if (p.startsWith('/trainer/cliente/')) return { t: 'Cliente', s: 'Assessorar este atleta', back: true };
     if (p === '/registrar/manual') return { t: 'Registrar antigo', s: 'Adicionar ao histórico', back: true };
+    if (p.match(/^\/registrar\/[^/]+\/finalizar$/)) return { t: 'Finalizar treino', s: 'Resumo e detalhes', back: true };
     if (p.startsWith('/registrar/')) return { t: 'Treino em andamento', s: 'Foco total', back: true };
     if (p === '/exercicios/novo') return { t: 'Novo exercício', s: 'Adicionar ao catálogo', back: true };
     if (p.startsWith('/exercicios/')) return { t: 'Exercício', s: 'Histórico e detalhes', back: true };
