@@ -264,12 +264,23 @@
   });
 
   function toggleSet(exIdx: number, setIdx: number) {
-    const next = [...performed];
-    const set = next[exIdx].sets[setIdx];
-    set.completed = !set.completed;
-    performed = next;
+    // Update imutavel completo — garante que o $derived (allDone, doneSets)
+    // disparam reativamente. Antes usava spread+mutate, mas o Svelte 5 as
+    // vezes nao detectava a mudanca em sets aninhados.
+    let willComplete = false;
+    performed = performed.map((pe, ei) => {
+      if (ei !== exIdx) return pe;
+      return {
+        ...pe,
+        sets: pe.sets.map((s, si) => {
+          if (si !== setIdx) return s;
+          willComplete = !s.completed;
+          return { ...s, completed: !s.completed };
+        })
+      };
+    });
 
-    if (set.completed && workout?.exercises[exIdx]?.restSeconds) {
+    if (willComplete && workout?.exercises[exIdx]?.restSeconds) {
       restingFor = { exIdx, setIdx };
       if (navigator.vibrate) navigator.vibrate(50);
     }
@@ -340,11 +351,14 @@
     (a, e) => a + (e.skipped ? 0 : e.sets.filter((s) => s.completed).length), 0
   ));
   const progressPct = $derived(totalSets === 0 ? 0 : Math.round((doneSets / totalSets) * 100));
-  // Pra finalizar: TODOS os sets nao-pulados precisam estar marcados.
-  // Bloqueia "Finalizar" se faltar set — usuario deve ou completar
-  // ou pular o exercicio inteiro.
-  const allDone = $derived(totalSets > 0 && doneSets === totalSets);
-  const remainingSets = $derived(totalSets - doneSets);
+  // Pra finalizar: TODOS os sets nao-pulados precisam estar marcados,
+  // OU o usuario pulou todos os exercicios. So bloqueia se houver sets
+  // pendentes em exercicios nao-pulados. Treino totalmente vazio
+  // (performed.length === 0) tambem bloqueia.
+  const allDone = $derived(
+    performed.length > 0 && (totalSets === 0 || doneSets >= totalSets)
+  );
+  const remainingSets = $derived(Math.max(0, totalSets - doneSets));
 
   const totalVolume = $derived(performed.reduce(
     (acc, e) => acc + e.sets.reduce(
@@ -722,12 +736,20 @@
 
   <!-- Finalização (UI navega pra /registrar/[id]/finalizar) -->
   {#if true}
-    {#if !allDone}
+    {#if !allDone && remainingSets > 0}
       <div class="finish-blocker">
         <span class="mi">checklist</span>
         <div>
           <div class="fb-t">Faltam {remainingSets} {remainingSets === 1 ? 'série' : 'séries'} pra fechar o treino</div>
           <div class="fb-s">Marca cada série feita ou pula o exercício pra liberar o "Finalizar".</div>
+        </div>
+      </div>
+    {:else if !allDone}
+      <div class="finish-blocker">
+        <span class="mi">checklist</span>
+        <div>
+          <div class="fb-t">Adicione pelo menos um exercício</div>
+          <div class="fb-s">O treino livre precisa de exercícios pra ser finalizado.</div>
         </div>
       </div>
     {/if}
