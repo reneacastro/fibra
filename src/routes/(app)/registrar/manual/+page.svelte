@@ -57,10 +57,15 @@
         exerciseId: we.exerciseId,
         exerciseName: meta?.name ?? '?',
         order: idx,
-        sets: we.sets.map((s) => ({
-          ...s,
-          completed: true // em modo manual, todas marcadas como feitas
-        } as PerformedSet))
+        sets: we.sets.map((s) => {
+          // Pre-deriva durationSec se cardio ja vem com distance+pace
+          // do template (caso comum: corrida 5km @ 5:30)
+          const ps: PerformedSet = { ...s, completed: true } as PerformedSet;
+          if (ps.distanceM && ps.paceSecPerKm && !ps.durationSec) {
+            ps.durationSec = Math.round((ps.distanceM / 1000) * ps.paceSecPerKm);
+          }
+          return ps;
+        })
       };
     });
   }
