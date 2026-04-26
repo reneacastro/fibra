@@ -7,6 +7,7 @@
   import { listWorkouts, getWorkout } from '$lib/db/workouts';
   import { getProfile } from '$lib/db/profile';
   import { saveSession, newSessionId } from '$lib/db/sessions';
+  import { toast } from '$lib/stores/toast.svelte';
   import { syncRanking } from '$lib/db/rankings';
   import type {
     Workout, Session, PerformedExercise, PerformedSet, ExerciseSet
@@ -111,6 +112,7 @@
       } catch (e) {
         console.warn('Falha ressync ranking:', e);
       }
+      toast.success('Treino registrado no histórico', { icon: '📅' });
       goto(`/sessao/${session.id}`);
     } catch (e) {
       saveError = (e as Error).message;

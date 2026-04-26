@@ -1,6 +1,7 @@
 <script lang="ts">
   import Header from '$lib/components/Header.svelte';
   import BottomNav from '$lib/components/BottomNav.svelte';
+  import ToastHost from '$lib/components/ToastHost.svelte';
   import { page } from '$app/state';
 
   let { children } = $props();
@@ -45,6 +46,7 @@
     {@render children()}
   </main>
   <BottomNav />
+  <ToastHost />
 </div>
 
 <style>

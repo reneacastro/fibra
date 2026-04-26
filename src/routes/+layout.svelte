@@ -73,6 +73,17 @@
     // Previne pinch-zoom em iOS Safari mesmo se o meta viewport falhar
     document.addEventListener('gesturestart', (e) => e.preventDefault());
     document.addEventListener('gesturechange', (e) => e.preventDefault());
+
+    // Registra Service Worker (SvelteKit gera em /service-worker.js no build).
+    // SW eh necessario pra: (1) push notifications, (2) cache offline,
+    // (3) PWA instalavel na home screen.
+    if ('serviceWorker' in navigator && import.meta.env.PROD) {
+      try {
+        await navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
+      } catch (e) {
+        console.warn('SW falhou ao registrar:', e);
+      }
+    }
   });
 </script>
 

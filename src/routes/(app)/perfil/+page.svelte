@@ -3,6 +3,8 @@
   import { goto } from '$app/navigation';
   import { authStore } from '$lib/stores/auth.svelte';
   import { getProfile, saveProfile } from '$lib/db/profile';
+  import { toast } from '$lib/stores/toast.svelte';
+  import { pushStore } from '$lib/stores/push.svelte';
   import { getMyRoleRequest, submitRoleRequest, cancelRoleRequest } from '$lib/db/roleRequests';
   import type { UserProfile, Goal, RoleRequest } from '$lib/types';
   import Card from '$lib/components/Card.svelte';
@@ -29,7 +31,22 @@
     if (!authStore.uid) return;
     profile = await getProfile(authStore.uid);
     roleRequest = await getMyRoleRequest(authStore.uid);
+    await pushStore.ensure();
   });
+
+  async function togglePush() {
+    if (pushStore.state === 'granted') {
+      await pushStore.unsubscribe();
+      toast.info('Notificações desativadas');
+    } else if (pushStore.state === 'denied') {
+      toast.warning('Notificações bloqueadas. Habilite nas configurações do navegador.', { duration: 6000 });
+    } else if (pushStore.state === 'unsupported') {
+      toast.warning('Seu dispositivo não suporta notificações no app web. No iOS, instale o FIBRA na tela inicial primeiro.', { duration: 6000 });
+    } else {
+      const ok = await pushStore.subscribe();
+      if (ok) toast.success('Notificações ativadas! Você receberá lembretes e mensagens.', { duration: 5000 });
+    }
+  }
 
   const approvedRole = $derived(profile?.settings?.role ?? 'athlete');
 
@@ -92,6 +109,9 @@
     try {
       await saveProfile(authStore.uid, profile);
       dirty = false;
+      toast.success('Perfil atualizado');
+    } catch (e) {
+      toast.error('Falha ao salvar: ' + (e as Error).message);
     } finally {
       saving = false;
     }
@@ -270,6 +290,43 @@
     {/if}
   </Card>
 
+  <!-- Notificações -->
+  <Card>
+    <div class="sec-title">Notificações</div>
+    <button class="push-toggle" onclick={togglePush}>
+      <div class="push-ic">
+        {#if pushStore.state === 'granted'}🔔{:else if pushStore.state === 'denied'}🔕{:else}🔔{/if}
+      </div>
+      <div class="push-body">
+        <div class="push-t">
+          {#if pushStore.state === 'granted'}
+            Notificações ativadas
+          {:else if pushStore.state === 'denied'}
+            Notificações bloqueadas
+          {:else if pushStore.state === 'unsupported'}
+            Não suportado no momento
+          {:else}
+            Receber lembretes
+          {/if}
+        </div>
+        <div class="push-s">
+          {#if pushStore.state === 'granted'}
+            Toque pra desativar
+          {:else if pushStore.state === 'denied'}
+            Habilite nas configurações do navegador
+          {:else if pushStore.state === 'unsupported'}
+            No iPhone, instale o app na tela inicial primeiro
+          {:else}
+            Lembretes de treino, mensagens do trainer, conquistas
+          {/if}
+        </div>
+      </div>
+      <div class="push-state" class:on={pushStore.state === 'granted'}>
+        <span class="push-knob"></span>
+      </div>
+    </button>
+  </Card>
+
   <!-- Suporte e legal -->
   <Card>
     <div class="sec-title">Suporte e termos</div>
@@ -346,6 +403,56 @@
   .support-t { font-weight: 700; font-size: var(--fs-sm); }
   .support-s { font-size: var(--fs-xs); color: var(--text-mute); margin-top: 2px; }
   .support-item .chev { color: var(--text-dim); font-size: 18px; }
+
+  /* Push toggle */
+  .push-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    width: 100%;
+    background: transparent;
+    border: 0;
+    padding: var(--s-2) 0;
+    text-align: left;
+    color: inherit;
+    cursor: pointer;
+  }
+  .push-ic {
+    font-size: 28px;
+    flex-shrink: 0;
+    width: 44px;
+    text-align: center;
+  }
+  .push-body { flex: 1; min-width: 0; }
+  .push-t { font-weight: 700; font-size: var(--fs-sm); }
+  .push-s { font-size: var(--fs-xs); color: var(--text-mute); margin-top: 2px; line-height: 1.4; }
+  .push-state {
+    width: 44px;
+    height: 24px;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    position: relative;
+    flex-shrink: 0;
+    transition: background var(--dur-fast);
+  }
+  .push-state.on {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .push-knob {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .push-state.on .push-knob {
+    transform: translateX(20px);
+  }
 
   .hero {
     display: flex;
