@@ -66,7 +66,17 @@
   }
 
   function updateSet(exIdx: number, sIdx: number, patch: Partial<PerformedSet>) {
-    performed[exIdx].sets[sIdx] = { ...performed[exIdx].sets[sIdx], ...patch };
+    const merged = { ...performed[exIdx].sets[sIdx], ...patch };
+    // Auto-deriva tempo total pra cardio quando user preenche distancia
+    // E pace. tempo (s) = (distancia_m / 1000) * pace_s_por_km
+    if (merged.distanceM && merged.paceSecPerKm) {
+      merged.durationSec = Math.round((merged.distanceM / 1000) * merged.paceSecPerKm);
+    } else if ('distanceM' in patch || 'paceSecPerKm' in patch) {
+      // Limpou um dos dois — zera duracao derivada (a nao ser que user
+      // tenha digitado durationSec manualmente nessa mesma chamada)
+      if (!('durationSec' in patch)) merged.durationSec = undefined;
+    }
+    performed[exIdx].sets[sIdx] = merged;
   }
 
   // Total de volume
@@ -82,11 +92,17 @@
     saveError = null;
     try {
       const ts = new Date(date + 'T12:00:00').getTime();
+      // Soma duracoes derivadas (cardio: km×pace) das series concluidas.
+      // Mostra um total razoavel no /sessao/[id] sem poluir ranking
+      // (recording='manual' ja exclui de totalDurationSec do ranking).
+      const totalDurSec = performed.reduce((acc, pe) =>
+        acc + pe.sets.reduce((s, st) => s + (st.completed ? (st.durationSec ?? 0) : 0), 0)
+      , 0);
       const session: Session = {
         id: newSessionId(),
         date,
         startedAt: ts,
-        finishedAt: ts, // manual: zerado proposital
+        finishedAt: ts + totalDurSec * 1000,
         workoutId: selectedWorkout.id,
         workoutName: selectedWorkout.name,
         workoutCategory: selectedWorkout.category,
@@ -95,7 +111,7 @@
         calories: calories ? Number(calories) : undefined,
         mood,
         notes: notes.trim() || undefined,
-        recording: 'manual', // marca como nao-cronometrada
+        recording: 'manual', // marca como nao-cronometrada (exclui do agregado de tempo no ranking)
         createdAt: Date.now()
       };
       await saveSession(authStore.uid, session);
@@ -256,6 +272,11 @@
                 />
               {/if}
             </div>
+            {#if cardio && set.durationSec && set.durationSec > 0}
+              <div class="cardio-time mono">
+                ⏱ Tempo total: {Math.floor(set.durationSec / 60)}:{String(set.durationSec % 60).padStart(2, '0')}
+              </div>
+            {/if}
           {/each}
         </div>
       </Card>
@@ -427,6 +448,16 @@
     outline: none;
     border-color: var(--accent);
     box-shadow: 0 0 0 1px var(--accent-glow);
+  }
+  .cardio-time {
+    margin: 4px 4px 0;
+    padding: 6px 10px;
+    background: var(--accent-glow);
+    color: var(--accent);
+    border-radius: var(--r-sm);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    text-align: center;
   }
 
   .mood-row { display: flex; gap: 4px; }

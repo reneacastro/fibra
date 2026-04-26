@@ -174,7 +174,7 @@
     <h1>{session.workoutName}</h1>
     <div class="hero-sub">
       {fmtDateShort(session.date)}
-      {#if duration > 0 && session.recording !== 'manual'}· {fmtDuration(duration * 1000)}{/if}
+      {#if duration > 0}· {fmtDuration(duration * 1000)}{#if session.recording === 'manual'} (estimado){/if}{/if}
     </div>
   </div>
 
